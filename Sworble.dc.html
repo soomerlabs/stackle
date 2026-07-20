@@ -255,8 +255,19 @@
             <div key="{{ timeKey }}" style="{{ timeValStyle }}">{{ timeText }}</div>
             {{ timeFxEl }}
           </div>
+          <sc-if value="{{ sworbHeaderShow }}" hint-placeholder-val="{{ false }}">
+            <div style="width:2px; align-self:stretch; background:var(--cell-line); border-radius:1px;"></div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:11px; font-weight:700; letter-spacing:1.5px; color:var(--card-sub);">CLUES</div>
+              <div style="{{ sworbPipValStyle }}">{{ sworbPipText }}</div>
+            </div>
+          </sc-if>
         </div>
       </div>
+
+      <sc-if value="{{ sworbCanGuessShow }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ openSworbModal }}" style="{{ sworbGuessBtnStyle }}">GUESS THE SWORB</button>
+      </sc-if>
 
       <div style="{{ hopperCardStyle }}">
         <div key="{{ msgKey }}" ref="{{ hopperMsgRef }}" style="{{ hopperMsgStyle }}">{{ bannerEl }}</div>
@@ -430,6 +441,22 @@
                       </div>
                     </sc-if>
                     </div>
+                    <sc-if value="{{ homeSworb.active }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex; align-items:center; justify-content:space-between; background:var(--card); border-radius:12px; padding:9px 13px; margin-top:2px;">
+                        <div style="display:flex; flex-direction:column; gap:1px;">
+                          <div style="font-size:9px; font-weight:800; letter-spacing:1.5px; color:var(--ghost);">SWORB OF THE DAY</div>
+                          <sc-if value="{{ homeSworb.solved }}" hint-placeholder-val="{{ false }}">
+                            <div style="font-size:15px; font-weight:800; letter-spacing:1px; color:#5FD6A8; text-transform:uppercase;">{{ homeSworb.word }}</div>
+                          </sc-if>
+                          <sc-if value="{{ homeSworb.notSolved }}" hint-placeholder-val="{{ true }}">
+                            <div style="font-size:13px; font-weight:700; color:var(--sheet-sub);">{{ homeSworb.progressText }}</div>
+                          </sc-if>
+                        </div>
+                        <sc-if value="{{ homeSworb.solved }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size:13px; font-weight:800; color:#F5B84A;">{{ homeSworb.bonusText }}</div>
+                        </sc-if>
+                      </div>
+                    </sc-if>
                     <button onClick="{{ openLb }}" style="width:100%; box-sizing:border-box; background:transparent; border:none; padding:0; font-family:inherit; cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:11px; margin-top:2px; -webkit-tap-highlight-color:transparent; outline:none;">
                       <div style="display:flex; align-items:center; justify-content:space-between;">
                         <span style="font-family:'Fredoka','Manrope',sans-serif; font-size:18px; font-weight:600; color:var(--sheet-ink);">standings</span>
@@ -973,6 +1000,29 @@
         <button onClick="{{ saveName }}" style="width:100%; box-sizing:border-box; background:#8971FF; color:#FFFFFF; border:none; border-radius:14px; padding:12px 0; font-size:16px; font-weight:800; font-family:inherit; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 0 #5A43C9;">SAVE</button>
         <button onClick="{{ cancelName }}" style="background:transparent; border:none; color:var(--ghost); font-size:13px; font-weight:800; font-family:inherit; letter-spacing:1.5px; cursor:pointer; padding:2px;">CANCEL</button>
       </sc-if>
+
+      <sc-if value="{{ isSworb }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:'Fredoka', 'Manrope', sans-serif; font-size:22px; font-weight:600; color:var(--sheet-ink); letter-spacing:0.5px; text-align:center;">guess the sworb</div>
+        <sc-if value="{{ sworbSolvedShow }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:12.5px; font-weight:700; color:var(--sheet-sub); text-align:center; line-height:1.5;">You got it!</div>
+          <div style="font-family:'Fredoka','Manrope',sans-serif; font-size:26px; font-weight:600; letter-spacing:1px; color:#5FD6A8; text-align:center; text-transform:uppercase;">{{ sworbRevealWord }}</div>
+          <div style="font-size:13px; font-weight:800; color:#F5B84A; text-align:center;">+{{ sworbRevealBonus }} pts</div>
+          <button onClick="{{ closeSworb }}" style="width:100%; box-sizing:border-box; background:#8971FF; color:#FFFFFF; border:none; border-radius:14px; padding:12px 0; font-size:16px; font-weight:800; font-family:inherit; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 0 #5A43C9;">NICE</button>
+        </sc-if>
+        <sc-if value="{{ sworbDoneShow }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:12.5px; font-weight:700; color:var(--sheet-sub); text-align:center; line-height:1.5;">Out of guesses &mdash; the sworb was <b>{{ sworbRevealWord }}</b>.</div>
+          <button onClick="{{ closeSworb }}" style="width:100%; box-sizing:border-box; background:#8971FF; color:#FFFFFF; border:none; border-radius:14px; padding:12px 0; font-size:16px; font-weight:800; font-family:inherit; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 0 #5A43C9;">CLOSE</button>
+        </sc-if>
+        <sc-if value="{{ sworbOpenShow }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:12.5px; font-weight:700; color:var(--sheet-sub); text-align:center; line-height:1.5;">{{ sworbClueLine }}</div>
+          <div key="{{ sworbShakeKey }}" style="{{ sworbInputWrapStyle }}">
+            <input value="{{ sworbInput }}" onInput="{{ onSworbInput }}" onKeyDown="{{ onSworbKey }}" maxLength="16" placeholder="YOUR GUESS" style="{{ sworbInputStyle }}" />
+          </div>
+          <div style="font-size:11.5px; font-weight:800; color:var(--ghost); letter-spacing:0.5px; text-align:center;">{{ sworbGuessesLine }}</div>
+          <button onClick="{{ submitSworb }}" style="width:100%; box-sizing:border-box; background:#8971FF; color:#FFFFFF; border:none; border-radius:14px; padding:12px 0; font-size:16px; font-weight:800; font-family:inherit; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 0 #5A43C9;">GUESS</button>
+          <button onClick="{{ cancelSworb }}" style="background:transparent; border:none; color:var(--ghost); font-size:13px; font-weight:800; font-family:inherit; letter-spacing:1.5px; cursor:pointer; padding:2px;">CANCEL</button>
+        </sc-if>
+      </sc-if>
       </div>
       </div>
     </div>
@@ -1214,6 +1264,7 @@ class Component extends DCLogic {
       scoreShown: 0, bestLit: false, roundWords: [],
       nextFresh: false, muted, opts, activeModal: null, modalStack: [], contentFading: false, heightAnim: false, modalW: 320, modalFromHome: false,
       lbData: null, homeLb: null, nameInput: '', nameError: '', sheetH: 0,
+      sworbInput: '', sworbShake: 0, clueGlowIds: null, // sworb-of-the-day guess sheet + clue-find tile glow (UI-only)
       screen: 'home',
       dictNote: 'loading dictionary\u2026',
       tileSize: this.initialSize(props), vw: window.innerWidth,
@@ -1252,7 +1303,7 @@ class Component extends DCLogic {
       this.setState({ sheetFading: false, ...patch }, after);
     }, 200);
   }
-  modalWidth(name) { return ({ settings: 350, howto: 350, stats: 318, lb: 328, words: 328, name: 300 })[name] || 320; }
+  modalWidth(name) { return ({ settings: 350, howto: 350, stats: 318, lb: 328, words: 328, name: 300, sworb: 300 })[name] || 320; }
   // single-shell modal router: ONE scrim + ONE sheet; activeModal swaps the content,
   // a back-stack (modalStack) powers parent->child nav, height glides between routes.
   goModal(name, opts) {
@@ -1595,6 +1646,23 @@ class Component extends DCLogic {
       this._rsNext = _rs.nextRow; this._rsWords = _rs.roundWords; this._rsStreak = _rs.streak;
       this.queueRunSave();
     }
+    // SWORB clue glow (Task 11): _clueJustFound is stamped (lowercase word) inside the SAME
+    // setState that marks that word's tiles `clearing` with a `clearSeq` — so right here,
+    // right after that commit, the just-played word's tile ids are exactly the non-mine
+    // clearing tiles. Consume the flag once (clear it immediately) and let the tiles glow
+    // via the existing bestGlow keyframe (see the tiles map — reused, not recolored) for a
+    // beat before it's cleared, same pattern as the debugBestIds reveal.
+    if (this._clueJustFound) {
+      const w = this._clueJustFound; this._clueJustFound = null;
+      const glowIds = (this.state.tiles || [])
+        .filter(t => t.clearing && t.clearSeq != null && !t.armed)
+        .sort((a, b) => a.clearSeq - b.clearSeq)
+        .map(t => t.id);
+      if (glowIds.length) {
+        this.setState({ clueGlowIds: glowIds });
+        this.later(() => this.setState(s => (s.clueGlowIds === glowIds ? { clueGlowIds: null } : null)), 1200);
+      }
+    }
     this.measureSheet();
     this.syncScrollLock();
     // scrim continuity: remember if ANY modal backdrop was visible this render, so a
@@ -1765,6 +1833,16 @@ class Component extends DCLogic {
     this.saveSworb(st);
     this.forceUpdate();
     return { ok: true, correct, guessesLeft: Math.max(0, 3 - st.guessesUsed), bonus: st.bonus };
+  }
+  // guess-sheet submit: UI-only wrapper around guessSworb — validates non-empty input,
+  // clears the field either way, and shakes (via sworbShake, a bump counter so repeated
+  // wrong guesses re-key the wrapper and always restart the CSS animation) on a miss.
+  doGuessSworb() {
+    const raw = (this.state.sworbInput || '').trim();
+    if (!raw) return;
+    const res = this.guessSworb(raw);
+    if (!res || !res.ok) return; // no sworb today, or guesses already exhausted
+    this.setState(s => ({ sworbInput: '', sworbShake: res.correct ? (s.sworbShake || 0) : (s.sworbShake || 0) + 1 }));
   }
 
   // never ACCEPT slurs as playable words, even when a source dictionary has them
@@ -4972,6 +5050,12 @@ class Component extends DCLogic {
             ? 'tileFlash 0.5s ease-out'
             : (st.debugBestIds && st.debugBestIds.includes(t.id))
               ? 'bestGlow 0.9s ease-in-out 4'
+            // SWORB clue find (Task 11): the just-played clue word's tiles glow with the SAME
+            // aura as the debugBestIds reveal above — reused, not a new color. These tiles are
+            // already mid-flight (clearing:true) so the glow rides the brief fade/fly window;
+            // that's paired with the header pip tick + score spike for the "explosive" feel.
+            : (st.clueGlowIds && st.clueGlowIds.includes(t.id))
+              ? 'bestGlow 0.9s ease-in-out 4'
             : (t.nope && !t.clearing)
               // (clearing wins: a valid word swiped right after a miss must FLY, not recoil)
               ? (() => { const i = t.nope - 1, n = t.nopeN || 4; // the whole word turns red TOGETHER (one smooth blend, instant start) + deflates in unison; the drain still sweeps out from the head
@@ -5145,6 +5229,28 @@ class Component extends DCLogic {
         transition: 'color 0.3s ease',
         animation: st.bestLit ? 'bestPop 0.5s ease-out' : 'none', // one-shot pop the moment you pass it
       },
+      // ---- SWORB OF THE DAY: in-game header pip cell + GUESS button (Task 11) ----
+      // dailyStatus().sworb is read ONCE here (it's active === false with safe defaults on a
+      // normal day) so every {{ }} hole below always resolves, sworb day or not \u2014 the sc-if
+      // gates (sworbHeaderShow / sworbCanGuessShow) are what actually hide the UI.
+      ...(() => {
+        const sw = this.dailyStatus().sworb;
+        return {
+          sworbHeaderShow: !!sw.active,
+          sworbPipText: sw.active ? (sw.foundCount + '/' + sw.total) : '',
+          sworbPipValStyle: {
+            fontSize: valFont, fontWeight: 800, lineHeight: 1, color: '#8971FF',
+            animation: (st.clueGlowIds && st.clueGlowIds.length) ? 'bestPop 0.5s ease-out' : 'none', // pip ticks on the SAME beat as the clue-find tile glow
+          },
+          sworbCanGuessShow: !!sw.canGuess,
+        };
+      })(),
+      openSworbModal: () => { this.sfxClick(); this.setState({ sworbInput: '', sworbShake: 0 }); this.goModal('sworb'); },
+      sworbGuessBtnStyle: {
+        width: '100%', boxSizing: 'border-box', background: '#8971FF', color: '#FFFFFF', border: 'none',
+        borderRadius: 12, padding: '10px 0', fontSize: 12.5, fontWeight: 800, letterSpacing: '1px',
+        fontFamily: "'Fredoka','Manrope',sans-serif", cursor: 'pointer', boxShadow: '0 3px 0 #5A43C9',
+      },
       streakTag: '\u00d7' + smNow,
       // the multiplier rides the LABEL LINE as plain purple text ("SCORE ×1.5") — no
       // pill box, so it can never cover the label or reflow the number
@@ -5228,6 +5334,23 @@ class Component extends DCLogic {
             emptyGhost: emp && !started, emptyStarted: emp && started, emptyZero: emp && started && n <= 0, emptyNum: emp && started && n > 0,
             sub: sev.words.length === 0 ? 'play to set your seven' : '' };
         } catch (e) { return { has: false, empty: true, total: '0', heroLetters: [], heroPts: '', listText: '', list: [], sub: '', emptyGhost: true, emptyZero: false, emptyNum: false }; }
+      })(),
+      // SWORB home reveal (Task 11): pre-solve shows the X/5 clue-find progress; once solved,
+      // reveals the theme word (from dailyEntry().sworb) + the guess bonus earned
+      // (sworbState().bonus). Safe {active:false} default on any non-sworb day.
+      homeSworb: (() => {
+        try {
+          const sw = this.dailyStatus().sworb;
+          if (!sw.active) return { active: false, solved: false, notSolved: false, word: '', progressText: '', bonusText: '' };
+          const entry = this.dailyEntry();
+          const word = (entry && entry.sworb) ? String(entry.sworb).toUpperCase() : '';
+          const bonus = sw.solved ? (this.sworbState().bonus || 0) : 0;
+          return {
+            active: true, solved: sw.solved, notSolved: !sw.solved, word,
+            progressText: sw.foundCount + ' / ' + sw.total + ' clues found',
+            bonusText: '+' + bonus.toLocaleString(),
+          };
+        } catch (e) { return { active: false, solved: false, notSolved: false, word: '', progressText: '', bonusText: '' }; }
       })(),
       goWordBank: () => { if (this._swiped) return; this.sfxClick(); this.setState({ screen: 'wordbank', wbQuery: '' }); },
       wbBack: () => { this.sfxClick(); this.setState({ screen: 'home' }); },
@@ -5798,9 +5921,9 @@ class Component extends DCLogic {
       },
       modalContentStyle: {
         position: 'relative', display: 'flex', flexDirection: 'column',
-        gap: st.activeModal === 'settings' ? 15 : st.activeModal === 'words' ? 12 : st.activeModal === 'name' ? 13 : 14,
-        alignItems: (st.activeModal === 'words' || st.activeModal === 'name') ? 'center' : 'stretch',
-        padding: st.activeModal === 'name' ? '24px 26px' : '22px 24px',
+        gap: st.activeModal === 'settings' ? 15 : st.activeModal === 'words' ? 12 : (st.activeModal === 'name' || st.activeModal === 'sworb') ? 13 : 14,
+        alignItems: (st.activeModal === 'words' || st.activeModal === 'name' || st.activeModal === 'sworb') ? 'center' : 'stretch',
+        padding: (st.activeModal === 'name' || st.activeModal === 'sworb') ? '24px 26px' : '22px 24px',
         boxSizing: 'border-box', width: '100%',
         opacity: st.contentFading ? 0 : 1, transition: 'opacity 0.14s ease',
       },
@@ -5843,6 +5966,7 @@ class Component extends DCLogic {
       isLb: st.activeModal === 'lb',
       isWords: st.activeModal === 'words',
       isName: st.activeModal === 'name',
+      isSworb: st.activeModal === 'sworb',
       modalHasBack: (st.modalStack || []).length > 0,
       contentRef: this.contentRef,
       backModal: () => this.backModal(),
@@ -5889,6 +6013,38 @@ class Component extends DCLogic {
       saveName: () => this.doSaveName(),
       cancelName: () => { this.sfxClick(); this.closeModal(); },
       nameInputStyle: { width: '100%', boxSizing: 'border-box', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '2px', fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 21, fontWeight: 600, padding: '10px 12px', borderRadius: 12, border: '2px solid var(--line)', background: this.isDark() ? 'rgba(255,255,255,0.05)' : '#FFFFFF', color: 'var(--sheet-ink)', outline: 'none' },
+      // ---- SWORB guess sheet (Task 11): clone of the name-input modal above — same input
+      // look, same single-shell modal router (activeModal:'sworb'), Enter-to-submit. Reads
+      // dailyStatus().sworb ONCE per render (grouped IIFE) so every field is always defined,
+      // even before a sworb day ever loads (isSworb gates whether the block is ever shown).
+      sworbInput: st.sworbInput || '',
+      onSworbInput: (e) => this.setState({ sworbInput: e.target.value }),
+      onSworbKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.doGuessSworb(); } },
+      submitSworb: () => this.doGuessSworb(),
+      cancelSworb: () => { this.sfxClick(); this.closeModal(); },
+      closeSworb: () => { this.sfxClick(); this.closeModal(); },
+      // re-key the input's wrapper on every wrong guess so shakeX (which doesn't restart on an
+      // unchanged animation string) always replays — same trick the tile keys use elsewhere
+      sworbShakeKey: 'sk' + (st.sworbShake || 0),
+      // width:100% is explicit (not just inherited) — this wrapper, not the input, is the
+      // actual flex child under the modal's alignItems:center; an auto-width wrapper around
+      // a width:100% input collapses to content size instead of filling the sheet
+      sworbInputWrapStyle: { width: '100%', boxSizing: 'border-box', animation: (st.sworbShake || 0) > 0 ? 'shakeX 0.4s ease-out' : 'none' },
+      sworbInputStyle: { width: '100%', boxSizing: 'border-box', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 19, fontWeight: 600, padding: '10px 12px', borderRadius: 12, border: '2px solid var(--line)', background: this.isDark() ? 'rgba(255,255,255,0.05)' : '#FFFFFF', color: 'var(--sheet-ink)', outline: 'none' },
+      ...(() => {
+        const sw = this.dailyStatus().sworb;
+        const entry = this.dailyEntry();
+        const revealWord = (entry && entry.sworb) ? String(entry.sworb).toUpperCase() : '';
+        return {
+          sworbClueLine: sw.active ? ('Guess today’s theme word. ' + sw.foundCount + ' of ' + sw.total + ' clues found.') : '',
+          sworbGuessesLine: sw.active ? (sw.guessesLeft + ' guess' + (sw.guessesLeft === 1 ? '' : 'es') + ' left') : '',
+          sworbSolvedShow: !!sw.solved,
+          sworbDoneShow: !!(sw.active && !sw.solved && sw.guessesLeft <= 0),
+          sworbOpenShow: !!(sw.active && !sw.solved && sw.guessesLeft > 0),
+          sworbRevealWord: revealWord,
+          sworbRevealBonus: (this.sworbState().bonus || 0).toLocaleString(),
+        };
+      })(),
       openInfo: () => this.goModal('howto'),
       settingsToInfo: () => this.goModal('howto', { push: true }),
       // GOT IT: first-run re-deals; opened-from-settings backs to settings; else closes
