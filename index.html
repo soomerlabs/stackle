@@ -16,6 +16,8 @@
   <script src="./sworble-store.js"></script>
   <script src="./sworble-run.js"></script>
   <script src="./sworble-status.js"></script>
+  <script src="./sworble-seed.js"></script>
+  <script src="./sworble-daily.js"></script>
   <script src="./sworble-net.js"></script>
   <script src="./sworble-solver.js"></script>
   <style>
@@ -1428,6 +1430,7 @@ class Component extends DCLogic {
     this.applySize();
     // boot lands on HOME — the first deal happens when the player picks a mode
     this.loadDict();
+    this.loadDailies();
     // ...unless a live run survived a reload: rehydrate it NOW (paused, still on home) so
     // home immediately shows the run's score + seven and PLAY reads RESUME. The board
     // itself re-enters through the normal in-memory resume path when they tap PLAY.
@@ -1729,6 +1732,14 @@ class Component extends DCLogic {
         } catch (e2) {}
       }
     } catch (e) { /* offline: starter dictionary stays active */ }
+  }
+
+  async loadDailies() {
+    try { const r = await fetch('./dailies.json'); if (r.ok) { this._dailies = await r.json(); this.forceUpdate(); } } catch (e) { this._dailies = null; }
+  }
+  dailyEntry() {
+    if (typeof SworbleDaily === 'undefined' || !this._dailies) return null;
+    return SworbleDaily.parseEntry(this._dailies, this.dailyKey || this.dayKey(new Date()));
   }
 
   // never ACCEPT slurs as playable words, even when a source dictionary has them

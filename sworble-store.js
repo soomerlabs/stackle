@@ -54,6 +54,7 @@
     LB_ME_PREFIX: 'sworble_lb_me_',
     DONE_PREFIX: 'sworble_done_', // one run per day: set when a daily run ends, locks the daily
     RUN_PREFIX: 'sworble_run_', // live-run snapshot (mid-run save/resume) — cleared when the run ends
+    SWORB_PREFIX: 'sworble_sworb_', // per-day sworb state: { guessesUsed, solved, correct, bonus, found:[] }
     MIGRATED_STACKLE: 'sworble_migrated_stackle', // one-time flag: stackle_*-era data has been copied over
     PLAYER_ID: 'sworble_player_id', // stable per-device UUID sent with Soomer submits (claimable by an account later)
     PENDING_SUBMITS: 'sworble_pending_submits', // SworbleApi's durable submit outbox — value must match QUEUE_KEY in sworble-net.js
