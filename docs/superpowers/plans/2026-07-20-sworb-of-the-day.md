@@ -588,6 +588,69 @@ git commit -m "feat: daily-status selector reports sworb progress (one source fo
 
 ---
 
+## Phase 2.5 — Remove the dead par-bot (cleanup, decided mid-execution)
+
+### Task 7.5: Remove the par bot and simplify its consumers
+
+**Why:** the game is player-vs-player (your Sworble Seven total ranks you on the standings/
+leaderboard). "Par for the course" was scrapped; the headless par bot (`simDaily`) is its
+ghost. It also actively breaks the sworb feature: it replays the UNSEEDED board, so on a
+sworb day the "words you missed" recap would list words that aren't on the board you played.
+Removing it fixes that recap for free (the recap's existing non-par branch solves the REAL
+opening board). The result screen's rich rank ladder is already leaderboard-driven — par only
+gates it and supplies one first-run chip.
+
+**Files:**
+- Modify: `index.html` (delete par methods; simplify 4 consumers), then mirror to `Sworble.dc.html`.
+- Modify: `sworble-store.js` (the `restartDaily` clear list references `K.PUZZLE_PAR_PREFIX`; leaving the key defined is fine, but stop writing/reading it).
+
+**No new Node test** (monolith UI). Verify in the browser.
+
+- [ ] **Step 1: Find every par reference**
+
+Run: `grep -n "puzzlePar\|ensurePuzzlePar\|simDaily\|PUZZLE_PAR\|_parBusy\|_parClock\|par\.bot\|par\.gold\|par\.words\|par\.bronze\|par\.silver\|parV\|botFind" index.html`
+Expected sites: the three methods (`ensurePuzzlePar`, `puzzlePar`, `simDaily`), two `ensurePuzzlePar()` call sites (in `componentDidMount` and a settings/restart path), `overParVals` (`parV`), `prepareRecap`/`missedWords` (`par.words`), `lbStub` (`par.bot`), the home `bench` (`par.gold`), and `_parClock`/`_parBusy` lifecycle bits.
+
+- [ ] **Step 2: Delete the par methods**
+
+Delete `ensurePuzzlePar()`, `puzzlePar()`, and `simDaily(day)` in full. Delete both `ensurePuzzlePar()` call sites. Delete the `_parClock` interval setup + its `clearInterval` in `componentWillUnmount`, and any `_parBusy` references.
+
+- [ ] **Step 3: `overParVals` — drop the par gate + chip**
+
+Change the guard from `if (!puz || !dailyOn || !parV) return {...classicOverShow...}` to `if (!puz || !dailyOn) return {...classicOverShow...}` (keep every returned key that the guard object already has, unchanged — `parOverShow`, `classicOverShow`, `tierRailShow`, `overTierShow`, `botFindShow`, `homePuzzleShow`). Delete the `const par = …`, `const parV = …`, and `const dT = …` lines. Replace the first-run chip:
+
+```js
+        if (firstRun) { good = true; chip = total > 1 ? ('you’re #' + fmt(rank) + ' of ' + fmt(total)) : 'you’re on the board'; }
+```
+
+(Everything else in `overParVals` — rank, tiers, podium, confetti — is leaderboard-driven and stays.) Ensure `botFindShow` remains returned as `false` in the main return path if it was only ever true via par; grep the template for `{{ botFind` and `{{ tierRail`/`{{ overTier` and set those keys to `false`/empty in the returned object so no `{{ }}` hole appears.
+
+- [ ] **Step 4: `missedWords` — always solve the real board**
+
+In `prepareRecap`, replace the puzzle branch that reads `par.words` with the opening-board solve used by the fallback: `missed = this.topWords(this.openingSnapshot, 3, [...played]);` for all daily runs. Delete the `const par = this.puzzlePar()` line there.
+
+- [ ] **Step 5: `lbStub` — drop the par anchor**
+
+Remove `const par = this.puzzleOn() ? this.puzzlePar() : null;` and the `if (par && par.bot) sc = …` branch; keep the existing non-par puzzle formula (`sc = Math.round(1200 + Math.pow(rnd(), 1.7) * 3200)`) as the only path.
+
+- [ ] **Step 6: home `bench` — drop the par fallback**
+
+Remove the `if (!bench) { … par.gold … }` line in the home bench computation.
+
+- [ ] **Step 7: Verify in the browser**
+
+Serve, play a daily run to the result screen: confirm the rank ladder still shows (NOT the bare classic card), first-run shows the rank/"on the board" chip, "words you missed" lists real board words, home renders, no `{{ }}` holes, no console errors. Reload — no errors from missing par.
+
+- [ ] **Step 8: Mirror, test, commit**
+
+```bash
+cp index.html Sworble.dc.html && printf '\n' >> Sworble.dc.html && npm test
+git add index.html Sworble.dc.html sworble-store.js
+git commit -m "refactor: remove the dead par bot (game is player-vs-player; recap now uses the real board)"
+```
+
+---
+
 ## Phase 3 — Game wiring (board, scoring, state)
 
 ### Task 7: Store keys + content file + loader
@@ -829,6 +892,9 @@ In `dailyStatus()` (the gatherer added in the Soomer work), add to the object pa
       let found = []; try { found = JSON.parse(LS.getItem(K.FOUND_PREFIX + this.dailyKey) || '[]'); } catch (x) {}
       const bonus = SworbleDaily.guessReward(found.length, e.clues.length);
       st.solved = true; st.correct = true; st.bonus = bonus;
+      // DECIDED mid-execution: the guess bonus rides today's competitive score (there is no
+      // par target to distort — ranking is player-vs-player, so solving the sworb helps you
+      // climb, which is the point). It flows into the Seven total like any other points.
       this.setState(s => ({ score: (s.score || 0) + bonus })); // sworb bonus rides today's score
       this.sfxWin && this.sfxWin();
     } else {
