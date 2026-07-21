@@ -327,33 +327,6 @@
       </div>
 
     </div>
-
-    <div style="{{ asideStyle }}">
-      <div style="background:#FFFFFF; border:2px solid #1F1442; border-radius:18px; padding:16px; box-shadow:0 4px 0 #D3D6E0;">
-        <div style="display:inline-block; background:#E5484D; color:#F2F2F2; font-size:15px; font-weight:800; letter-spacing:1.5px; padding:5px 14px; border-radius:9px; margin-bottom:14px;">HOW TO PLAY</div>
-        <div style="display:flex; flex-direction:column; gap:13px;">
-          <div style="display:flex; gap:10px; align-items:flex-start;">
-            <div style="min-width:24px; height:24px; border-radius:50%; background:#E5484D; color:#F2F2F2; font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:center;">1</div>
-            <div style="font-size:14.5px; font-weight:600; color:var(--sheet-sub); line-height:1.35;">Drag through touching letters to spell a word &#8212; bends welcome.</div>
-          </div>
-          <div style="display:flex; gap:10px; align-items:flex-start;">
-            <div style="min-width:24px; height:24px; border-radius:50%; background:#E5484D; color:#F2F2F2; font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:center;">2</div>
-            <div style="font-size:14.5px; font-weight:600; color:var(--sheet-sub); line-height:1.35;">Real words clear, fresh letters rain in. Longer words score way more.</div>
-          </div>
-          <div style="display:flex; gap:10px; align-items:flex-start;">
-            <div style="min-width:24px; height:24px; border-radius:50%; background:#E5484D; color:#F2F2F2; font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:center;">3</div>
-            <div style="font-size:14.5px; font-weight:600; color:var(--sheet-sub); line-height:1.35;">Every word adds time. Score big before the clock runs out.</div>
-          </div>
-        </div>
-      </div>
-
-      <div style="background:#FFFFFF; border:2px solid #1F1442; border-radius:18px; padding:16px; box-shadow:0 4px 0 #D3D6E0;">
-        <div style="display:inline-block; background:#6952E0; color:#F2F2F2; font-size:15px; font-weight:800; letter-spacing:1.5px; padding:5px 14px; border-radius:9px; margin-bottom:10px;">GOAL</div>
-        <div style="font-size:14.5px; font-weight:600; color:var(--sheet-sub);">Most points before the clock dies wins.</div>
-      </div>
-
-      
-    </div>
   </div>
 
   <div style="{{ appBarStyle }}">
@@ -499,18 +472,6 @@
                       <button onClick="{{ launchArmed }}" aria-label="{{ homeSwipeLabel }}" style="position:relative; z-index:1; width:100%; box-sizing:border-box; background:transparent; border:none; padding:8px 0 4px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; font-family:inherit; transition:transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);" style-active="transform:translateY(-5px)">
                         <span style="font-family:'Material Symbols Rounded'; font-weight:normal; font-size:30px; line-height:0.7; color:#8971FF; font-feature-settings:'liga'; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; animation:swipeUpHint 1.7s ease-in-out infinite, arrowHue 7.2s linear infinite;">keyboard_arrow_up</span>
                         <span style="font-family:'Fredoka','Manrope',sans-serif; font-size:15px; font-weight:600; letter-spacing:0.3px; color:var(--sheet-ink);">{{ homeSwipeLabel }}</span>
-                      </button>
-                    </div>
-                  </sc-if>
-                  <sc-if value="{{ dailyIsDone }}" hint-placeholder-val="{{ false }}">
-                    <div style="position:relative; display:flex; flex-direction:column; align-items:center; width:100%;">
-                      <div aria-hidden="true" style="position:absolute; left:50%; bottom:-84px; transform:translateX(-50%); width:272px; height:150px; pointer-events:none; z-index:0; opacity:0.5;">
-                        <div style="position:absolute; inset:0; filter:blur(20px); background:radial-gradient(20px 68px at 24% 52%, rgba(95,214,168,0.7) 0%, transparent 68%), radial-gradient(18px 80px at 42% 45%, rgba(91,200,245,0.62) 0%, transparent 68%), radial-gradient(20px 72px at 60% 54%, rgba(122,222,182,0.6) 0%, transparent 68%), radial-gradient(16px 84px at 78% 47%, rgba(120,150,240,0.46) 0%, transparent 68%); animation:auroraDrift 9s ease-in-out infinite;"></div>
-                        <div style="position:absolute; inset:0; filter:blur(26px); background:radial-gradient(34px 60px at 38% 50%, rgba(95,214,168,0.34) 0%, transparent 72%), radial-gradient(30px 66px at 66% 56%, rgba(91,200,245,0.3) 0%, transparent 72%); animation:auroraDrift2 13s ease-in-out infinite;"></div>
-                      </div>
-                      <button onClick="{{ startPractice }}" aria-label="Swipe up to practice" style="position:relative; z-index:1; width:100%; box-sizing:border-box; background:transparent; border:none; padding:4px 0; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; font-family:inherit; transition:transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);" style-active="transform:translateY(-5px)">
-                        <span style="font-family:'Material Symbols Rounded'; font-weight:normal; font-size:30px; line-height:0.7; color:#8971FF; font-feature-settings:'liga'; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; animation:swipeUpHint 1.7s ease-in-out infinite, arrowHue 7.2s linear infinite;">keyboard_arrow_up</span>
-                        <span style="font-family:'Fredoka','Manrope',sans-serif; font-size:15px; font-weight:600; letter-spacing:0.3px; color:var(--sheet-ink);">swipe up to practice</span>
                       </button>
                     </div>
                   </sc-if>
@@ -800,16 +761,6 @@
                 <button onClick="{{ rowsPlus }}" style="width:34px; height:34px; border-radius:10px; border:none; background:color-mix(in srgb, var(--sheet-ink) 10%, transparent); color:var(--sheet-ink); font-size:17px; font-weight:800; cursor:pointer; font-family:inherit;">+</button>
               </div>
             </div>
-            <sc-if value="{{ puzzleOn }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:14px; font-weight:700; color:var(--sheet-sub);">Words per run</span>
-                <div style="display:flex; align-items:center; gap:6px;">
-                  <button onClick="{{ parGMinus }}" style="width:34px; height:34px; border-radius:10px; border:none; background:color-mix(in srgb, var(--sheet-ink) 10%, transparent); color:var(--sheet-ink); font-size:17px; font-weight:800; cursor:pointer; font-family:inherit;">&#8722;</button>
-                  <span style="min-width:32px; text-align:center; font-size:15px; font-weight:800; color:var(--sheet-ink);">{{ optParG }}</span>
-                  <button onClick="{{ parGPlus }}" style="width:34px; height:34px; border-radius:10px; border:none; background:color-mix(in srgb, var(--sheet-ink) 10%, transparent); color:var(--sheet-ink); font-size:17px; font-weight:800; cursor:pointer; font-family:inherit;">+</button>
-                </div>
-              </div>
-            </sc-if>
             <div style="font-size:11.5px; font-weight:600; color:var(--ghost); text-align:center;">Changing board settings restarts the round</div>
               </div>
               </div>
@@ -833,10 +784,6 @@
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <div style="min-width:24px; height:24px; border-radius:50%; background:#8971FF; color:#FFFFFF; font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:center;">2</div>
           <div style="font-size:14.5px; font-weight:600; color:var(--sheet-sub); line-height:1.4;">Real words clear, fresh letters rain in. Longer words score way more.</div>
-        </div>
-        <div style="display:flex; gap:10px; align-items:flex-start;">
-          <div style="min-width:24px; height:24px; border-radius:50%; background:#8971FF; color:#FFFFFF; font-size:14px; font-weight:800; display:flex; align-items:center; justify-content:center;">3</div>
-          <div style="font-size:14.5px; font-weight:600; color:var(--sheet-sub); line-height:1.4;">{{ htTimeLine }}</div>
         </div>
         <div style="display:flex; gap:10px; align-items:flex-start;">
           <div style="min-width:24px; height:24px; border-radius:50%; background:#F5B84A; color:#1F1442; font-size:15px; font-weight:800; display:flex; align-items:center; justify-content:center;">&#9733;</div>
@@ -997,28 +944,6 @@
         <button onClick="{{ cancelName }}" style="background:transparent; border:none; color:var(--ghost); font-size:13px; font-weight:800; font-family:inherit; letter-spacing:1.5px; cursor:pointer; padding:2px;">CANCEL</button>
       </sc-if>
 
-      <sc-if value="{{ isSworb }}" hint-placeholder-val="{{ false }}">
-        <div style="font-family:'Fredoka', 'Manrope', sans-serif; font-size:22px; font-weight:600; color:var(--sheet-ink); letter-spacing:0.5px; text-align:center;">guess the sworb</div>
-        <sc-if value="{{ sworbSolvedShow }}" hint-placeholder-val="{{ false }}">
-          <div style="font-size:12.5px; font-weight:700; color:var(--sheet-sub); text-align:center; line-height:1.5;">You got it!</div>
-          <div style="font-family:'Fredoka','Manrope',sans-serif; font-size:26px; font-weight:600; letter-spacing:1px; color:#5FD6A8; text-align:center; text-transform:uppercase;">{{ sworbRevealWord }}</div>
-          <div style="font-size:13px; font-weight:800; color:#F5B84A; text-align:center;">+{{ sworbRevealBonus }} pts</div>
-          <button onClick="{{ closeSworb }}" style="width:100%; box-sizing:border-box; background:#8971FF; color:#FFFFFF; border:none; border-radius:14px; padding:12px 0; font-size:16px; font-weight:800; font-family:inherit; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 0 #5A43C9;">NICE</button>
-        </sc-if>
-        <sc-if value="{{ sworbDoneShow }}" hint-placeholder-val="{{ false }}">
-          <div style="font-size:12.5px; font-weight:700; color:var(--sheet-sub); text-align:center; line-height:1.5;">Out of guesses &mdash; the sworb was <b>{{ sworbRevealWord }}</b>.</div>
-          <button onClick="{{ closeSworb }}" style="width:100%; box-sizing:border-box; background:#8971FF; color:#FFFFFF; border:none; border-radius:14px; padding:12px 0; font-size:16px; font-weight:800; font-family:inherit; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 0 #5A43C9;">CLOSE</button>
-        </sc-if>
-        <sc-if value="{{ sworbOpenShow }}" hint-placeholder-val="{{ true }}">
-          <div style="font-size:12.5px; font-weight:700; color:var(--sheet-sub); text-align:center; line-height:1.5;">{{ sworbClueLine }}</div>
-          <div key="{{ sworbShakeKey }}" style="{{ sworbInputWrapStyle }}">
-            <input value="{{ sworbInput }}" onInput="{{ onSworbInput }}" onKeyDown="{{ onSworbKey }}" maxLength="16" placeholder="YOUR GUESS" style="{{ sworbInputStyle }}" />
-          </div>
-          <div style="font-size:11.5px; font-weight:800; color:var(--ghost); letter-spacing:0.5px; text-align:center;">{{ sworbGuessesLine }}</div>
-          <button onClick="{{ submitSworb }}" style="width:100%; box-sizing:border-box; background:#8971FF; color:#FFFFFF; border:none; border-radius:14px; padding:12px 0; font-size:16px; font-weight:800; font-family:inherit; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 0 #5A43C9;">GUESS</button>
-          <button onClick="{{ cancelSworb }}" style="background:transparent; border:none; color:var(--ghost); font-size:13px; font-weight:800; font-family:inherit; letter-spacing:1.5px; cursor:pointer; padding:2px;">CANCEL</button>
-        </sc-if>
-      </sc-if>
       </div>
       </div>
     </div>
@@ -5425,28 +5350,6 @@ class Component extends DCLogic {
         transition: 'color 0.3s ease',
         animation: st.bestLit ? 'bestPop 0.5s ease-out' : 'none', // one-shot pop the moment you pass it
       },
-      // ---- SWORB OF THE DAY: in-game header pip cell + GUESS button (Task 11) ----
-      // dailyStatus().sworb is read ONCE here (it's active === false with safe defaults on a
-      // normal day) so every {{ }} hole below always resolves, sworb day or not \u2014 the sc-if
-      // gates (sworbHeaderShow / sworbCanGuessShow) are what actually hide the UI.
-      ...(() => {
-        const sw = this.dailyStatus().sworb;
-        return {
-          sworbHeaderShow: !!sw.active,
-          sworbPipText: sw.active ? (sw.foundCount + '/' + sw.total) : '',
-          sworbPipValStyle: {
-            fontSize: valFont, fontWeight: 800, lineHeight: 1, color: '#8971FF',
-            animation: (st.clueGlowIds && st.clueGlowIds.length) ? 'bestPop 0.5s ease-out' : 'none', // pip ticks on the SAME beat as the clue-find tile glow
-          },
-          sworbCanGuessShow: !!sw.canGuess,
-        };
-      })(),
-      openSworbModal: () => { this.sfxClick(); this.setState({ sworbInput: '', sworbShake: 0 }); this.goModal('sworb'); },
-      sworbGuessBtnStyle: {
-        width: '100%', boxSizing: 'border-box', background: '#8971FF', color: '#FFFFFF', border: 'none',
-        borderRadius: 12, padding: '10px 0', fontSize: 12.5, fontWeight: 800, letterSpacing: '1px',
-        fontFamily: "'Fredoka','Manrope',sans-serif", cursor: 'pointer', boxShadow: '0 3px 0 #5A43C9',
-      },
       streakTag: '\u00d7' + smNow,
       // the multiplier rides the LABEL LINE as plain purple text ("SCORE ×1.5") — no
       // pill box, so it can never cover the label or reflow the number
@@ -5503,7 +5406,6 @@ class Component extends DCLogic {
       wordsBtnLabel: (() => { const p = (st.roundWords || []).length, m = (st.missedWords || []).length; if (!p) return m + ' MISSED WORD' + (m === 1 ? '' : 'S'); return p + ' WORD' + (p === 1 ? '' : 'S') + (m ? ' \u00b7 ' + m + ' MISSED' : ''); })(),
       openWords: () => this.goModal('words'),
       closeWords: () => { this.sfxClick(); this.closeModal(); },
-      htTimeLine: 'You get ' + this.parGuesses() + ' words, no clock. Spend them on the biggest words you can find. Misses are free.',
       htBombShow: this.optVal('debugMine', false) || this.stacklOn(), // bombs live on stackl's themed board (and via dev debugMine elsewhere) — surface the how-to line there
       // SWORB home reveal (Task 11): pre-solve shows the X/5 clue-find progress; once solved,
       // reveals the theme word (from dailyEntry().sworb) + the guess bonus earned
@@ -5959,7 +5861,6 @@ class Component extends DCLogic {
           animA: 'smokeDriftA 14s ease-in-out infinite', lightAnim: 'lightningFlash 9s ease-in-out infinite',
         };
       })(),
-      dailyIsDone: false,
       dailyNotDone: true,
       nextPuzzleIn: (() => { try { const now = new Date(); const mid = new Date(now); mid.setHours(24, 0, 0, 0); const ms = mid - now; const h = Math.floor(ms / 3600000); const m = Math.floor((ms % 3600000) / 60000); return h > 0 ? (h + 'h ' + m + 'm') : (m + 'm'); } catch (e) { return ''; } })(),
 
@@ -5967,7 +5868,6 @@ class Component extends DCLogic {
         height: mobile ? 66 : 86, display: 'flex', alignItems: 'center', justifyContent: 'center',
         position: 'relative',
       },
-      asideStyle: { display: 'none' }, // how-to/goal now live behind the info button
       colStyle: { width: colW, display: 'flex', flexDirection: 'column' },
       scoreText: (st.scoreShown != null ? st.scoreShown : st.score).toLocaleString(),
       bestText: (() => {
@@ -6192,7 +6092,6 @@ class Component extends DCLogic {
       isLb: st.activeModal === 'lb',
       isWords: st.activeModal === 'words',
       isName: st.activeModal === 'name',
-      isSworb: st.activeModal === 'sworb',
       modalHasBack: (st.modalStack || []).length > 0,
       contentRef: this.contentRef,
       backModal: () => this.backModal(),
@@ -6239,14 +6138,6 @@ class Component extends DCLogic {
       saveName: () => this.doSaveName(),
       cancelName: () => { this.sfxClick(); this.closeModal(); },
       nameInputStyle: { width: '100%', boxSizing: 'border-box', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '2px', fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 21, fontWeight: 600, padding: '10px 12px', borderRadius: 12, border: '2px solid var(--line)', background: this.isDark() ? 'rgba(255,255,255,0.05)' : '#FFFFFF', color: 'var(--sheet-ink)', outline: 'none' },
-      // ---- SWORB guess sheet (Task 11): clone of the name-input modal above — same input
-      // look, same single-shell modal router (activeModal:'sworb'), Enter-to-submit. Reads
-      // dailyStatus().sworb ONCE per render (grouped IIFE) so every field is always defined,
-      // even before a sworb day ever loads (isSworb gates whether the block is ever shown).
-      sworbInput: st.sworbInput || '',
-      onSworbInput: (e) => this.setState({ sworbInput: e.target.value }),
-      onSworbKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.doGuessSworb(); } },
-      submitSworb: () => this.doGuessSworb(),
       // ---- SWORB FACE of the stepper: the day's guess blocks in their CURRENT state.
       // Unsolved+guessable -> your typed letters fill L->R (green/yellow/gray after a submit);
       // solved -> all blocks filled green with the answer (trophy view); out-of-guesses ->
@@ -6409,30 +6300,6 @@ class Component extends DCLogic {
       // the game-tile layer crossfades opposite the keyboard: sharp/opaque in play, blurred/
       // faded while typing. Both layers stay mounted so the swap animates BOTH ways (no jump).
       boardGameLayerStyle: { position: 'absolute', inset: 0, opacity: st.sworbTyping ? 0 : 1, filter: st.sworbTyping ? 'blur(9px)' : 'blur(0px)', pointerEvents: st.sworbTyping ? 'none' : 'auto', transition: 'opacity 0.28s ease, filter 0.28s ease' },
-      cancelSworb: () => { this.sfxClick(); this.closeModal(); },
-      closeSworb: () => { this.sfxClick(); this.closeModal(); },
-      // re-key the input's wrapper on every wrong guess so shakeX (which doesn't restart on an
-      // unchanged animation string) always replays — same trick the tile keys use elsewhere
-      sworbShakeKey: 'sk' + (st.sworbShake || 0),
-      // width:100% is explicit (not just inherited) — this wrapper, not the input, is the
-      // actual flex child under the modal's alignItems:center; an auto-width wrapper around
-      // a width:100% input collapses to content size instead of filling the sheet
-      sworbInputWrapStyle: { width: '100%', boxSizing: 'border-box', animation: (st.sworbShake || 0) > 0 ? 'shakeX 0.4s ease-out' : 'none' },
-      sworbInputStyle: { width: '100%', boxSizing: 'border-box', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '1px', fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 19, fontWeight: 600, padding: '10px 12px', borderRadius: 12, border: '2px solid var(--line)', background: this.isDark() ? 'rgba(255,255,255,0.05)' : '#FFFFFF', color: 'var(--sheet-ink)', outline: 'none' },
-      ...(() => {
-        const sw = this.dailyStatus().sworb;
-        const entry = this.dailyEntry();
-        const revealWord = (entry && entry.sworb) ? String(entry.sworb).toUpperCase() : '';
-        return {
-          sworbClueLine: sw.active ? ('Guess today’s theme word. ' + sw.foundCount + ' of ' + sw.total + ' clues found.') : '',
-          sworbGuessesLine: sw.active ? (sw.guessesLeft + ' guess' + (sw.guessesLeft === 1 ? '' : 'es') + ' left') : '',
-          sworbSolvedShow: !!sw.solved,
-          sworbDoneShow: !!(sw.active && !sw.solved && sw.guessesLeft <= 0),
-          sworbOpenShow: !!(sw.active && !sw.solved && sw.guessesLeft > 0),
-          sworbRevealWord: revealWord,
-          sworbRevealBonus: (this.sworbState().bonus || 0).toLocaleString(),
-        };
-      })(),
       openInfo: () => this.goModal('howto'),
       settingsToInfo: () => this.goModal('howto', { push: true }),
       // GOT IT: first-run re-deals; opened-from-settings backs to settings; else closes
@@ -6475,7 +6342,6 @@ class Component extends DCLogic {
         this.saveOpts(opts);
         this.setState({ opts }, () => this.syncMines());
       },
-      puzzleOn: true,
       flagsChevStyle: { fontSize: 14, fontWeight: 800, color: 'var(--ghost)', transform: st.devFlagsOpen ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.22s ease', display: 'inline-block' },
       flagsBoxStyle: { display: 'grid', gridTemplateRows: st.devFlagsOpen ? '1fr' : '0fr', opacity: st.devFlagsOpen ? 1 : 0, marginTop: -8, marginBottom: st.devFlagsOpen ? 0 : -8, transition: 'grid-template-rows 0.24s ease, opacity 0.2s ease, margin-bottom 0.24s ease' },
       toggleFlagsOpen: () => { this.sfxClick(); this.setState({ devFlagsOpen: !this.state.devFlagsOpen }); },
@@ -6504,9 +6370,6 @@ class Component extends DCLogic {
         this.later(() => this.setState({ debugBestIds: null }), 3700);
       },
       optCols: cols, optRows: rows,
-      optParG: String(this.parGuesses()),
-      parGMinus: () => this.bumpOpt('parGuesses', -1, 5, 40, 7),
-      parGPlus: () => this.bumpOpt('parGuesses', 1, 5, 40, 7),
       colsMinus: () => this.bumpOpt('cols', -1, 4, 9, 5),
       colsPlus: () => this.bumpOpt('cols', 1, 4, 9, 5),
       rowsMinus: () => this.bumpOpt('rows', -1, 4, 14, 6),
