@@ -2521,7 +2521,9 @@ class Component extends DCLogic {
     if (this.state.over) return;
     this.dragging = false;
     this._dailyLive = false; // the run ends here (locks via dailyDone below) — no resume after this
-    this.clearRunState(); // the finished run's snapshot must never restore
+    // only CASUAL owns the shared RUN_PREFIX snapshot (stacks is session-only, never saves one) —
+    // gating this on dailyMode stops a finished STACKS round from wiping casual's saved run.
+    if (this.optVal('dailyMode', true)) this.clearRunState(); // the finished run's snapshot must never restore
     if (this._boardTickAt != null) { this._boardElapsedMs = (this._boardElapsedMs || 0) + (performance.now() - this._boardTickAt); this._boardTickAt = null; }
     this._timeOnBoard = Math.round((this._boardElapsedMs || 0) / 1000); // seconds actively on the board this run
     if (this.optVal('dailyMode', true)) {
