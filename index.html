@@ -1877,8 +1877,8 @@ class Component extends DCLogic {
     st.guessesUsed += 1;
     if (correct) {
       let found = []; try { found = JSON.parse(LS.getItem(K.FOUND_PREFIX + this.dailyKey) || '[]'); } catch (x) {}
-      const bonus = SworbleDaily.guessReward(found.length, e.clues.length);
-      st.solved = true; st.correct = true; st.bonus = bonus;
+      const bonus = SworbleDaily.guessReward(found.length, e.themeWords.length);
+      st.solved = true; st.correct = true; st.bonus = bonus; st.solveTier = bonus; // tier == reward value (higher = earlier/bolder)
       // DECIDED mid-execution: the guess bonus rides today's competitive score (there is no
       // par target to distort — ranking is player-vs-player, so solving the sworb helps you
       // climb, which is the point). It flows into the Seven total like any other points.
@@ -2377,7 +2377,7 @@ class Component extends DCLogic {
         const e = this.dailyEntry(); if (!e) return null;
         let found = []; try { found = JSON.parse(LS.getItem(K.FOUND_PREFIX + day) || '[]'); } catch (x) {}
         const st = this.sworbState();
-        return { entry: e, cluesFound: found, guessesUsed: st.guessesUsed, solved: st.solved };
+        return { entry: e, cluesFound: found, guessesUsed: st.guessesUsed, solved: st.solved, solveTier: st.solveTier || 0 };
       })(),
     });
   }
