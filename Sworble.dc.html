@@ -2142,15 +2142,18 @@ class Component extends DCLogic {
       this.letterQueue = shuffledBag(FRIENDLY, qr)
         .concat(shuffledBag(BAG, qr), shuffledBag(BAG, qr), shuffledBag(BAG, qr));
       this.queueIdx = 0;
-      // count this attempt at today's puzzle
-      if (!this.skipAttCount) {
-        try {
-          const k = K.ATT_PREFIX + this.dailyKey;
-          LS.setItem(k, String((parseInt(LS.getItem(k) || '0', 10) || 0) + 1));
-        } catch (e) {}
+      // count this attempt at today's puzzle — casual-only bookkeeping: stackl reuses this
+      // branch for its themed deal, but must not touch casual's unsuffixed ATT/run-state keys
+      if (this.optVal('dailyMode', true)) {
+        if (!this.skipAttCount) {
+          try {
+            const k = K.ATT_PREFIX + this.dailyKey;
+            LS.setItem(k, String((parseInt(LS.getItem(k) || '0', 10) || 0) + 1));
+          } catch (e) {}
+        }
+        this.skipAttCount = false;
+        this.clearRunState(); // a fresh deal IS a new attempt — any saved live-run snapshot is superseded (restart/re-roll paths)
       }
-      this.skipAttCount = false;
-      this.clearRunState(); // a fresh deal IS a new attempt — any saved live-run snapshot is superseded (restart/re-roll paths)
     } else {
       this._rngN = null; // practice streams are unseeded — nothing to snapshot
       this.seedN = (Math.random() * 0x7fffffff) | 0; // practice board is random anyway; scrub just needs some seed
