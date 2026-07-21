@@ -5093,7 +5093,7 @@ class Component extends DCLogic {
           boxShadow: 'inset 0 -3px 0 #000000, 0 3px 16px 4px rgba(229,72,77,0.6)',
           animation: 'bombFade 0.08s ease both, bombGlowUp 0.2s ease-in both', // no shrink theatrics: SNAP black, red glow flares — woah, bomb — then it just blows
         } : { display: 'none' },
-        ring: t.mine && !t.clearing && (this.optVal('debugMine', false) || this.stacklOn()) ? {
+        ring: t.mine && !t.clearing && this.optVal('debugMine', false) ? {
           position: 'absolute', top: 2, right: 2, fontSize: Math.round(s * 0.3), lineHeight: 1,
           animation: 'mineRing 1s ease-in-out infinite', pointerEvents: 'none', zIndex: 7,
           filter: 'drop-shadow(0 1px 1.5px rgba(0,0,0,0.45))',
@@ -5107,7 +5107,7 @@ class Component extends DCLogic {
           zIndex: 6, pointerEvents: 'none',
         } : { display: 'none' },
         danger: { display: 'none' }, // red face removed with the pressure-pop reveal
-        ringGlyph: isBomb ? '' : (t.mine && !t.clearing && (this.optVal('debugMine', false) || this.stacklOn())) ? '💣' : '',
+        ringGlyph: isBomb ? '' : (t.mine && !t.clearing && this.optVal('debugMine', false)) ? '💣' : '',
         style: {
           position: 'absolute', left: 0, top: 0, width: s, height: s,
           transform,
