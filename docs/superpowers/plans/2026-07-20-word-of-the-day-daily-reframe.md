@@ -106,6 +106,89 @@ git commit -m "feat: parseEntry accepts a theme-word pool (relax 5-clue cap, bac
 
 ---
 
+## Task 9: `sworble-seed.js` — best-effort packing (engine prerequisite; execute BEFORE Task 2's guardrail and Task 3)
+
+**Why:** 30 cells reliably hold only ~7 *pure* theme words (measured: 5–7 pack 20/20 seeds, 8 packs 7/20, 10 packs 0/20). The current `seedClueLetters` is all-or-nothing (null if ANY word fails), so requesting 10 would fail and force junk padding. Best-effort packing places **as many as fit** and reports the **realized** set — matching the spec ("a day may pack fewer than N"). This is the packing sweet spot for a *deduction* daily (fewer, well-woven theme words = better puzzle).
+
+**Files:**
+- Modify: `sworble-seed.js` (add `seedClueLettersBestEffort` + to the `API`)
+- Test: `tests/sworble-seed.test.js` (extend — the file already imports `Solver` + has `tilesFromLetters` / `expand` helpers)
+
+**Interfaces:**
+- Produces: `SworbleSeed.seedClueLettersBestEffort(opts) -> { letters, cluePaths }` where `opts = { clues: string[], cols, rows, rng }`. Greedily places each word (crossing earlier ones via the existing `stampWord` `letters` option), **skipping** any that don't fit instead of returning null. `cluePaths` keys are the **realized** set (words that actually placed). Never returns null (may place zero). Deterministic given `rng` + word order. Dedupes repeated words.
+- Consumed by: Task 2 (guardrail) and Task 3 (game seeding).
+
+- [ ] **Step 1: Write the failing test** (append to `tests/sworble-seed.test.js`, before the final `reseedBroken` `console.log` or after it — anywhere in the `seedClueLetters` area)
+
+```js
+// best-effort: packs as many as FIT, skips the rest, never null; realized = what placed
+{
+  const ocean = ['tide','coral','wave','reef','salt','shore','kelp','surf','foam','brine','pearl','shell'];
+  const out = Seed.seedClueLettersBestEffort({ clues: ocean, cols: 5, rows: 6, rng: Core.mulberry32(Core.hashSeed('ocean|be')) });
+  assert.ok(out, 'best-effort never returns null');
+  const realized = Object.keys(out.cluePaths);
+  assert.ok(realized.length >= 5, 'packs a healthy number (>=5) of the pool, got ' + realized.length);
+  assert.ok(realized.length <= ocean.length, 'never more than the pool');
+  const tiles = tilesFromLetters(out.letters, 5, 6);
+  for (const w of realized) {
+    assert.strictEqual(out.cluePaths[w].map(p => out.letters[p.r + ',' + p.c]).join(''), w, w + ' spelled on its path');
+    assert.ok(Solver.findWord(tiles, { word: w, expand, diag: true }), w + ' findable');
+  }
+  // deterministic
+  const out2 = Seed.seedClueLettersBestEffort({ clues: ocean, cols: 5, rows: 6, rng: Core.mulberry32(Core.hashSeed('ocean|be')) });
+  assert.deepStrictEqual(out.cluePaths, out2.cluePaths, 'same seed -> same realized packing');
+  // over-target: a pool of 12 packs FEWER than 12 (proves it skips, does not choke)
+  assert.ok(realized.length < ocean.length, 'a 12-word pool packs fewer than 12 on 30 cells (skips the overflow)');
+}
+console.log('sworble-seed: seedClueLettersBestEffort passed');
+```
+
+- [ ] **Step 2: Run to verify it fails**
+
+Run: `node tests/sworble-seed.test.js`
+Expected: FAIL — `Seed.seedClueLettersBestEffort is not a function`.
+
+- [ ] **Step 3: Implement `seedClueLettersBestEffort`** (add to `sworble-seed.js`, near `seedClueLetters`, and to `API`)
+
+```js
+  // Best-effort variant of seedClueLetters: greedily place as many clue words as FIT (crossing
+  // earlier ones via stampWord's `letters` option), SKIPPING any that don't, instead of the
+  // all-or-nothing null. Returns { letters, cluePaths }; cluePaths keys are the REALIZED set.
+  // Never null (may place zero). Deterministic given rng + word order.
+  function seedClueLettersBestEffort(opts) {
+    var clues = opts.clues || [], cols = opts.cols, rows = opts.rows, rng = opts.rng;
+    var cells = [];
+    for (var c = 0; c < cols; c++) for (var r = 0; r < rows; r++) cells.push({ r: r, c: c });
+    var letters = {}, cluePaths = {};
+    for (var i = 0; i < clues.length; i++) {
+      var w = String(clues[i]).toLowerCase();
+      if (cluePaths[w]) continue; // dedupe
+      var path = stampWord(cells, { word: w, rng: rng, letters: letters });
+      if (!path) continue; // doesn't fit alongside what's placed — skip it, keep going
+      cluePaths[w] = path.map(function (p) { return { r: p.r, c: p.c }; });
+      for (var j = 0; j < path.length; j++) { var k = path[j].r + ',' + path[j].c; letters[k] = path[j].letter; }
+    }
+    return { letters: letters, cluePaths: cluePaths };
+  }
+```
+
+Add `seedClueLettersBestEffort: seedClueLettersBestEffort,` to the `API` object.
+
+- [ ] **Step 4: Run to verify it passes**
+
+Run: `node tests/sworble-seed.test.js`
+Expected: all `sworble-seed:` lines print, including `seedClueLettersBestEffort passed`.
+
+- [ ] **Step 5: Commit**
+
+```bash
+npm test
+git add sworble-seed.js tests/sworble-seed.test.js
+git commit -m "feat: seedClueLettersBestEffort — pack as many theme words as fit (realized set)"
+```
+
+---
+
 ## Task 2: `dailies.json` — pool shape + content guardrail test
 
 **Files:**
@@ -114,19 +197,21 @@ git commit -m "feat: parseEntry accepts a theme-word pool (relax 5-clue cap, bac
 - Modify: `package.json` (add the check to the `test` script)
 
 **Interfaces:**
-- Consumes: `SworbleDaily.parseEntry`, `SworbleSeed.seedClueLetters`, `SworbleCore`, `dictionary.txt`.
+- Consumes: `SworbleDaily.parseEntry`, `SworbleSeed.seedClueLettersBestEffort` (Task 9), `SworbleCore`, `dictionary.txt`.
 - Produces: a green guardrail that bad content can never ship.
 
-- [ ] **Step 1: Convert `dailies.json` to pools (keep today playable)**
+**CRITICAL — theme words must be ON-THEME.** Every word in a pool is a real theme word that will GLOW and hint the sworb. NEVER pad a pool with filler/utility words ("and", "are", "the", "all") to make packing hit a number — that wrecks the deduction. If fewer pack, that's fine (best-effort). The guardrail below only requires ≥6 pack, which pure short theme words comfortably meet.
+
+- [ ] **Step 1: Convert `dailies.json` to pools (keep today playable) — PURE theme words only**
 
 ```json
 {
-  "2026-07-20": { "sworb": "ocean", "themeWords": ["tide","coral","wave","reef","salt","shore","kelp","surf","foam","brine","pearl","shell"] },
-  "2026-07-21": { "sworb": "kitchen", "themeWords": ["oven","fork","pan","dish","spoon","plate","knife","bowl","whisk","ladle","pot","cup"] }
+  "2026-07-20": { "sworb": "ocean", "themeWords": ["tide","coral","wave","reef","salt","shore","kelp","surf","foam","brine","pearl","shell","swell","spray","abyss"] },
+  "2026-07-21": { "sworb": "kitchen", "themeWords": ["oven","fork","pan","dish","spoon","plate","knife","bowl","whisk","ladle","pot","cup","stove","grill","sink"] }
 }
 ```
 
-(Every word must be lowercase and in `dictionary.txt`. If a chosen word is absent, swap it for one that is — the test in Step 2 will catch any miss.)
+(Every word must be lowercase, ON-THEME, and in `dictionary.txt`. If a chosen word is absent from `dictionary.txt`, swap it for a different ON-THEME word that IS present — verify with `grep -x "word" dictionary.txt`. Never substitute a non-theme word.)
 
 - [ ] **Step 2: Write the guardrail test**
 
@@ -151,17 +236,18 @@ for (const day of Object.keys(dailies)) {
     assert.ok(dict.has(w), day + ': theme word "' + w + '" is in dictionary.txt');
     assert.ok(w.length >= 3 && w.length <= 7, day + ': theme word "' + w + '" is 3-7 letters');
   }
-  // at least the default target (10) must be able to pack, or the day feels thin
-  const target = Math.min(10, e.themeWords.length);
+  // best-effort packing must land a healthy number of PURE theme words (>=6), or the day is thin.
+  // 30 cells hold ~7 pure short words; requiring 6 is comfortably met without any filler padding.
   const rng = Core.mulberry32(Core.hashSeed(day + '|sworb'));
-  const out = Seed.seedClueLetters({ clues: e.themeWords.slice(0, target), cols: 5, rows: 6, rng });
-  assert.ok(out, day + ': first ' + target + ' theme words pack onto the board');
+  const out = Seed.seedClueLettersBestEffort({ clues: e.themeWords, cols: 5, rows: 6, rng });
+  const realized = Object.keys(out.cluePaths);
+  assert.ok(realized.length >= 6, day + ': best-effort packs at least 6 theme words (got ' + realized.length + ')');
   days++;
 }
 console.log('dailies-check: ' + days + ' days valid');
 ```
 
-Note: `seedClueLetters` still takes the option key `clues` (its internal param name); pass `themeWords.slice(...)` as that value.
+Note: `seedClueLettersBestEffort` takes the option key `clues` (its internal param name); pass the full `themeWords` pool as that value — it packs as many as fit.
 
 - [ ] **Step 3: Run it, fix any failing day**
 
@@ -188,8 +274,8 @@ git commit -m "content: theme-word pools in dailies.json + placement/dictionary 
 - Test: manual (browser). Determinism already covered by seed tests.
 
 **Interfaces:**
-- Consumes: `SworbleDaily.parseEntry` (Task 1), `SworbleSeed.seedClueLetters`, `SworbleSolver.findWord`.
-- Produces: `this._themePool` (parsed pool), `this._activeTheme` (realized set = the theme words that placed + verified findable), `K.THEME_PREFIX + day` persisting the realized set, and `dailyEntry()` returning the **active themed entry** `{ sworb, themeWords: realizedSet }` used by isClue/status/guess. `this.themeTarget()` returns the dev target (default 10).
+- Consumes: `SworbleDaily.parseEntry` (Task 1), `SworbleSeed.seedClueLettersBestEffort` (Task 9), `SworbleSolver.findWord`.
+- Produces: `this._activeTheme` (realized set = the theme words that packed + verified findable), `K.THEME_PREFIX + day` persisting the realized set, and `dailyEntry()` returning the **active themed entry** `{ sworb, themeWords: realizedSet }` used by isClue/status/guess. `this.themeTarget()` returns the dev target (default 8).
 
 - [ ] **Step 1: Add the store key**
 
@@ -204,7 +290,7 @@ In `sworble-store.js`, in the `K` object near `SWORB_PREFIX`:
 In `index.html`, add an accessor near `dailyEntry()`:
 
 ```js
-  themeTarget() { const n = parseInt(this.optVal('themeTarget', 10), 10); return (n >= 1 && n <= 20) ? n : 10; }
+  themeTarget() { const n = parseInt(this.optVal('themeTarget', 8), 10); return (n >= 1 && n <= 20) ? n : 8; } // ~7 pure words is the realistic ceiling on 30 cells; 8 is a good default (best-effort packs what fits)
 ```
 
 In the render-vals dev-flags area (mirror the existing `tilePoints`/`debugBest` toggles), add a small stepper:
@@ -251,32 +337,28 @@ Change the loader `dailyEntry()` split so parseEntry gives the POOL and `dailyEn
   }
 ```
 
-In `newGame()`, at the clue-seeding block (search `SworbleSeed.seedClueLetters` — currently uses `_entry.clues`), change the source to the pool sliced by the target, and STORE the realized set:
+In `newGame()`, at the clue-seeding block (search `SworbleSeed.seedClueLetters` — currently uses `_entry.clues`), switch to **best-effort** packing (packs as many of the target slice as fit; never null), stamp its letters, and STORE the **realized** set (only the words that both packed AND verify findable on the stamped board):
 
 ```js
     const _pool = this.themePool();
     if (_pool && this.optVal('dailyMode', true)) {
       const wanted = _pool.themeWords.slice(0, this.themeTarget());
       const byCell = {}; tiles.forEach(t => { byCell[t.row + ',' + t.col] = t; });
-      let placed = null;
-      for (let attempt = 0; attempt < 8 && !placed; attempt++) {
-        const rng = mulberry32((SworbleCore.hashSeed(this.dailyKey + '|sworb') ^ (attempt * 0x9E3779B1)) >>> 0);
-        const cand = SworbleSeed.seedClueLetters({ clues: wanted, cols: this.cols(), rows: this.rows(), rng });
-        if (!cand) continue;
-        const reverts = [];
-        Object.keys(cand.letters).forEach(k => { const [r, c] = k.split(',').map(Number); const t = byCell[r + ',' + c]; if (t) { reverts.push([t, t.letter]); t.letter = cand.letters[k]; } });
-        const ok = wanted.every(w => SworbleSolver.findWord(tiles, { word: w, expand: SworbleCore.expandLetter, diag: this.diag() }));
-        if (ok) { placed = cand; this._cluePaths = cand.cluePaths; }
-        else { reverts.forEach(([t, l]) => { t.letter = l; }); }
-      }
-      if (placed) {
-        const realized = Object.keys(placed.cluePaths); // the words that actually landed
+      const rng = mulberry32(SworbleCore.hashSeed(this.dailyKey + '|sworb') >>> 0);
+      const cand = SworbleSeed.seedClueLettersBestEffort({ clues: wanted, cols: this.cols(), rows: this.rows(), rng });
+      Object.keys(cand.letters).forEach(k => { const [r, c] = k.split(',').map(Number); const t = byCell[r + ',' + c]; if (t) t.letter = cand.letters[k]; });
+      // realized = the packed words that verify findable on the real board (all should, by construction)
+      const realized = Object.keys(cand.cluePaths).filter(w => SworbleSolver.findWord(tiles, { word: w, expand: SworbleCore.expandLetter, diag: this.diag() }));
+      if (realized.length) {
         this._activeTheme = realized;
+        this._cluePaths = cand.cluePaths;
         try { LS.setItem(K.THEME_PREFIX + this.dailyKey, JSON.stringify(realized)); } catch (e) {}
         try { LS.setItem(K.TARGETS_PREFIX + this.dailyKey, JSON.stringify(realized)); } catch (e) {} // reuse existing found/targets UI
       }
     }
 ```
+
+Note: best-effort packing is deterministic and never fails, so the old 8-attempt all-or-nothing retry loop is gone. `realized` is the source of truth for the day's theme set (X / N, glow, reward scaling).
 
 Update `ensureDailyTargets()`'s early-return guard to use `this.themePool()` instead of the old `this.dailyEntry()` (so it still defers on a theme day):
 
