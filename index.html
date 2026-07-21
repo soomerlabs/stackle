@@ -1852,7 +1852,10 @@ class Component extends DCLogic {
     let realized = null;
     try { realized = JSON.parse(LS.getItem(K.THEME_PREFIX + day) || 'null'); } catch (e) {}
     const themeWords = (Array.isArray(realized) && realized.length) ? realized : pool.themeWords.slice(0, this.themeTarget());
-    return { sworb: pool.sworb, themeWords };
+    // `clues` is a transition alias for `themeWords` so consumers not yet converted (guessSworb,
+    // _placeCluesInRefill, clueFan, sworble-status) keep working; Tasks 4/5/7 convert them to
+    // `themeWords`, then the alias is removed in final cleanup.
+    return { sworb: pool.sworb, themeWords, clues: themeWords };
   }
   // dev-only density knob: how many of the day's theme-word pool to attempt seeding onto the
   // board (best-effort packs what fits — ~7 pure words is the realistic ceiling on 30 cells).
