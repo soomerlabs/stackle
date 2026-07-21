@@ -226,7 +226,7 @@
     <div style="width:22px; height:4px; border-radius:2px; background:#A78BFA;"></div>
   </div>
   <div style="font-family:'Fredoka', 'Manrope', sans-serif; font-size:24px; font-weight:600; color:#EDEFF7;">rotate your phone</div>
-  <div style="font-family:'Manrope', sans-serif; font-size:15px; font-weight:600; color:#9DA2B3;">sworble plays portrait-only</div>
+  <div style="font-family:'Manrope', sans-serif; font-size:15px; font-weight:600; color:#9DA2B3;">sworbl plays portrait-only</div>
 </div>
 <div data-screen-label="Game" style="{{ rootStyle }}">
   <sc-for list="{{ floaters }}" as="f" hint-placeholder-count="0">
@@ -373,7 +373,7 @@
           <div style="position:absolute; inset:4px; border-radius:8px; background:#5BC8F5; box-shadow:0 2px 0 #2E9FD0; transform:rotate(10deg) translate(4px, 2px);"></div>
           <div style="position:absolute; inset:1.5px; border-radius:9px; background:#A78BFA; box-shadow:0 2px 0 #7C5CE0, inset 0 1.5px 0 rgba(255,255,255,0.35); display:flex; align-items:center; justify-content:center; color:#FFFFFF; font-family:'Fredoka', sans-serif; font-size:18px; font-weight:600; padding-bottom:2px;">s</div>
         </div>
-        <div style="font-family:'Fredoka', 'Manrope', sans-serif; font-size:22px; font-weight:600; letter-spacing:0.3px; color:var(--sheet-ink);">sworble</div>
+        <div style="font-family:'Fredoka', 'Manrope', sans-serif; font-size:22px; font-weight:600; letter-spacing:0.3px; color:var(--sheet-ink);">sworbl</div>
       </div>
       <div style="width:44px; flex:none; display:flex; justify-content:flex-end;">
         <sc-if value="{{ isGameScr }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openSettings }}" aria-label="Settings" title="Settings" style="{{ navIconStyle }}"><span style="{{ navGlyphStyle }}">settings</span></button></sc-if>
@@ -415,7 +415,7 @@
                           <span style="{{ modePicker.casualStatStyle }}">{{ modePicker.casualStat }}</span>
                         </button>
                         <button onClick="{{ armStackl }}" style="{{ modePicker.stacklBtnStyle }}">
-                          <span style="{{ modePicker.stacklLabelStyle }}">stackl</span>
+                          <span style="{{ modePicker.stacklLabelStyle }}">stacks</span>
                           <span style="{{ modePicker.stacklStatStyle }}">{{ modePicker.stacklStat }}</span>
                         </button>
                       </div>
@@ -651,7 +651,7 @@
         <div style="{{ profileAvatarStyle }}">{{ profileInitial }}</div>
         <div style="flex:1; min-width:0;">
           <button onClick="{{ editName }}" style="display:flex; align-items:center; gap:7px; background:transparent; border:none; padding:0; cursor:pointer; font-family:inherit;" style-active="opacity:0.6"><span style="font-family:'Fredoka','Manrope',sans-serif; font-size:23px; font-weight:600; color:var(--sheet-ink);">{{ profileName }}</span><span style="font-family:'Material Symbols Rounded'; font-weight:normal; font-size:18px; line-height:1; color:#8971FF; font-feature-settings:'liga'; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased;">edit</span></button>
-          <div style="font-size:11.5px; font-weight:700; color:var(--ghost); margin-top:2px;">playing sworble</div>
+          <div style="font-size:11.5px; font-weight:700; color:var(--ghost); margin-top:2px;">playing sworbl</div>
         </div>
       </div>
       <sc-if value="{{ statHasHistory }}" hint-placeholder-val="{{ true }}">
@@ -1050,7 +1050,7 @@
         <!-- Stackl's OWN leaderboard stub (Task 3) — separate `|stackl` partition, distinct from casual's standings; only ever shows for an actual stackl run -->
         <sc-if value="{{ stacklLbShow }}" hint-placeholder-val="{{ false }}">
           <div style="position:relative; width:100%; box-sizing:border-box; margin-top:14px; display:flex; flex-direction:column; gap:5px;">
-            <span style="font-size:10px; font-weight:800; letter-spacing:1.5px; color:var(--ghost);">STACKL BOARD &middot; {{ stacklLbCount }}</span>
+            <span style="font-size:10px; font-weight:800; letter-spacing:1.5px; color:var(--ghost);">STACKS BOARD &middot; {{ stacklLbCount }}</span>
             <sc-for list="{{ stacklLbRows }}" as="row" hint-placeholder-count="5">
               <div style="{{ row.rowStyle }}">
                 <div style="{{ row.rankStyle }}">{{ row.rank }}</div>
@@ -1600,7 +1600,7 @@ class Component extends DCLogic {
     };
     document.addEventListener('pointerdown', this._dragScroll);
     this.applyBodyTheme();
-    try { document.title = 'sworble'; } catch (e) {} // brand the tab (covers preview + export post-boot)
+    try { document.title = 'sworbl'; } catch (e) {} // brand the tab (covers preview + export post-boot)
     // first real render is committed — reveal the app (raw template is CSS-hidden)
     try { const el = document.querySelector('x-dc'); if (el) { el.style.visibility = 'visible'; el.style.opacity = '1'; } } catch (e) {}
   }
@@ -3672,7 +3672,7 @@ class Component extends DCLogic {
       } catch (e) { return this.dailyKey; }
     })();
     const text = [
-      'sworble ' + (daily ? dayLabel : 'practice'),
+      'sworbl ' + (daily ? dayLabel : 'practice'),
       st.score.toLocaleString() + ' \u2022 ' + words.length + ' words',
       this._lastRunPerfect && words.length ? '\u2b50 perfect run' : '',
       bestLine,
@@ -4290,7 +4290,7 @@ class Component extends DCLogic {
     for (const f of FLOATERS) { x.save(); const s = f.s * 2.4; x.globalAlpha = 0.07; x.fillStyle = PALETTE[f.c].bg; x.translate(f.x / 100 * W, f.y / 100 * H); x.rotate((f.d % 18 - 9) * Math.PI / 180); rr(-s / 2, -s / 2, s, s, s * 0.28); x.fill(); x.restore(); }
     x.globalAlpha = 1;
     // lockup: violet tile w/ peeking siblings + wordmark
-    const lg = 104, wm = 'sworble';
+    const lg = 104, wm = 'sworbl';
     x.font = '600 92px Fredoka, sans-serif';
     const wmW = x.measureText(wm).width, gap = 24, totalW = lg + gap + wmW, lx = (W - totalW) / 2, ly = 214;
     x.fillStyle = PALETTE[2].bg; rr(lx + 10, ly - lg / 2 - 8, lg, lg, 26); x.fill();
@@ -5836,7 +5836,7 @@ class Component extends DCLogic {
       // only surfaces on the shared practice/stackl result sheet, and only for an actual stackl run
       ...(() => { const v = this.stacklLbVals(); return { ...v, stacklLbShow: this.stacklOn() && v.stacklLbShow }; })(),
       ...(this.dailyStatus().resumable && this.optVal('dailyMode', true) ? { homePlayLabel: 'RESUME' } : {}), // a paused live run resumes on PLAY, it never restarts — even across a reload (the selector knows both)
-      homeSwipeLabel: st.armedMode === 'stackl' ? 'swipe up · stackl' : 'swipe up to play',
+      homeSwipeLabel: st.armedMode === 'stackl' ? 'swipe up · stacks' : 'swipe up to play',
       againLabel: dailyOn ? 'REPLAY' : 'PLAY AGAIN',
       isDaily: dailyOn,
       dailyLabel: dailyOn ? 'ON' : 'OFF',
