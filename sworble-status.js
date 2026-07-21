@@ -70,11 +70,16 @@
     var sworb;
     if (!sw || !sw.entry) { sworb = { active: false }; }
     else {
-      var total = sw.entry.clues.length;
+      var themeList = sw.entry.themeWords || sw.entry.clues || [];
+      var total = themeList.length;
       var foundCount = Array.isArray(sw.cluesFound) ? sw.cluesFound.length : 0;
       var guessesLeft = Math.max(0, 3 - (num(sw.guessesUsed) || 0));
       var solved = !!sw.solved;
-      sworb = { active: true, total: total, foundCount: foundCount, guessesLeft: guessesLeft, solved: solved, canGuess: !solved && guessesLeft > 0 };
+      sworb = {
+        active: true, total: total, foundCount: foundCount, guessesLeft: guessesLeft, solved: solved,
+        canGuess: !solved && guessesLeft > 0,
+        rank: { solved: solved, solveTier: num(sw.solveTier) || 0, themeFound: foundCount },
+      };
     }
     return {
       played: bestToday > 0,

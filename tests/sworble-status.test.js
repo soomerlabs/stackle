@@ -119,6 +119,22 @@ function st(over) { return S.dailyStatus(Object.assign({}, BASE, over)); }
   assert.strictEqual(spent.guessesLeft, 0);
   assert.strictEqual(spent.canGuess, false, 'no guesses left -> cannot guess');
 }
+
+// --- sworb theme-rank block --------------------------------------------------------
+{
+  const entry = { sworb: 'ocean', themeWords: ['tide','coral','wave','reef','salt','shore','kelp','surf','foam','brine'] }; // 10 realized
+  const base = { done:false, storedDailyBest:0, storedSeven:null, puzzleBest:0, lbMe:null, savedRun:null, live:{active:false,over:false,roundWords:[],tilesCount:0} };
+  const on = S.dailyStatus(Object.assign({}, base, { sworb: { entry, cluesFound: ['tide','wave','kelp'], guessesUsed: 1, solved: false } })).sworb;
+  assert.strictEqual(on.total, 10, 'total = realized theme set size (not hardcoded 5)');
+  assert.strictEqual(on.foundCount, 3);
+  assert.strictEqual(on.rank.solved, false);
+  assert.strictEqual(on.rank.themeFound, 3);
+  const solved = S.dailyStatus(Object.assign({}, base, { sworb: { entry, cluesFound: ['tide'], guessesUsed: 1, solved: true, solveTier: 500 } })).sworb;
+  assert.strictEqual(solved.rank.solved, true);
+  assert.strictEqual(solved.rank.solveTier, 500, 'earliness/boldness tier banked at solve time flows through');
+}
+console.log('sworble-status: sworb theme-rank passed');
+
 console.log('sworble-status: sworb block passed');
 
 console.log('sworble-status: all tests passed');
