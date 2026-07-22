@@ -685,10 +685,6 @@
         </div>
       </div>
       <sc-if value="{{ statHasHistory }}" hint-placeholder-val="{{ true }}">
-        <div style="display:flex; flex-direction:column; align-items:center; gap:1px; padding:2px 0;">
-          <div style="font-family:'Fredoka','Manrope',sans-serif; font-size:42px; font-weight:600; line-height:1; color:#8971FF;">{{ statIQ }}</div>
-          <div style="font-size:9.5px; font-weight:800; letter-spacing:1.5px; color:var(--ghost);">SWORBLE IQ &middot; {{ statIQdays }}</div>
-        </div>
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px;">
           <div style="border:2px solid var(--line); border-radius:12px; padding:9px 6px; display:flex; flex-direction:column; align-items:center; gap:2px;"><div style="{{ statStreakStyle }}">{{ statStreak }}</div><div style="font-size:8.5px; font-weight:800; letter-spacing:0.5px; color:var(--ghost);">STREAK</div></div>
           <div style="border:2px solid var(--line); border-radius:12px; padding:9px 6px; display:flex; flex-direction:column; align-items:center; gap:2px;"><div style="font-family:'Fredoka','Manrope',sans-serif; font-size:20px; font-weight:600; line-height:1; color:var(--sheet-ink);">{{ statMaxStreak }}</div><div style="font-size:8.5px; font-weight:800; letter-spacing:0.5px; color:var(--ghost);">LONGEST</div></div>
@@ -815,14 +811,6 @@
                   <button onClick="{{ toggleBestDbg }}" style="{{ bestDbgToggleStyle }}">{{ bestDbgLabel }}</button>
                 </div>
                 <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0;">
-                  <div style="font-size:13px; font-weight:700; color:var(--sheet-sub);">THEME WORDS</div>
-                  <div style="display:flex; align-items:center; gap:12px;">
-                    <button onClick="{{ themeTargetDec }}" style="background:transparent; border:none; color:var(--sheet-ink); font-size:18px; font-weight:800; cursor:pointer;">&minus;</button>
-                    <div style="font-size:14px; font-weight:800; color:var(--sheet-ink); min-width:20px; text-align:center;">{{ themeTargetLabel }}</div>
-                    <button onClick="{{ themeTargetInc }}" style="background:transparent; border:none; color:var(--sheet-ink); font-size:18px; font-weight:800; cursor:pointer;">+</button>
-                  </div>
-                </div>
-                <div style="display:flex; align-items:center; justify-content:space-between; padding:6px 0;">
                   <div style="font-size:13px; font-weight:700; color:var(--sheet-sub);">ROUND TIME</div>
                   <div style="display:flex; align-items:center; gap:12px;">
                     <button onClick="{{ roundSecsDec }}" style="background:transparent; border:none; color:var(--sheet-ink); font-size:18px; font-weight:800; cursor:pointer;">&minus;</button>
@@ -899,13 +887,6 @@
       <sc-if value="{{ isStats }}" hint-placeholder-val="{{ false }}">
         <button onClick="{{ closeStats }}" aria-label="Close" title="Close" style="position:absolute; top:8px; left:8px; width:44px; height:44px; display:flex; align-items:center; justify-content:center; background:transparent; border:none; color:var(--ghost); font-size:28px; font-weight:800; font-family:inherit; cursor:pointer; margin:0; padding:0; line-height:1;">&#215;</button>
         <div style="font-family:'Fredoka', 'Manrope', sans-serif; font-size:22px; font-weight:600; color:var(--sheet-ink); text-align:center; letter-spacing:0.5px;">stats</div>
-
-        <sc-if value="{{ statIQ }}" hint-placeholder-val="{{ false }}">
-          <div style="display:flex; flex-direction:column; align-items:center; gap:1px; padding:2px 0 4px;">
-            <div style="font-family:'Fredoka','Manrope',sans-serif; font-size:44px; font-weight:600; line-height:1; color:#8971FF;">{{ statIQ }}</div>
-            <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; color:var(--ghost);">SWORBLE IQ &middot; {{ statIQdays }}</div>
-          </div>
-        </sc-if>
 
         <sc-if value="{{ statHasHistory }}" hint-placeholder-val="{{ true }}">
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -1108,7 +1089,6 @@
 <script type="text/x-dc" data-dc-script data-props="{
   &quot;cols&quot;: { &quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 5, &quot;min&quot;: 4, &quot;max&quot;: 9, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Board&quot; },
   &quot;rows&quot;: { &quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 6, &quot;min&quot;: 4, &quot;max&quot;: 14, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Board&quot; },
-  &quot;gameSeconds&quot;: { &quot;editor&quot;: &quot;range&quot;, &quot;default&quot;: 120, &quot;min&quot;: 30, &quot;max&quot;: 300, &quot;step&quot;: 10, &quot;unit&quot;: &quot;s&quot;, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Difficulty&quot; },
   &quot;dropSeconds&quot;: { &quot;editor&quot;: &quot;range&quot;, &quot;default&quot;: 10, &quot;min&quot;: 5, &quot;max&quot;: 30, &quot;step&quot;: 1, &quot;unit&quot;: &quot;s&quot;, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Difficulty&quot; }
 }">
 const MONO = { bg: '#EAE8F0', hi: '#F5F4F9', edge: '#C8C4D2' };
@@ -1289,7 +1269,7 @@ class Component extends DCLogic {
       scoreShown: 0, bestLit: false, roundWords: [],
       nextFresh: false, muted, opts, activeModal: null, modalStack: [], contentFading: false, heightAnim: false, modalW: 320, modalFromHome: false,
       lbData: null, homeLb: null, nameInput: '', nameError: '', sheetH: 0,
-      sworbInput: '', sworbShake: 0, sworbColors: null, clueGlowIds: null, // sworb guess: current typed letters, wrong-guess shake counter, last-guess Wordle colors (UI-only)
+      sworbShake: 0, sworbColors: null, clueGlowIds: null, // wrong-guess shake counter, last-guess Wordle colors (UI-only)
       stepperMode: 'play', sworbTyping: false, sworbWin: false, sworbFlipKey: 0, // stepper flip (play<->sworb), board-morph keyboard open, win-flash, flip-anim rekey
       finale: false, // THE FINALE: 0:00 board-morph guess-off is live (set by endRound, cleared by sworbSubmit on resolve)
       sworbSlots: [], // position-addressable guess slots (Wordle-persistence: green/yellow letters stay after a miss)
@@ -1297,7 +1277,9 @@ class Component extends DCLogic {
       dictNote: 'loading dictionary\u2026',
       tileSize: this.initialSize(props), vw: window.innerWidth,
       dropMs: ((opts.dropSeconds ?? (props && props.dropSeconds)) || 10) * 1000,
-      timeLeft: ((opts.gameSeconds ?? (props && props.gameSeconds)) || 120),
+      // idle placeholder only — never rendered pre-round; newGame() always overwrites this
+      // with roundSecs() the moment a round (daily or practice) actually starts.
+      timeLeft: 120,
     };
   }
 
@@ -1477,18 +1459,6 @@ class Component extends DCLogic {
         this.applySize();
         this.newGame(true);
         if (this.state.activeModal === 'settings') this.setState({ paused: true }); // stay behind the sheet
-      } else if (k === 'dropSeconds') {
-        this.progV = 0;
-        this.dropMsV = v * 1000; // the engine reads dropMsV
-        this.cycleStartAt = performance.now();
-        this.setState({ dropMs: this.dropMsV });
-      } else if (k === 'gameSeconds') {
-        this.timeLeftV = v;
-        this.setState({ timeLeft: v });
-      } else if (k === 'parGuesses') {
-        // new budget = a fresh run if one is live
-        if (this.state.screen === 'game' && !this.state.over) this.newGame(true);
-        else this.setState({ guessesLeft: v });
       } else if (k === 'roundSecs') {
         // dev tuning knob: a live round re-anchors to the new length immediately so the
         // change is instantly testable; an idle home screen just waits for the next newGame()
@@ -1704,10 +1674,6 @@ class Component extends DCLogic {
       this.dropMsV = (this.props.dropSeconds || 10) * 1000; // the engine reads dropMsV
       this.cycleStartAt = performance.now();
       this.setState({ dropMs: this.dropMsV });
-    }
-    if (prevProps.gameSeconds !== this.props.gameSeconds) {
-      this.timeLeftV = (this.props.gameSeconds || 120);
-      this.setState({ timeLeft: this.timeLeftV }); // never un-end a finished game
     }
     // live-run persistence: any core change to an active daily run schedules a throttled
     // snapshot. Change-detection compares against our own last-seen refs (not the prevState
@@ -1946,17 +1912,13 @@ class Component extends DCLogic {
     let realized = null;
     try { realized = JSON.parse(LS.getItem(K.THEME_PREFIX + day) || 'null'); } catch (e) {}
     // pre-seed fallback (no board built yet, e.g. on home): preview the same SWORB_CLUE_COUNT
-    // (6) the two-pass seed will realize once the board deals — NOT themeTarget(), which is a
-    // dev-only knob for pass-1's wider candidate pool and would otherwise leak up to 8/20.
+    // (6) the two-pass seed will realize once the board deals.
     const themeWords = (Array.isArray(realized) && realized.length) ? realized : pool.themeWords.slice(0, SWORB_CLUE_COUNT);
     // `clues` is a transition alias for `themeWords` so consumers not yet converted (guessSworb,
     // _placeCluesInRefill, clueFan, sworble-status) keep working; Tasks 4/5/7 convert them to
     // `themeWords`, then the alias is removed in final cleanup.
     return { sworb: pool.sworb, themeWords, clues: themeWords };
   }
-  // dev-only density knob: how many of the day's theme-word pool to attempt seeding onto the
-  // board (best-effort packs what fits — ~7 pure words is the realistic ceiling on 30 cells).
-  themeTarget() { const n = parseInt(this.optVal('themeTarget', 8), 10); return (n >= 1 && n <= 20) ? n : 8; }
   // sworb-of-the-day guess state, per day: { guessesUsed, solved, correct, bonus }
   sworbState() {
     const d = this.dailyKey || this.dayKey(new Date());
@@ -1988,31 +1950,6 @@ class Component extends DCLogic {
     this.forceUpdate();
     return { ok: true, correct, guessesLeft: Math.max(0, 6 - st.guessesUsed), bonus: st.bonus };
   }
-  // guess-sheet submit: UI-only wrapper around guessSworb — validates non-empty input,
-  // clears the field either way, and shakes (via sworbShake, a bump counter so repeated
-  // wrong guesses re-key the wrapper and always restart the CSS animation) on a miss.
-  doGuessSworb() {
-    const e = this.dailyEntry();
-    const raw = (this.state.sworbInput || '').trim().toLowerCase().replace(/[^a-z]/g, '');
-    if (!raw || !e) return;
-    // the guess must be the full length of the sworb (the blocks show how many) — a short
-    // guess just nudges (shake) rather than burning one of your six guesses
-    if (raw.length !== e.sworb.length) { this.setState(s => ({ sworbShake: (s.sworbShake || 0) + 1 })); return; }
-    const colors = SworbleDaily.scoreGuess(raw, e.sworb); // Wordle green/yellow/gray for the blocks
-    const res = this.guessSworb(raw);
-    if (!res || !res.ok) return; // no sworb, or already solved / out of guesses
-    if (res.correct) {
-      // all green — hold the win colors; the bar retires on its own (sworb.solved → inactive)
-      this.setState({ sworbColors: colors });
-      try { this.sfxWin ? this.sfxWin() : this.sfxOver(); } catch (x) {}
-    } else {
-      // show the hint colors, then clear the row for the next guess + shake
-      this.setState({ sworbColors: colors });
-      try { this.sfxBad(); } catch (x) {}
-      this.later(() => this.setState(s => ({ sworbInput: '', sworbColors: null, sworbShake: (s.sworbShake || 0) + 1 })), 1300);
-    }
-  }
-
   // ---- STEPPER FLIP + BOARD-MORPH KEYBOARD (final guess input) ----
   // The stepper (word strip) is a tap-to-flip card: PLAY face (gameplay) <-> SWORB face
   // (the day's guess blocks). Flipping to SWORB while still guessable morphs the board
@@ -2349,7 +2286,7 @@ class Component extends DCLogic {
     this.juiceNext = 0;          // pending friendly deals
     // SWORB day: two-pass pack EXACTLY SWORB_CLUE_COUNT (6) theme words onto the opening board
     // ("6 to find, 6 to crack it"). Pass 1 best-effort-packs the FULL curated theme-word pool
-    // (see below — not themeTarget()-sliced); the first 6 realized become the target set.
+    // (see below); the first 6 realized become the target set.
     // Pass 2 re-packs a FRESH board with ONLY those 6, on a fresh rng from the SAME seed, so
     // the final board stamps ONLY the 6 targets — no leftover bonus words from the wider
     // pass-1 pool. Deterministic: same seed + same pool
@@ -2358,10 +2295,10 @@ class Component extends DCLogic {
     // truth (see SworbleSeed.seedClueLettersTwoPass; dailies-check.js simulates this exact path).
     const _pool = this.themePool();
     if (_pool && !this.practiceMode()) {
-      // pass 1's candidate pool is the FULL curated theme-word list (not themeTarget()-sliced):
-      // a wider pool packs strictly better, and dailies-check.js's guardrail simulates this
-      // EXACT full-pool call — slicing here would let the app under-place clues the guardrail
-      // never catches. themeTarget() remains a dev-only stepper elsewhere (see its other uses).
+      // pass 1's candidate pool is the FULL curated theme-word list (never sliced): a wider
+      // pool packs strictly better, and dailies-check.js's guardrail simulates this EXACT
+      // full-pool call — slicing here would let the app under-place clues the guardrail never
+      // catches.
       const wanted = _pool.themeWords;
       const byCell = {}; tiles.forEach(t => { byCell[t.row + ',' + t.col] = t; });
       const dailySeed = this.dailyKey + '|sworb';
@@ -2685,12 +2622,6 @@ class Component extends DCLogic {
       wbMatchCount: filtered.length + (filtered.length === 1 ? ' MATCH' : ' MATCHES'), wbMatches: matches,
       wbQuery: st.wbQuery || '', wbHasQuery: searching, wbQueryUpper: q.toUpperCase(),
     };
-  }
-  // season "IQ": average efficiency (your best-7 vs the bot's optimal) across every daily you've finished
-  seasonIQ() {
-    let sum = 0, n = 0;
-    try { for (let i = 0; i < LS.length; i++) { const k = LS.key(i); if (k && k.indexOf(K.EFF_PREFIX) === 0) { const v = parseInt(LS.getItem(k) || '0', 10) || 0; if (v > 0) { sum += v; n++; } } } } catch (e) {}
-    return n ? { iq: Math.round(sum / n), days: n } : null;
   }
   // Shared end-of-round: classic reaches it from the frame clock at 0:00, par from
   // clearWord when the last guess is spent (after its cascade settles).
@@ -4498,10 +4429,7 @@ class Component extends DCLogic {
       });
     }
     const bw = this.bestWordEver;
-    const iq = this.seasonIQ();
     return {
-      statIQ: iq ? String(iq.iq) : '',
-      statIQdays: iq ? (iq.days + (iq.days === 1 ? ' DAY' : ' DAYS')) : '',
       statHasHistory: s.days.length > 0,
       statNoHistory: s.days.length === 0,
       statStreak: s.cur,
@@ -5324,7 +5252,7 @@ class Component extends DCLogic {
     }
     this.timeLeftV = this.roundSecs();
     this.progV = 0;
-    this.setState({ opts, screen: 'home', paused: false, gamePaused: false, countIn: null, over: false, tiles: [], path: [], banner: null, bombArmed: false, boom: null, rattle: 0, score: 0, scoreShown: 0, streak: 0, prog: 0, timeLeft: this.optVal('gameSeconds', 120), homeSeq: (this.state.homeSeq || 0) + 1, ...sworbReset });
+    this.setState({ opts, screen: 'home', paused: false, gamePaused: false, countIn: null, over: false, tiles: [], path: [], banner: null, bombArmed: false, boom: null, rattle: 0, score: 0, scoreShown: 0, streak: 0, prog: 0, timeLeft: 120, homeSeq: (this.state.homeSeq || 0) + 1, ...sworbReset });
     this.loadHomeLb();
   }
   renderVals() {
@@ -6093,7 +6021,7 @@ class Component extends DCLogic {
         try {
           const LS = SworbleStore.LS, K = SworbleStore.K;
           const day = this.dailyKey || this.dayKey(new Date());
-          [K.DONE_PREFIX, K.DAILY_PREFIX, K.SEVEN_PREFIX, K.RUNS_PREFIX, K.ATT_PREFIX, K.EFF_PREFIX, K.TIME_PREFIX, K.FOUND_PREFIX, K.TARGETS_PREFIX, K.PUZZLE_BEST_PREFIX, K.PUZZLE_PAR_PREFIX, K.RUN_PREFIX].forEach(p => { try { LS.removeItem(p + day); } catch (e) {} });
+          [K.DONE_PREFIX, K.DAILY_PREFIX, K.SEVEN_PREFIX, K.RUNS_PREFIX, K.ATT_PREFIX, K.TIME_PREFIX, K.FOUND_PREFIX, K.TARGETS_PREFIX, K.PUZZLE_BEST_PREFIX, K.PUZZLE_PAR_PREFIX, K.RUN_PREFIX].forEach(p => { try { LS.removeItem(p + day); } catch (e) {} });
           [K.LB_ME_PREFIX + day, K.LB_ME_PREFIX + day + '|puzzle'].forEach(k => { try { LS.removeItem(k); } catch (e) {} }); // leaderboard "me" submit (board id = day OR day|puzzle) — else YOU lingers on the standing graph
         } catch (e) {}
         this._dailyLive = false;
@@ -6930,9 +6858,6 @@ class Component extends DCLogic {
         this.saveOpts(opts);
         this.setState({ opts });
       },
-      themeTargetLabel: String(this.themeTarget()),
-      themeTargetDec: () => { this.sfxClick(); const opts = { ...(this.state.opts || {}), themeTarget: Math.max(1, this.themeTarget() - 1) }; this.saveOpts(opts); this.setState({ opts }, () => this.newGame(true)); },
-      themeTargetInc: () => { this.sfxClick(); const opts = { ...(this.state.opts || {}), themeTarget: Math.min(20, this.themeTarget() + 1) }; this.saveOpts(opts); this.setState({ opts }, () => this.newGame(true)); },
       roundSecsLabel: (() => { const s = this.roundSecs(); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); })(),
       roundSecsDec: () => this.bumpOpt('roundSecs', -30, 30, 900, 300),
       roundSecsInc: () => this.bumpOpt('roundSecs', 30, 30, 900, 300),

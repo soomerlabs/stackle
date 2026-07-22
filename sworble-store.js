@@ -64,7 +64,6 @@
     MIGRATED_STACKLE: 'sworble_migrated_stackle', // one-time flag: stackle_*-era data has been copied over
     PLAYER_ID: 'sworble_player_id', // stable per-device UUID sent with Soomer submits (claimable by an account later)
     PENDING_SUBMITS: 'sworble_pending_submits', // SworbleApi's durable submit outbox — value must match QUEUE_KEY in sworble-net.js
-    EFF_PREFIX: 'sworble_eff_', // per-day efficiency (your best-7 vs the bot's optimal) → season IQ
     TIME_PREFIX: 'sworble_time_', // per-day seconds actively on the board (freezes when you leave the board)
   };
 
