@@ -50,7 +50,6 @@
        by the SAME st.hintPulse flag (see hintGrantFx), so they always play together. */
     @keyframes hintFanBob { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-7px); } 60% { transform: translateY(1px); } }
     @keyframes hintBeat { 0% { transform: translateX(-50%) translateY(4px); opacity: 0; } 25% { transform: translateX(-50%) translateY(-6px); opacity: 1; } 75% { transform: translateX(-50%) translateY(-11px); opacity: 1; } 100% { transform: translateX(-50%) translateY(-17px); opacity: 0; } }
-    @keyframes confettiUp { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(-64px) rotate(260deg); opacity: 0; } }
     @keyframes conIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes wbStateIn { from { opacity: 0; filter: blur(7px); transform: translateY(4px); } to { opacity: 1; filter: blur(0); transform: none; } }
     @keyframes confFall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 0; } 6% { opacity: 1; } 100% { transform: translateY(102vh) rotate(560deg); opacity: 0.85; } }
@@ -60,8 +59,6 @@
     @keyframes floatSlotA { 0%, 100% { transform: translateX(-50%) rotate(0deg); } 50% { transform: translateX(-50%) translate(2px,-4px) rotate(1deg); } }
     @keyframes floatSlotB { 0%, 100% { transform: translateX(-50%) rotate(0deg); } 50% { transform: translateX(-50%) translate(-3px,-3px) rotate(-1deg); } }
     @keyframes floatSlotC { 0%, 100% { transform: translateX(-50%) rotate(0deg); } 35% { transform: translateX(-50%) translate(2px,-3px) rotate(0.8deg); } 70% { transform: translateX(-50%) translate(-2px,-2px) rotate(-0.9deg); } }
-    @keyframes barDrainA { 0% { width: 100%; background: #00A7FD; } 70% { background: #00A7FD; } 88% { background: #E0A63C; } 100% { width: 0%; background: #E5484D; } }
-    @keyframes barDrainB { 0% { width: 100%; background: #00A7FD; } 70% { background: #00A7FD; } 88% { background: #E0A63C; } 100% { width: 0%; background: #E5484D; } }
     @keyframes slotPopA { 0% { transform: scale(1); } 40% { transform: scale(0.7) rotate(8deg); } 100% { transform: scale(1); } }
     @keyframes slotPopB { 0% { transform: scale(1); } 40% { transform: scale(0.7) rotate(-8deg); } 100% { transform: scale(1); } }
     @keyframes slotShake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-1.5px, 1px) rotate(-1deg); } 50% { transform: translate(1.5px, -1px) rotate(1deg); } 75% { transform: translate(-1px, -1px); } }
@@ -71,15 +68,10 @@
     @keyframes confettiDropB { 0% { transform: translate(0, -12px) rotate(12deg); opacity: 0; } 10% { opacity: 0.9; } 92% { opacity: 0.9; } 100% { transform: translate(11px, 520px) rotate(-340deg); opacity: 0; } }
     @keyframes confFadeA { 0% { transform: translate(0,-6px) rotate(-12deg); opacity:0; } 16% { opacity:0.95; } 50% { opacity:0.8; } 100% { transform: translate(-8px, 110px) rotate(320deg); opacity:0; } }
     @keyframes confFadeB { 0% { transform: translate(0,-6px) rotate(10deg); opacity:0; } 16% { opacity:0.95; } 50% { opacity:0.8; } 100% { transform: translate(9px, 110px) rotate(-300deg); opacity:0; } }
-    @keyframes edgePulse { 0%, 100% { box-shadow: 0 6px 0 var(--card-edge); } 50% { box-shadow: 0 6px 0 var(--card-edge), 0 0 0 3px rgba(229,72,77,0.75), 0 0 26px 6px rgba(229,72,77,0.45); } }
     @keyframes tileFlash { 0%, 100% { filter: brightness(1) saturate(1); } 30% { filter: brightness(1.28) saturate(1.12); } }
     @keyframes shockwave { from { transform: scale(0.45); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
     @keyframes slotInA { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     @keyframes slotInB { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    @keyframes burst1 { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(-24px, -28px) rotate(120deg) scale(0.3); opacity: 0; } }
-    @keyframes burst2 { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(26px, -22px) rotate(-100deg) scale(0.35); opacity: 0; } }
-    @keyframes burst3 { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(-20px, 22px) rotate(-140deg) scale(0.3); opacity: 0; } }
-    @keyframes burst4 { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(22px, 26px) rotate(110deg) scale(0.3); opacity: 0; } }
 
     @keyframes tipCycle { 0% { opacity: 0; transform: translateY(5px); } 9% { opacity: 1; transform: translateY(0); } 86% { opacity: 1; } 100% { opacity: 0; } }
     @keyframes trailDraw { 0% { stroke-dashoffset: 1; opacity: 0.2; } 45% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
@@ -142,7 +134,6 @@
        breaks back to the initial 'running' at that level. `.stormAura *` covers every depth. */
     .stormAura, .stormAura * { animation-play-state: inherit; }
     @keyframes hudRise { 0% { opacity: 0; transform: translateY(8px) scale(0.6); } 20% { opacity: 1; transform: translateY(-1px) scale(1.12); } 70% { opacity: 1; transform: translateY(-11px) scale(1); } 100% { opacity: 0; transform: translateY(-18px) scale(0.95); } }
-    @keyframes chipPop { 0% { transform: translate3d(0,0,0) rotateZ(0deg) rotateX(0deg) scale(0.3); opacity: 1; animation-timing-function: cubic-bezier(0.15,0.7,0.3,1); } 30% { transform: translate3d(var(--cx), var(--cy), 0) rotateZ(calc(var(--cr) * 0.4)) rotateX(calc(var(--fx) * 0.35)) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.5,0.05,0.75,0.4); } 82% { opacity: 1; } 100% { transform: translate3d(var(--dx), var(--gy), 0) rotateZ(var(--cr)) rotateX(var(--fx)) scale(0.85); opacity: 0; } }
     @keyframes twinPulse { 0%, 100% { filter: drop-shadow(0 0 0px rgba(137,113,255,0)); } 50% { filter: drop-shadow(0 0 9px rgba(137,113,255,0.9)) drop-shadow(0 0 2px rgba(137,113,255,0.8)); } }
     @keyframes ghostSlide { 0% { transform: translate(var(--gx0), var(--gy0)) scale(1); opacity: 0; box-shadow: 0 3px 0 var(--edge); animation-timing-function: ease-out; } 7% { opacity: 1; } 17% { transform: translate(var(--gx0), var(--gy0)) translateY(-9px) scale(1.14); box-shadow: 0 16px 22px rgba(0,0,0,0.4); opacity: 1; animation-timing-function: cubic-bezier(0.45,0,0.55,1); } 53% { transform: translate(var(--gx1), var(--gy1)) translateY(-9px) scale(1.14); box-shadow: 0 16px 22px rgba(0,0,0,0.4); opacity: 1; animation-timing-function: cubic-bezier(0.55,0,0.9,0.35); } 65% { transform: translate(var(--gx1), var(--gy1)) translateY(0px) scale(0.9); box-shadow: 0 2px 0 var(--edge); opacity: 1; animation-timing-function: cubic-bezier(0.2,0.85,0.3,1.25); } 74% { transform: translate(var(--gx1), var(--gy1)) scale(1.06); } 84% { transform: translate(var(--gx1), var(--gy1)) scale(1); box-shadow: 0 3px 0 var(--edge); opacity: 1; } 93% { opacity: 1; } 100% { transform: translate(var(--gx1), var(--gy1)) scale(1); opacity: 0; box-shadow: 0 3px 0 var(--edge); } }
     @keyframes boardPunchA { 0% { transform: scale(1); } 32% { transform: scale(1.035); } 100% { transform: scale(1); } }
@@ -158,11 +149,10 @@
     @keyframes rotNudge { 0%, 55%, 100% { transform: rotate(0deg); } 25%, 35% { transform: rotate(90deg); } }
     @keyframes sheetIn { from { opacity: 0; transform: translateY(10px) scale(0.97); } to { opacity: 1; transform: none; } }
     @keyframes sheetGrow { from { opacity: 0; transform: scale(0.88) translateY(4px); } to { opacity: 1; transform: none; } }
+    @keyframes sheetShrink { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.88) translateY(4px); } }
     @keyframes mineRing { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
-    @keyframes bombDanger { 0%, 100% { box-shadow: 0 0 0 2px rgba(229,72,77,0.85), 0 0 11px 2px rgba(229,72,77,0.55); } 50% { box-shadow: 0 0 0 2.5px rgba(229,72,77,1), 0 0 17px 5px rgba(229,72,77,0.9); } }
     @keyframes bombIn { 0% { opacity: 0; transform: scale(0.4); } 60% { opacity: 1; transform: scale(1.12); } 100% { transform: scale(1); } }
-    @keyframes bombSuckIn { 0% { transform: scale(1); } 25% { transform: scale(1.07); } 100% { transform: scale(0.7); } }
     @keyframes bombGlowUp { 0% { box-shadow: inset 0 -3px 0 #000000, 0 2px 6px 1px rgba(229,72,77,0.3); } 100% { box-shadow: inset 0 -3px 0 #000000, 0 4px 24px 8px rgba(229,72,77,0.9); } }
     @keyframes bombFade { from { opacity: 0; } to { opacity: 1; } }
     @keyframes blockRain { 0% { transform: translate(0, 0) rotate(0deg); opacity: 0; } 6% { opacity: 0.55; } 96% { opacity: 0.55; } 100% { transform: translate(var(--dx), 340px) rotate(var(--rr)); opacity: 0; } }
@@ -192,12 +182,6 @@
     }
     @keyframes rjDrainOut { 0% { background: #E5484D; box-shadow: 0 var(--rjl) 0 #8C2328, 0 0 12px 2px rgba(229,72,77,0.4), inset 0 2px 0 rgba(255,255,255,0), inset 0 -3px 4px rgba(0,0,0,0); color: #FFFFFF; filter: none; } 55% { background: var(--rjm); box-shadow: 0 var(--rjl) 0 var(--rje), 0 0 10px 2px rgba(229,72,77,0.2), inset 0 2px 0 var(--rjhi), inset 0 -3px 4px var(--rjbot); color: var(--rji); filter: saturate(0.5); } 100% { background: var(--rjb); box-shadow: 0 var(--rjl) 0 var(--rje), 0 0 0 0 rgba(229,72,77,0), inset 0 2px 0 var(--rjhi), inset 0 -3px 4px var(--rjbot); color: var(--rji); filter: none; } }
     @keyframes chipFall { to { transform: translateY(48px) rotate(var(--fr)); opacity: 0; } }
-    @keyframes boomFlash { 0% { opacity: 0; transform: scale(0.5); } 14% { opacity: 0.95; } 100% { opacity: 0; transform: scale(1.8); } }
-    @keyframes dotA { 0%, 19% { opacity: 0; } 20%, 100% { opacity: 1; } }
-    @keyframes dotB { 0%, 44% { opacity: 0; } 45%, 100% { opacity: 1; } }
-    @keyframes dotC { 0%, 69% { opacity: 0; } 70%, 100% { opacity: 1; } }
-    @keyframes bombSpark { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.32); filter: brightness(1.4); } }
-    @keyframes bombFlame { 0%, 100% { transform: scale(1,1) translate(0,0) skewX(0deg); } 20% { transform: scale(1.16,0.88) translate(-1px,-1px) skewX(-8deg); } 45% { transform: scale(0.88,1.18) translate(1px,0) skewX(7deg); } 70% { transform: scale(1.08,0.95) translate(-1px,-1px) skewX(-4deg); } }
     @keyframes boardRattleA { 0%, 100% { transform: translateX(0); } 15% { transform: translateX(-7px); } 35% { transform: translateX(6px); } 55% { transform: translateX(-4px); } 75% { transform: translateX(3px); } }
     @keyframes boardRattleB { 0%, 100% { transform: translateX(0); } 15% { transform: translateX(7px); } 35% { transform: translateX(-6px); } 55% { transform: translateX(4px); } 75% { transform: translateX(-3px); } }
     @keyframes tripFlash { 0% { filter: brightness(1.8) saturate(1.6) hue-rotate(-25deg); } 100% { filter: none; } }
@@ -446,7 +430,7 @@
         <sc-if value="{{ isSworbDay }}" hint-placeholder-val="{{ false }}">
           <div style="{{ stepperSworbFaceStyle }}">
             <div key="{{ sworbGuess.shakeKey }}" style="{{ sworbGuess.wrapStyle }}">
-              <div style="display:flex; gap:5px; justify-content:center;">
+              <div key="{{ sworbGuess.flipKey }}" style="display:flex; gap:5px; justify-content:center;">
                 <sc-for list="{{ sworbGuess.blocks }}" as="b" hint-placeholder-count="5">
                   <div style="{{ b.style }}">{{ b.ch }}</div>
                 </sc-for>
@@ -1221,7 +1205,7 @@
         <div style="font-size:12.5px; font-weight:700; color:var(--sheet-sub); text-align:center; line-height:1.5;">This name shows on the leaderboard for everyone. Keep it clean.</div>
         <input value="{{ nameInput }}" onInput="{{ onNameInput }}" onKeyDown="{{ onNameKey }}" maxLength="12" placeholder="ORDA" style="{{ nameInputStyle }}" />
         <sc-if value="{{ nameError }}" hint-placeholder-val="{{ false }}">
-          <div style="font-size:12px; font-weight:800; color:#E5484D; letter-spacing:0.5px;">{{ nameError }}</div>
+          <div style="font-size:12px; font-weight:800; color:#E5484D; letter-spacing:0.5px; animation:bannerIn 0.26s ease-out, shakeX 0.4s ease-out;">{{ nameError }}</div>
         </sc-if>
         <button onClick="{{ saveName }}" style="width:100%; box-sizing:border-box; background:#8971FF; color:#FFFFFF; border:none; border-radius:14px; padding:12px 0; font-size:16px; font-weight:800; font-family:inherit; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 0 #5A43C9;">SAVE</button>
         <button onClick="{{ cancelName }}" style="background:transparent; border:none; color:var(--ghost); font-size:13px; font-weight:800; font-family:inherit; letter-spacing:1.5px; cursor:pointer; padding:2px;">CANCEL</button>
@@ -2386,7 +2370,7 @@ class Component extends DCLogic {
     const finale = !!this.state.finale;
     if (res.correct) {
       if (finale) {
-        this.setState({ sworbColors: colors, sworbWin: true }); // sworbTyping stays true — see method note
+        this.setState(s => ({ sworbColors: colors, sworbWin: true, sworbGuessSeq: (s.sworbGuessSeq || 0) + 1 })); // sworbTyping stays true — see method note
         try { this.sfxWin ? this.sfxWin() : this.sfxOver(); } catch (x) {}
         this.later(() => {
           this.bankFinaleBonus(); // score just grew (guess bonus) — re-merge/re-submit before landing home
@@ -2394,12 +2378,16 @@ class Component extends DCLogic {
           this.homeReturnAfterRound();
         }, 3000); // was 2400 — the block pop + confetti burst need the extra beat to land before the home-hop
       } else {
-        this.setState({ sworbColors: colors, sworbTyping: false, sworbWin: true });
+        this.setState(s => ({ sworbColors: colors, sworbTyping: false, sworbWin: true, sworbGuessSeq: (s.sworbGuessSeq || 0) + 1 }));
         try { this.sfxWin ? this.sfxWin() : this.sfxOver(); } catch (x) {}
         this.later(() => this.setState({ sworbWin: false, stepperMode: 'play', sworbSlots: [], sworbColors: null, sworbFlipKey: (this.state.sworbFlipKey || 0) + 1 }), 2400);
       }
     } else {
-      this.setState({ sworbColors: colors });
+      // FINALE COLOR REVEAL: sworbGuessSeq bumps on every submit (right or wrong, spent or
+      // not) — it's what keys sworbGuess.flipKey below, forcing a fresh remount of the block
+      // row so each block's sworbFlip animation actually replays every guess (a plain value
+      // diff misses guesses where a kept green/yellow letter's color string is unchanged).
+      this.setState(s => ({ sworbColors: colors, sworbGuessSeq: (s.sworbGuessSeq || 0) + 1 }));
       try { this.sfxBad(); } catch (x) {}
       const spent = res.guessesLeft <= 0;
       if (finale && spent) {
@@ -6380,8 +6368,13 @@ class Component extends DCLogic {
         overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
         padding: mobile ? 'calc(' + (navBarH + 6) + 'px + env(safe-area-inset-top)) 16px calc(34px + env(safe-area-inset-bottom))' : (navBarH + 6) + 'px 16px 44px',
-        opacity: st.screen === 'wordbank' ? 1 : 0, transition: 'opacity 0.26s ease',
-        pointerEvents: st.screen === 'wordbank' ? 'auto' : 'none', willChange: 'opacity',
+        // NAV MORPH: transform+opacity only (no blur — the game screen already owns the heavier
+        // blur/scale morph via gameMorphStyle; this is the LIGHT counterpart so nav doesn't read
+        // flat by comparison). Symmetric both directions — the same st.screen==='wordbank' check
+        // drives it whichever way navigation runs.
+        opacity: st.screen === 'wordbank' ? 1 : 0, transform: st.screen === 'wordbank' ? 'scale(1)' : 'scale(0.97)',
+        transition: 'opacity 0.26s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1)',
+        pointerEvents: st.screen === 'wordbank' ? 'auto' : 'none', willChange: 'opacity, transform',
       },
       wordBankContentStyle: { flex: '1 0 auto', width: '100%', maxWidth: colW, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 9, position: 'relative', zIndex: 1 },
       wbSearchDockStyle: { position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 4, display: 'flex', justifyContent: 'center', boxSizing: 'border-box', padding: mobile ? '18px 16px calc(14px + env(safe-area-inset-bottom))' : '20px 16px 20px', background: 'linear-gradient(to top, var(--home-bg) 62%, transparent)', pointerEvents: 'none' },
@@ -7228,7 +7221,12 @@ class Component extends DCLogic {
         boxSizing: 'border-box', overflow: 'hidden', width: st.modalW || 320,
         height: (st.heightAnim && st.sheetH) ? st.sheetH : 'auto',
         transition: 'height 0.26s cubic-bezier(0.4,0,0.2,1), width 0.2s ease',
-        animation: st.modalFromHome ? 'sheetGrow 0.28s cubic-bezier(0.34,1.28,0.5,1)' : 'sheetIn 0.22s ease',
+        // MODAL CLOSE SYMMETRY: fadeClose keeps the shell mounted for 200ms (st.sheetFading)
+        // while the scrim dims — previously the shell itself just sat there static during that
+        // window (only the scrim had a close animation). sheetShrink (the reverse of sheetGrow)
+        // now plays over the same window; 'forwards' holds it shrunk instead of snapping back to
+        // full size for the last frame before the modal actually unmounts.
+        animation: st.sheetFading ? 'sheetShrink 0.18s cubic-bezier(0.34,1.28,0.5,1) forwards' : (st.modalFromHome ? 'sheetGrow 0.28s cubic-bezier(0.34,1.28,0.5,1)' : 'sheetIn 0.22s ease'),
       },
       modalContentStyle: {
         position: 'relative', display: 'flex', flexDirection: 'column',
@@ -7253,6 +7251,11 @@ class Component extends DCLogic {
         // pills' hard '0 2px 0' shadows painted after the pills are removed (stray colored bars).
         // Paired with msgKey remounting the subtree on every banner change.
         transform: 'translateZ(0)', isolation: 'isolate', backfaceVisibility: 'hidden',
+        // BANNER DISMISS: the msgKey remount above must stay (it's the iOS repaint fix noted
+        // above) — this just gives the fresh subtree a brief opacity dip instead of popping
+        // straight to opacity:1, so the swap reads as a crossfade rather than a hard cut.
+        // conIn is already alive (scrimStyle reuses it) — no new keyframe needed.
+        animation: 'conIn 0.18s ease',
       },
       badgeStyle: {
         flexShrink: 0, // the count must NEVER clip — the label gives way instead
@@ -7299,8 +7302,11 @@ class Component extends DCLogic {
         overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
         padding: mobile ? 'calc(' + (navBarH + 6) + 'px + env(safe-area-inset-top)) 16px calc(34px + env(safe-area-inset-bottom))' : (navBarH + 6) + 'px 16px 44px',
-        opacity: st.screen === 'profile' ? 1 : 0, transition: 'opacity 0.26s ease',
-        pointerEvents: st.screen === 'profile' ? 'auto' : 'none', willChange: 'opacity',
+        // NAV MORPH: transform+opacity only (no blur), symmetric both directions — see
+        // wordBankScreenStyle's comment for the full rationale.
+        opacity: st.screen === 'profile' ? 1 : 0, transform: st.screen === 'profile' ? 'scale(1)' : 'scale(0.97)',
+        transition: 'opacity 0.26s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1)',
+        pointerEvents: st.screen === 'profile' ? 'auto' : 'none', willChange: 'opacity, transform',
       },
       profileContentStyle: { flex: '1 0 auto', width: '100%', maxWidth: colW, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 14, position: 'relative', zIndex: 1 },
       ...((st.screen === 'profile' || st.activeModal === 'stats') ? this.statsVals() : {}),
@@ -7314,8 +7320,11 @@ class Component extends DCLogic {
         overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
         padding: mobile ? 'calc(' + (navBarH + 6) + 'px + env(safe-area-inset-top)) 16px calc(34px + env(safe-area-inset-bottom))' : (navBarH + 6) + 'px 16px 44px',
-        opacity: st.screen === 'lb' ? 1 : 0, transition: 'opacity 0.26s ease',
-        pointerEvents: st.screen === 'lb' ? 'auto' : 'none', willChange: 'opacity',
+        // NAV MORPH: transform+opacity only (no blur), symmetric both directions — see
+        // wordBankScreenStyle's comment for the full rationale.
+        opacity: st.screen === 'lb' ? 1 : 0, transform: st.screen === 'lb' ? 'scale(1)' : 'scale(0.97)',
+        transition: 'opacity 0.26s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1)',
+        pointerEvents: st.screen === 'lb' ? 'auto' : 'none', willChange: 'opacity, transform',
       },
       lbContentStyle: { flex: '1 0 auto', width: '100%', maxWidth: colW, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: 12, position: 'relative', zIndex: 1 },
       lbDateLabel: '', lbCount: '', lbEyebrow: '',
@@ -7334,7 +7343,7 @@ class Component extends DCLogic {
       sworbGuess: (() => {
         const sw = this.dailyStatus().sworb;
         const e = this.dailyEntry();
-        const off = { isDay: false, blocks: [], full: false, maxLen: 0, canType: false, solved: false, locked: false, caption: '', captionStyle: { display: 'none' }, shakeKey: 'sg0', wrapStyle: { display: 'none' } };
+        const off = { isDay: false, blocks: [], full: false, maxLen: 0, canType: false, solved: false, locked: false, caption: '', captionStyle: { display: 'none' }, shakeKey: 'sg0', flipKey: 'sf0', wrapStyle: { display: 'none' } };
         if (!e || !sw.active) return off;
         const len = e.sworb.length;
         const answer = String(e.sworb || '').toUpperCase();
@@ -7348,10 +7357,13 @@ class Component extends DCLogic {
         // resolve each block's letter + skin for the current state
         const blocks = [];
         for (let i = 0; i < len; i++) {
-          let ch = '', col = null;
+          let ch = '', col = null, guessFlip = false;
           if (solved) { ch = answer[i]; col = 'green'; }
           else if (locked) { ch = answer[i]; col = 'gray'; }
-          else { ch = (slots[i] || '').toUpperCase(); col = colors ? colors[i] : null; }
+          // FINALE COLOR REVEAL: this is the live per-guess feedback (not the solved/locked
+          // full-answer reveal above, which already has its own pop below) — flagged separately
+          // so `flip` and `pop` can never land on the same block at once (see flip below).
+          else { ch = (slots[i] || '').toUpperCase(); col = colors ? colors[i] : null; guessFlip = !!col; }
           let bg, edge, ink;
           if (col === 'green') { bg = '#5FD6A8'; edge = '#38AD7F'; ink = '#1F1442'; }
           else if (col === 'yellow') { bg = '#F5B84A'; edge = '#CE9022'; ink = '#1F1442'; }
@@ -7364,7 +7376,13 @@ class Component extends DCLogic {
           // flips true (reusing bombIn — no new keyframe needed) — the burst (below) fires once
           // the pop finishes landing.
           const pop = winning ? ('animation:bombIn 0.3s cubic-bezier(0.34, 1.5, 0.55, 1) ' + (i * 0.06).toFixed(2) + 's backwards;') : '';
-          blocks.push({ k: 'sg' + i, ch, style: box + skin + pop });
+          // FINALE COLOR REVEAL: wires the previously-dead sworbFlip keyframe — each block
+          // perspective-flips to its fresh green/yellow/gray instead of an instant background
+          // swap, 60ms stagger (same idiom as `pop` above). Keyed by flipKey (below) which
+          // remounts this row on every submit, so all 5 blocks flip together even when a
+          // letter's color string happens to repeat between guesses (kept green/yellow).
+          const flip = guessFlip ? ('animation:sworbFlip 0.32s cubic-bezier(0.22, 1, 0.36, 1) ' + (i * 0.06).toFixed(2) + 's backwards;') : '';
+          blocks.push({ k: 'sg' + i, ch, style: box + skin + flip + pop });
         }
         const caption = solved
           ? ('SOLVED  +' + (this.sworbState().bonus || 0).toLocaleString())
@@ -7377,6 +7395,11 @@ class Component extends DCLogic {
           caption,
           captionStyle: { marginTop: 7, textAlign: 'center', fontSize: 10, fontWeight: 800, letterSpacing: '1px', color: solved ? '#5FD6A8' : 'var(--ghost)', textTransform: 'uppercase', pointerEvents: 'none' },
           shakeKey: 'sg' + (st.sworbShake || 0),
+          // flipKey remounts the block row on EVERY submit (sworbGuessSeq bumps unconditionally
+          // in sworbSubmit) — a superset of shakeKey's wrong-guess-only remounts, so a
+          // wrong-but-continuing guess remounts BOTH the outer (shakeKey) and inner (flipKey)
+          // wrap in the same tick: the row shakes while each block flips to its color inside it.
+          flipKey: 'sf' + (st.sworbGuessSeq || 0),
           wrapStyle: { display: 'inline-block', position: 'relative', animation: (st.sworbShake || 0) > 0 ? 'shakeX 0.4s ease-out' : 'none' },
           burstOn: winning, burst: winning ? this.sworbBurstSparks('sgb') : [],
         };
