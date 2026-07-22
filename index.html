@@ -1441,10 +1441,6 @@ class Component extends DCLogic {
       opacity: st.sheetFading ? 0 : 1, transition: 'opacity 0.2s ease',
       animation: (st.sheetFading || this._hadModal) ? 'none' : 'conIn 0.2s ease' }; // fade in only from NOTHING — sheet→sheet hops keep the backdrop solid
   }
-  // the classic drop mode (v1) was retired — always-full board, words add time. isV2() is
-  // the one remaining flag from that split and is now permanently true (a further baked-
-  // switch collapse candidate — flagged, not done, in the Task 8 report's crap-logic audit).
-  isV2() { return true; }
   // Task 4 (mode collapse): Stackl (the session-only 2-min timed arm) and the fixed-clock
   // puzzle identity it grew out of are both retired — the daily round is the one timed game
   // now. stacklOn()/stacklMode are gone; liveDaily() alone judges the live countdown.
@@ -1467,7 +1463,6 @@ class Component extends DCLogic {
   // (default 5:00), clamped to a sane 30s–15min range. Practice inherits the same clock (its
   // start path just re-anchors to it); the old stackl-only 120/180 split is gone.
   roundSecs() { const n = Math.round(this.optVal('roundSecs', 420)); return Math.max(30, Math.min(900, isFinite(n) ? n : 420)); } // 7:00 — the Sworble Seven reborn as seven minutes
-  isV1() { return !this.isV2(); }
   // Task 4: the daily round PINS the board to 5x6 — clue packing (SWORB_CLUE_COUNT=6) and
   // the leaderboard both depend on every player getting the identical board shape, so the
   // dev cols/rows knobs (settings sheet +/-) must not be able to skew a daily run. Practice
@@ -2241,7 +2236,6 @@ class Component extends DCLogic {
   }
 
   randLetter() { return BAG[Math.floor(this.rand() * BAG.length)]; }
-  randColor() { return Math.floor(this.rand() * PALETTE.length); }
   // the Q tile IS "Qu" (Boggle's fix): displays as Qu, spells as "qu" — never stranded
   dispLetter(l) { return SworbleCore.dispLetter(l); }
   expandLetter(l) { return SworbleCore.expandLetter(l); }
@@ -2258,13 +2252,12 @@ class Component extends DCLogic {
 
   // (smartLetter removed — its logic now lives in the shared dealFromQueue, the single
   //  dealer used by both the live game and the par bot)
-  // v2 colors MEAN something: gold = vowel, pink = premium (5+ pts), violet = mid (2–4),
-  // cyan/green = common consonants. v1 keeps festive random colors.
+  // colors MEAN something: gold = vowel, pink = premium (5+ pts), violet = mid (2–4),
+  // cyan/green = common consonants.
   // sibling hues WITHIN each class (per-tile, deterministic): warm pair = vowels,
   // cool pair = commons. Classes still read as families, but twins can differ —
   // so merged piles fan real color like the logo.
   tileColorFor(letter, id) {
-    if (!this.isV2()) return this.randColor();
     const pick = ((id != null ? id : Math.floor(Math.random() * 2)) * 7 + letter.charCodeAt(0)) % 2;
     if ('aeiou'.includes(letter)) return pick ? 4 : 5;   // amber / coral
     const v = VALUES[letter] || 1;
@@ -2384,7 +2377,7 @@ class Component extends DCLogic {
     }
     const cols = this.cols(), rows = this.rows();
     const tiles = [];
-    const startRows = this.isV2() ? rows : Math.max(2, Math.round(rows * 0.6)); // v2: the grid is ALWAYS full
+    const startRows = rows; // the grid is ALWAYS full
     const dealt = {}; // neighbor-aware dealing: no vowel ponds, no consonant deserts
     for (let c = 0; c < cols; c++) {
       for (let i = 0; i < startRows; i++) {
@@ -2964,30 +2957,6 @@ class Component extends DCLogic {
       this.engineQ.sort((a, b) => a.at - b.at);
       while (this.engineQ.length && this.engineQ[0].at <= now) this.engineQ.shift().fn();
     }
-    // hopper roulette: every second the queued row swaps two letters, so you never
-    // know which column a letter will fall in until it drops (silent, visual only).
-    // Goes quiet for the last 20% of the cycle so the swap can never collide with
-    // the drop + refill animations.
-    const cycleFrac = this.cycleStartAt ? Math.min(1, (now - this.cycleStartAt) / (this.dropMsV || 10000)) : 0;
-    // …and never before the refill cascade has fully landed (1.6s after a reload)
-    if (this.isV1() && !st.nextFresh
-      && (!this.reloadAt || now - this.reloadAt > 2000)
-      && (!this.lastSlotTransEnd || now - this.lastSlotTransEnd > 450) // a slot finished moving <450ms ago = cascade still settling
-      && cycleFrac < 0.8 && st.timeLeft > 10 && (!this.lastHopSwapAt || now - this.lastHopSwapAt > 1000)) {
-      this.lastHopSwapAt = now;
-      const idx = [];
-      st.nextRow.forEach((sl, i2) => { if (sl) idx.push(i2); });
-      if (idx.length >= 2) {
-        const i = idx[Math.floor(Math.random() * idx.length)];
-        let j = idx[Math.floor(Math.random() * idx.length)];
-        if (j === i) j = idx[(idx.indexOf(i) + 1) % idx.length];
-        this.setState(s2 => {
-          const nr = s2.nextRow.slice();
-          const tmp = nr[i]; nr[i] = nr[j]; nr[j] = tmp;
-          return { nextRow: nr, hopSwap: { i, j, n: (s2.hopSwap ? s2.hopSwap.n : 0) + 1 } };
-        });
-      }
-    }
     // --- round clock: ONE-GAME pivot — daily and practice both now run a LIVE countdown
     // off roundEndAt; the old "daily/practice frozen at 9999" split is gone.
     const timeLeft = Math.max(0, (this.roundEndAt - now) / 1000);
@@ -3001,38 +2970,6 @@ class Component extends DCLogic {
       if (ceilNow <= 5) this.sfxTick();
       if (ceilPrev > 60 && ceilNow <= 60 && this.liveDaily(st)) { this.showBanner({ timeWarn: true }); this.sfxTimeWarn(); } // low-time cue on a live daily round's countdown
       this.setState({ timeLeft });
-    }
-    if (this.isV1()) {
-    // --- drop cycle: the FUSE burns right-to-left under the queued letters ---
-    // (fill + spark written straight to the DOM: no render latency)
-    const frac = Math.min(1, (now - this.cycleStartAt) / this.dropMsV);
-    const bar = this.dropBarRef && this.dropBarRef.current;
-    const spark = this.sparkRef && this.sparkRef.current;
-    const feverNow = !!(this.feverUntil && now < this.feverUntil);
-    const fuseColor = feverNow ? '#F5B84A' : frac > 0.88 ? '#E5484D' : frac > 0.7 ? '#F5B84A' : '#46BEFF';
-    if (bar) {
-      if (timeLeft <= 10) {
-        bar.style.width = '0%';
-      } else {
-        bar.style.width = ((1 - frac) * 100) + '%';
-        bar.style.background = fuseColor;
-      }
-    }
-    if (spark) {
-      if (timeLeft <= 10) {
-        spark.style.opacity = '0';
-      } else {
-        spark.style.opacity = '1';
-        spark.style.left = ((1 - frac) * 100) + '%';
-        spark.style.background = fuseColor;
-        spark.style.boxShadow = '0 0 8px 2px ' + fuseColor + ', 0 0 16px 4px ' + (frac > 0.88 ? 'rgba(229,72,77,0.5)' : frac > 0.7 ? 'rgba(245,184,74,0.5)' : 'rgba(70,190,255,0.5)');
-      }
-    }
-    // tremble from 85% to 96% of the fuse, then SETTLE for the final beat — the
-    // release must start from stillness (mid-shake release read as a blink)
-    const dropSoon = frac > 0.85 && frac < 0.96 && timeLeft > 10;
-    if (!!st.dropSoon !== dropSoon) this.setState({ dropSoon });
-    if (frac >= 1 && timeLeft > 10) this.dropRow();
     }
     // (final-countdown red pulse removed per tester feedback — it read as anxiety,
     // not excitement; the clock turning red + last-5s beeps carry the urgency now)
@@ -3127,12 +3064,6 @@ class Component extends DCLogic {
         this.later(() => this.setState(s => (s.idleTip && s.idleTip.key === key) ? { idleTip: null } : null), 3300);
       }
       // (rotating text tips retired — only the one-time stack demo + bomb warning coach now)
-    }
-    // entering the final sprint: the LAST queued row falls now, and the hopper
-    // stays empty for the rest of the round (no more blocks left)
-    if (this.isV1() && timeLeft <= 10 && !this.finalDropFired) {
-      this.finalDropFired = true;
-      if ((st.nextRow || []).some(sl => sl)) this.dropRow();
     }
   }
 
@@ -3539,7 +3470,7 @@ class Component extends DCLogic {
 
   // length multiplier — v2 rewards long words much harder (feedback: 5-letter words
   // felt weak): 4=1.5x, 5=2.5x, 6=4x, 7+=6x. v1 keeps the original curve.
-  lenMult(n) { return SworbleCore.lenMult(n, this.isV2()); }
+  lenMult(n) { return SworbleCore.lenMult(n, true); }
   // streak multiplier: every 3 consecutive words +0.5x, capped at 2x
   streakMult(streak) { return SworbleCore.streakMult(streak); }
 
@@ -4124,14 +4055,14 @@ class Component extends DCLogic {
         this.later(() => this.setState(s => ({ tiles: s.tiles.map(t => t.id === l.id ? { ...t, fallDur: null, fallDelay: null, squash: true } : t) })), l.ms);
         this.later(() => this.setState(s => ({ tiles: s.tiles.map(t => t.id === l.id ? { ...t, squash: false } : t) })), l.ms + 110);
       });
-      // v2: refill launches WITH the survivor drop — one gravity event, not two waves
-      if (this.isV2() && !this.state.over) this.later(() => this.refillBoard(), 0);
+      // refill launches WITH the survivor drop — one gravity event, not two waves
+      if (!this.state.over) this.later(() => this.refillBoard(), 0);
     });
   }
 
-  // v2: drop fresh tiles into every empty cell from above (per-column stacks)
+  // drop fresh tiles into every empty cell from above (per-column stacks)
   refillBoard() {
-    if (!this.isV2() || this.state.over) return;
+    if (this.state.over) return;
     const rows = this.rows(), cols = this.cols();
     const added = [];
     const boardLetters = this.liveTiles().filter(t => !t.clearing).map(t => t.letter); // concurrent dup cap sees the whole board
@@ -4920,7 +4851,7 @@ class Component extends DCLogic {
       // MISS state renders through this same element with the same chip keys, so
       // "not a word" is the blocks you're holding TURNING red (background transition
       // + shake) — a state change, never a view swap.
-      const cs = this.isV1() ? 22 : 28;
+      const cs = 28;
       const rowChips = chips.map(t => ({ id: t.id, l: this.dispLetter(t.letter), c: t.color }));
       return h('div', {
         key: 'path',
@@ -4947,7 +4878,7 @@ class Component extends DCLogic {
     if (b && b.bad) {
       // SAME element key ('path'), SAME chip keys as the live row above — React keeps
       // the DOM nodes, so the chips you were holding flush red in place and shake.
-      const cs = this.isV1() ? 22 : 28;
+      const cs = 28;
       const bchips = (b.chips || []).slice(-9);
       return h('div', {
         key: 'path',
@@ -6137,8 +6068,6 @@ class Component extends DCLogic {
       wbEyebrow: '',
       ...(() => { if (st.screen === 'wordbank') { this._wbCache = this.wordBankVals(); return this._wbCache; } return this._wbCache || {}; })(),
       htBombLine: 'The tiny corner numbers point to where the board\u2019s best words begin. Find a start, thread a long word out of it, and it blasts for a big bonus. More show up as your words run low.',
-      isV1: this.isV1(),
-      isV2Mode: this.isV2(),
       // ------- HOME screen -------
       showHome: st.screen === 'home',
       // identical top offset to the game root, so the wordmark doesn't move on PLAY
@@ -6742,7 +6671,7 @@ class Component extends DCLogic {
         // stay masked). The clip is restored before the refill drops: settle marks the
         // fliers dead first, so this flag is already false when new tiles fall in.
         ...(() => {
-          if (this.isV1() || st.screen === 'home') return { overflow: 'visible' };
+          if (st.screen === 'home') return { overflow: 'visible' };
           // bottom stays open -8px so the clip never eats the card's own 6px ledge (clipPath,
           // unlike overflow, clips the element's OWN paint); and never un-clip while a refill
           // is still dropping in from above — those spawn-above tiles must stay masked
@@ -6970,8 +6899,8 @@ class Component extends DCLogic {
       // once the banner clears. Stable ('m-idle') while idle/swiping so chips don't thrash.
       msgKey: (st.banner && !st.banner.bad) ? ('m' + st.banner.key) : 'm-idle', // bad shares 'm-idle' so the live chips' DOM survives into the red state
       hopperMsgStyle: {
-        // v2: the row is the card's only content — center it (the v1 margin pushed it high)
-        height: this.isV1() ? 40 : 48, marginBottom: this.isV1() ? 9 : 0, width: '100%', display: 'flex',
+        // the row is the card's only content — center it
+        height: 48, marginBottom: 0, width: '100%', display: 'flex',
         alignItems: 'center', justifyContent: 'center', overflow: 'visible',
         position: 'relative',
         // own compositing layer + repaint isolation: iOS Safari otherwise leaves the celebration
