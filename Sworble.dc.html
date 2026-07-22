@@ -454,7 +454,7 @@
       </div>
       <div style="{{ homeDockStyle }}">
         <div style="{{ homeDockInnerStyle }}">
-                  <div style="position:relative; display:flex; flex-direction:column; align-items:center; width:100%; opacity:0; animation:homeRise 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.4s forwards;">
+                  <div key="{{ homeRiseKey }}" style="position:relative; display:flex; flex-direction:column; align-items:center; width:100%; opacity:0; animation:homeRise 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.4s forwards;">
                     <div aria-hidden="true" style="{{ stormWrapStyle }}">
                       <div style="position:absolute; inset:0; filter:blur(19px); background:{{ storm.colorBg }}; animation:{{ storm.animA }};"></div>
                       <div style="position:absolute; inset:0; filter:blur(17px); background:radial-gradient(34px 27px at 36% 52%, rgba(8,6,16,0.92) 0%, transparent 70%), radial-gradient(26px 22px at 58% 46%, rgba(8,6,16,0.86) 0%, transparent 70%), radial-gradient(24px 20px at 82% 60%, rgba(8,6,16,0.82) 0%, transparent 70%), radial-gradient(22px 18px at 14% 46%, rgba(8,6,16,0.8) 0%, transparent 70%); animation:smokeDriftB 17s ease-in-out infinite;"></div>
@@ -1175,6 +1175,14 @@ class Component extends DCLogic {
       if (!opts.g2) {
         delete opts.cols;
         opts.g2 = 1;
+        LS.setItem(K.OPTS, JSON.stringify(opts));
+      }
+      // legacy heal: the mode toggle is gone — dailyMode:false is not a valid persisted
+      // state anymore. A returning user stuck with it from before mode-collapse would boot
+      // to home with homeLeadersVals() gated off (blank slim strip) until the next daily
+      // start healed it late. Heal it here, at boot, so first paint is never stale.
+      if (opts.dailyMode === false) {
+        opts.dailyMode = true;
         LS.setItem(K.OPTS, JSON.stringify(opts));
       }
     } catch (e) {}
@@ -4954,7 +4962,18 @@ class Component extends DCLogic {
 
   homeLeadersVals(st, dailyOn) {
         const on = dailyOn && st.screen === 'home';
-        if (!on) return {};
+        // homeSlim.* renders UNGATED (no sc-if wraps the slim score strip, ~index.html:364-375)
+        // so even the early-return path must hand back a safe dormant shape — belt-and-braces
+        // alongside the boot heal above, in case any other stale/edge state ever lands here.
+        if (!on) return {
+          homeSlim: {
+            youText: '0',
+            youStyle: 'font-family:\'Fredoka\',\'Manrope\',sans-serif; font-weight:600; font-size:18px; color:var(--ghost);',
+            fillStyle: 'position:absolute; left:0; top:50%; transform:translateY(-50%); height:5px; border-radius:999px; width:0%; background:color-mix(in srgb, #8971FF 80%, transparent); filter:blur(1px); box-shadow:0 0 9px -1px #8971FF; opacity:0; transition:width 0.5s cubic-bezier(0.22,1,0.36,1);',
+            knobStyle: 'position:absolute; top:50%; left:2%; transform:translate(-50%,-50%); width:17px; height:17px; border-radius:6px; box-sizing:border-box; background:var(--home-bg); border:2px dashed var(--line); opacity:0.45;',
+            topText: '\u2014',
+          },
+        };
         const fmt = n => (n == null ? '' : Number(n).toLocaleString('en-US'));
         const day = this.dailyKey || this.dayKey(new Date());
         // the daily-status selector is the ONE source for score/played — a live run, a saved
