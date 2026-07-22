@@ -10,13 +10,13 @@ states) · `../mocks/2026-07-22-storm-aurora-blocks-v11.html` (storm feel, blur 
 
 ## The game (all mechanics LOCKED)
 
-> **sworbl:** one daily round. **5:00** on the themed board — spell words for points; the day's
+> **sworbl:** one daily round. **7:00** on the themed board — spell words for points; the day's
 > **6 theme words** bank as clue pills as you find them. At **0:00 the board morphs into the A–Z
 > keyboard**: **6 guesses**, Wordle-colored, to crack the word of the day. Solve it or don't —
 > that was your shot. See you tomorrow.
 
 - **One round per day.** Wordle-style stakes. No replays of the daily (practice mode is the outlet).
-- **Round length: 5:00**, a config knob (dev menu), not hardcoded.
+- **Round length: 7:00** (the Seven, reborn as seven minutes — owner, 2026-07-22), a config knob (dev menu), not hardcoded.
 - **Clues: exactly 6 per day.** The generator pool stays ~10–15 words; the seeder places exactly 6
   (it already proves ≥6 fit — take the first 6 that pack). "6 to find, 6 to crack it."
 - **Finale:** at 0:00 the gameplay board morphs into the built A–Z tile keyboard (reuse the

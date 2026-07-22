@@ -1453,7 +1453,7 @@ class Component extends DCLogic {
   // ONE-GAME pivot: the daily round is now TIMED like everything else — a dev-tunable knob
   // (default 5:00), clamped to a sane 30s–15min range. Practice inherits the same clock (its
   // start path just re-anchors to it); the old stackl-only 120/180 split is gone.
-  roundSecs() { const n = Math.round(this.optVal('roundSecs', 300)); return Math.max(30, Math.min(900, isFinite(n) ? n : 300)); }
+  roundSecs() { const n = Math.round(this.optVal('roundSecs', 420)); return Math.max(30, Math.min(900, isFinite(n) ? n : 420)); } // 7:00 — the Sworble Seven reborn as seven minutes
   isV1() { return !this.isV2(); }
   // Task 4: the daily round PINS the board to 5x6 — clue packing (SWORB_CLUE_COUNT=6) and
   // the leaderboard both depend on every player getting the identical board shape, so the
@@ -7120,8 +7120,8 @@ class Component extends DCLogic {
         this.setState({ opts });
       },
       roundSecsLabel: (() => { const s = this.roundSecs(); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); })(),
-      roundSecsDec: () => this.bumpOpt('roundSecs', -30, 30, 900, 300),
-      roundSecsInc: () => this.bumpOpt('roundSecs', 30, 30, 900, 300),
+      roundSecsDec: () => this.bumpOpt('roundSecs', -30, 30, 900, 420),
+      roundSecsInc: () => this.bumpOpt('roundSecs', 30, 30, 900, 420),
 
       mineDbgLabel: this.optVal('debugMine', false) ? 'ON' : 'OFF',
       mineDbgToggleStyle: this.toggleStyle(this.optVal('debugMine', false)),
