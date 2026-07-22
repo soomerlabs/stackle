@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "description": "sworble — daily word-drop puzzle (GitHub Pages prototype)",
   "scripts": {
-    "lint": "eslint sworble-core.js sworble-daily.js sworble-net.js sworble-run.js sworble-seed.js sworble-solver.js sworble-status.js sworble-store.js words.js tests/*.js",
-    "test": "npm run lint && node tests/sworble-core.test.js && node tests/sworble-status.test.js && node tests/sworble-store.test.js && node tests/sworble-run.test.js && node tests/sworble-net.test.js && node tests/sworble-solver.test.js && node tests/sworble-seed.test.js && node tests/sworble-daily.test.js && node tests/dailies-check.js"
+    "lint": "eslint sworble-core.js sworble-daily.js sworble-flow.js sworble-net.js sworble-run.js sworble-seed.js sworble-solver.js sworble-status.js sworble-store.js words.js tests/*.js",
+    "test": "npm run lint && node tests/sworble-core.test.js && node tests/sworble-status.test.js && node tests/sworble-store.test.js && node tests/sworble-run.test.js && node tests/sworble-net.test.js && node tests/sworble-solver.test.js && node tests/sworble-seed.test.js && node tests/sworble-daily.test.js && node tests/sworble-flow.test.js && node tests/round-lifecycle.test.js && node tests/dailies-check.js"
   },
   "devDependencies": {
     "eslint": "^10.7.0"

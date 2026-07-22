@@ -22,6 +22,7 @@
   <script src="./sworble-status.js?v=2026.07.22-1"></script>
   <script src="./sworble-seed.js?v=2026.07.22-1"></script>
   <script src="./sworble-daily.js?v=2026.07.22-1"></script>
+  <script src="./sworble-flow.js?v=2026.07.22-1"></script>
   <script src="./sworble-net.js?v=2026.07.22-1"></script>
   <script src="./sworble-solver.js?v=2026.07.22-1"></script>
   <style>
@@ -1571,7 +1572,7 @@ class Component extends DCLogic {
   // share one clock (see frame()'s ONE-GAME pivot note) — not yet over, not the untimed finale.
   // THE predicate gating count-in + pause (Task 5c): both surfaces and both auto-pause listeners
   // read this so a hunt is pausable/count-in'd the same way regardless of daily vs. practice.
-  liveHunt(st) { st = st || this.state; return st.screen === 'game' && !st.over && !st.finale; }
+  liveHunt(st) { st = st || this.state; return SworbleFlow.liveHunt(st); }
   // HINT AIDS gate (spec: "during a LIVE ROUND — hunting, not finale, not paused"): the one
   // predicate the token-grant, spend, and mercy-pulse integration points all share, so the
   // three aids can never fire outside a genuine live hunt on an actual sworb day. liveDaily
@@ -2040,7 +2041,9 @@ class Component extends DCLogic {
   // fair-paused (`gamePaused`), or off a live hunt (finale/home/over) — cheap to call from every
   // listener without each one re-deriving the guard.
   forceFairPause() {
-    if (!this.liveHunt(this.state) || this.state.gamePaused) return;
+    // legality decided by SworbleFlow.fairPauseAction (sworble-flow.js) — must still run
+    // DURING a count-in (paused true, gamePaused false), so it can't gate on `paused`.
+    if (SworbleFlow.fairPauseAction({ screen: this.state.screen, over: this.state.over, finale: this.state.finale, gamePaused: this.state.gamePaused }) === 'noop') return;
     if (this.pausedAt == null) this.pausedAt = performance.now(); // freeze the anchor NOW — rAF may not tick again before the setState below commits
     this.cancelCountIn();
     this.setState({ paused: true, gamePaused: true, countIn: null });
@@ -2258,9 +2261,9 @@ class Component extends DCLogic {
   flipStepper() {
     const e = this.dailyEntry();
     if (!e) return; // no sworb today: the strip has one face, nothing to flip
-    const daily = !this.practiceMode() && this.state.screen === 'game';
-    const liveHunting = daily && !this.state.over && !this.state.finale;
-    if (liveHunting || this.state.finale) return;
+    // no-op mid-hunt (nothing to flip to yet) AND mid-finale (locked to the sworb face) —
+    // decided by SworbleFlow.flipStepperAction (sworble-flow.js). Practice is unaffected.
+    if (SworbleFlow.flipStepperAction({ practice: this.practiceMode(), screen: this.state.screen, over: this.state.over, finale: this.state.finale }) === 'noop') return;
     this.sfxClick();
     this.setState(s => {
       const toSworb = s.stepperMode !== 'sworb';
@@ -2351,9 +2354,12 @@ class Component extends DCLogic {
     const colors = SworbleDaily.scoreGuess(raw, e.sworb);
     const res = this.guessSworb(raw);
     if (!res || !res.ok) return;
-    const finale = !!this.state.finale;
+    // SworbleFlow.finaleResolveRoute (sworble-flow.js) picks the exit (finale-solve / solve /
+    // finale-miss-out / miss-out / miss-continue) — pinned by tests; the setState/timer bodies
+    // for each stay here.
+    const route = SworbleFlow.finaleResolveRoute({ finale: !!this.state.finale, correct: res.correct, spent: res.guessesLeft <= 0 });
     if (res.correct) {
-      if (finale) {
+      if (route === 'finale-solve') {
         this.setState(s => ({ sworbColors: colors, sworbWin: true, sworbGuessSeq: (s.sworbGuessSeq || 0) + 1 })); // sworbTyping stays true — see method note
         try { this.sfxWin ? this.sfxWin() : this.sfxOver(); } catch (x) {}
         this.later(() => {
@@ -2373,8 +2379,7 @@ class Component extends DCLogic {
       // diff misses guesses where a kept green/yellow letter's color string is unchanged).
       this.setState(s => ({ sworbColors: colors, sworbGuessSeq: (s.sworbGuessSeq || 0) + 1 }));
       try { this.sfxBad(); } catch (x) {}
-      const spent = res.guessesLeft <= 0;
-      if (finale && spent) {
+      if (route === 'finale-miss-out') {
         this.later(() => {
           this.setState({ sworbSlots: [], sworbColors: null }); // sworbGuess.locked now renders the gray answer on its own
           this.later(() => {
@@ -2382,7 +2387,7 @@ class Component extends DCLogic {
             this.homeReturnAfterRound();
           }, 2000);
         }, 1300);
-      } else if (spent) {
+      } else if (route === 'miss-out') {
         this.later(() => this.setState(s => ({ sworbSlots: [], sworbColors: null, sworbTyping: false, stepperMode: 'play', sworbFlipKey: (s.sworbFlipKey || 0) + 1 })), 1300);
       } else {
         this.later(() => this.setState(s => {
@@ -3045,8 +3050,16 @@ class Component extends DCLogic {
     // function does for a non-finale ending.
     const dailyMode = !this.practiceMode();
     const sworbEntry = dailyMode && this.dailyEntry();
-    const sworbNow = sworbEntry && this.dailyStatus().sworb;
-    const enteringFinale = !!(sworbEntry && sworbNow && sworbNow.active && !sworbNow.solved && sworbNow.guessesLeft > 0);
+    const sworbNow = sworbEntry ? this.dailyStatus().sworb : null;
+    // SworbleFlow.endRoundRoute (sworble-flow.js) owns the finale-gate DECISION (unresolved
+    // daily sworb -> board-morph keyboard; else the over-landing) + whether this exit hops
+    // home itself — pinned by tests. This method keeps the setState/side effects.
+    const rr = SworbleFlow.endRoundRoute({
+      practice: this.practiceMode(), hasEntry: !!sworbEntry,
+      sworbActive: !!(sworbNow && sworbNow.active), sworbSolved: !!(sworbNow && sworbNow.solved),
+      sworbGuessesLeft: sworbNow ? sworbNow.guessesLeft : 0,
+    });
+    const enteringFinale = rr.enteringFinale;
     if (enteringFinale) {
       this.setState({
         timeLeft: 0, over: false, path: [], scoreShown: this.state.score,
@@ -3065,7 +3078,7 @@ class Component extends DCLogic {
     // IS the result (your seven fills, score, YOU on the standing graph — no separate result surface needed).
     // Practice keeps its own on-board modal. The finale skips this landing entirely — sworbSubmit calls
     // homeReturnAfterRound() itself once the finale resolves.
-    if (dailyMode && !enteringFinale) this.homeReturnAfterRound();
+    if (rr.homeReturn) this.homeReturnAfterRound();
   }
   // shared "round -> home" landing (the board celebrates in place for a beat, then the screen
   // hops to home, where the done-state IS the result). Used by endRound's non-finale exit AND
@@ -6574,38 +6587,41 @@ class Component extends DCLogic {
       // the daily round is the ONLY game now, launched directly by startDaily (dock button +
       // swipe-up gesture both call it).
       startDaily: (this._startDaily = () => {
-        // 5b LOW fix (folded into 5c): the HOME finale keyboard is open (tap the hero blocks
-        // on a finale-pending day — see homeHeroTap below) — dock PLAY / swipe-up must never
-        // bounce this to the game screen; enterFinale() would wipe the letters mid-guess.
-        // The player is already guessing right where they are — no-op.
-        if (this.state.finale && this.state.screen === 'home') return;
+        // SworbleFlow.startDailyRoute (sworble-flow.js) owns the DECISION — the zombie-fixed
+        // branch ORDER (home-finale guard > consumed > resume > finale > fresh) is pinned by
+        // tests there; this method keeps only the side effects for each route. See that fn's
+        // comment for why each branch sits where it does.
+        const route = SworbleFlow.startDailyRoute({
+          finale: this.state.finale, onHome: this.state.screen === 'home',
+          consumed: this.dailyConsumed(),
+          dailyLive: this._dailyLive, over: this.state.over, hasTiles: (this.state.tiles || []).length > 0,
+          finalePending: this.finalePending(),
+        });
+        // the HOME finale keyboard is open (player already guessing right where they are) —
+        // a pure no-op that fires BEFORE the click sfx: enterFinale would wipe the letters.
+        if (route === 'home-finale-guard') return;
         this.sfxClick();
-        // DAY CONSUMED — checked FIRST (zombie-run fix): if the day is resolved, no branch
-        // below may run, ESPECIALLY not the in-memory resume (a stale rehydrated snapshot
-        // once matched it and opened a ghost round on a finished day). Kill any such
-        // zombie state on the way out.
-        if (this.dailyConsumed()) {
+        if (route === 'consumed') {
+          // DAY CONSUMED: kill any stale zombie live/tiles snapshot on the way out (a
+          // rehydrated snapshot once matched a finished day and opened a ghost round).
           if (this._dailyLive || (this.state.tiles || []).length) { this.clearRunState(); this._dailyLive = false; }
           return;
         }
-        // RESUME a live, unfinished daily run — you only paused it by visiting home (or the
-        // tab auto-paused). Never re-roll. Task 5c: this is now a FAIR resume, not instant —
-        // land on the game screen already showing the blurred pause overlay (gamePaused) so
-        // the player taps RESUME and runs the same 3·2·1 count-in as a fresh round before the
-        // clock moves again. Covers both a manual leave-and-return AND a reload-at-boot
-        // rehydrate (restoreRun already parked it paused; see restoreRun's atBoot comment).
-        if (this._dailyLive && !this.state.over && (this.state.tiles || []).length) {
+        if (route === 'resume') {
+          // FAIR resume (not instant): land on the game screen already showing the blurred
+          // pause overlay (gamePaused) so RESUME runs the same 3·2·1 count-in a fresh round
+          // gets before the clock moves. Covers a manual leave-and-return AND a boot rehydrate.
           this.setState({ screen: 'game', paused: true, gamePaused: true, countIn: null, sworbTyping: false, stepperMode: 'play' });
           return;
         }
-        // RE-ENTER a pending finale — leaving it early (back/swipe-down) never forfeits it;
-        // PLAY picks the SAME unresolved guess back up instead of dealing a fresh round.
-        if (this.finalePending()) { this.enterFinale(); return; }
-        // (reload-resume happens at BOOT now — componentDidMount rehydrates the saved run
-        // into memory, so the in-memory branch above already covers the reload case)
-        // defensive: home implies daily — heals any missed home-return path. practiceMode is
-        // already cleared on every screen:'home' transition (see _optsHomeReset()), so this is
-        // belt-and-braces insurance against a future path nobody audited, not the primary fix.
+        if (route === 'finale') {
+          // RE-ENTER a pending finale — leaving it early never forfeits it; PLAY picks the SAME
+          // unresolved guess back up instead of dealing a fresh round.
+          this.enterFinale();
+          return;
+        }
+        // route === 'fresh': deal a new round. Defensive: home implies daily — heal any missed
+        // home-return path (practiceMode is already cleared on every screen:'home' transition).
         if (this.practiceMode()) this.setState({ opts: this._optsHomeReset() });
         this.setState({ screen: 'game', sworbTyping: false, stepperMode: 'play' }, () => {
           this.newGame(true);
@@ -6625,7 +6641,7 @@ class Component extends DCLogic {
       // obscured overlay, clock frozen). No-op off a live hunt, mid count-in, or behind an
       // already-open modal (that modal owns its own pause).
       pauseGame: () => {
-        if (!this.liveHunt(this.state) || this.state.paused || this.state.activeModal) return;
+        if (SworbleFlow.pauseAction({ screen: this.state.screen, over: this.state.over, finale: this.state.finale, paused: this.state.paused, activeModal: this.state.activeModal }) === 'noop') return;
         this.sfxClick();
         this.forceFairPause();
         this.saveRunState();
@@ -6636,7 +6652,7 @@ class Component extends DCLogic {
       // pause+count-in span shifts roundEndAt as one gap the instant frame() sees paused go
       // false again.
       resumeGame: () => {
-        if (!this.state.gamePaused) return;
+        if (SworbleFlow.resumeAction({ gamePaused: this.state.gamePaused }) === 'noop') return;
         this.sfxClick();
         this.setState({ gamePaused: false, countIn: 3 }, () => this.armCountIn());
       },

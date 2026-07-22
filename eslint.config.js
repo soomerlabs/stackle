@@ -1,4 +1,4 @@
-// eslint.config.js — flat config (ESLint 10). Scope is DELIBERATELY narrow: the 8 pure
+// eslint.config.js — flat config (ESLint 10). Scope is DELIBERATELY narrow: the 9 pure
 // kernel modules (sworble-*.js), words.js, and tests/*.js. That's it.
 //
 // index.html is NOT linted and NEVER will be by this config: it's ~7k lines of hand-tuned
@@ -64,9 +64,9 @@ const nodeTestGlobals = {
 
 module.exports = [
   {
-    // the 8 pure kernel modules: IIFE scripts, `window.Foo = API` + `module.exports = API`
+    // the 9 pure kernel modules: IIFE scripts, `window.Foo = API` + `module.exports = API`
     // dual-export tail. Mixed var/const/let and function/arrow styles are both native here.
-    files: ['sworble-core.js', 'sworble-daily.js', 'sworble-net.js', 'sworble-run.js',
+    files: ['sworble-core.js', 'sworble-daily.js', 'sworble-flow.js', 'sworble-net.js', 'sworble-run.js',
       'sworble-seed.js', 'sworble-solver.js', 'sworble-status.js', 'sworble-store.js'],
     languageOptions: {
       ecmaVersion: 2022,
