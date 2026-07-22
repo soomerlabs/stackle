@@ -2075,15 +2075,14 @@ class Component extends DCLogic {
   async loadDict() {
     let mod = null;
     // standalone export: the dictionary is baked in as a global — no network, no import
-    if (window.__SWORBLE_WORDS) mod = { FALLBACK_WORDS: window.__SWORBLE_WORDS, REMOTE_URL: window.__SWORBLE_WORDS_URL || '' };
+    if (window.__SWORBLE_WORDS) mod = { FALLBACK_WORDS: window.__SWORBLE_WORDS };
     if (!mod) try { mod = await import('./words.js'); } catch (e) {}
     if (!mod || !mod.FALLBACK_WORDS) {
       // standalone build: dynamic import can 404 — fetch the file and parse it instead
       try {
         const txt = await (await fetch('./words.js')).text();
         const fw = txt.match(/FALLBACK_WORDS\s*=\s*(["'`])([\s\S]*?)\1/);
-        const ru = txt.match(/REMOTE_URL\s*=\s*(["'`])(.*?)\1/);
-        if (fw) mod = { FALLBACK_WORDS: fw[2], REMOTE_URL: ru ? ru[2] : '' };
+        if (fw) mod = { FALLBACK_WORDS: fw[2] };
       } catch (e) {}
     }
     if (!mod || !mod.FALLBACK_WORDS) {
@@ -2092,8 +2091,7 @@ class Component extends DCLogic {
     }
     try {
       const base = new Set(mod.FALLBACK_WORDS.split(/\s+/).filter(w => w.length >= 3));
-      // common words the starter list misses (feedback: "MEGA is not a word?")
-      for (const w of ['mega','demo','memo','vibe','taco','ninja','robot','laser','turbo','combo','pixel','emoji','audio','video','remix']) base.add(w);
+      // (the "MEGA is not a word?" patch words live IN words.js now — one vocabulary source)
       this.commonDict = base; // the small starter list = the "recognizable words" tier; the
       // best-word target prefers it so the reveal shows TOILET, not its obscure anagram ETOILE
       this.dict = base;
@@ -2102,9 +2100,9 @@ class Component extends DCLogic {
       this.setState({ dictNote: 'Dictionary: ' + base.size.toLocaleString() + ' starter words' });
       // BUNDLED dictionary (same-origin ./dictionary.txt, pre-filtered 3-10 letters from
       // the curated Scrabble list): every player validates against the IDENTICAL list, no
-      // third-party fetch to fail or drift. Deliberately NOT read from words.js REMOTE_URL —
-      // a cached words.js must never resurrect the old remote list. Standalone export can
-      // still override via the baked-in global.
+      // third-party fetch to fail or drift. (words.js' old REMOTE_URL export is deleted —
+      // the bundled file is the only source; the standalone export can still override via
+      // the baked-in __SWORBLE_WORDS_URL global.)
       const urls = [window.__SWORBLE_WORDS_URL || './dictionary.txt'];
       for (const url of urls) {
         try {
