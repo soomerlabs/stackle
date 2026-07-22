@@ -726,17 +726,19 @@
                         </div></div>
                       </div>
                     </div>
-                    <sc-if value="{{ dailyNotDone }}" hint-placeholder-val="{{ true }}">
-                      <button onClick="{{ startDaily }}" aria-label="{{ homeSwipeLabel }}" style="position:relative; z-index:1; width:100%; box-sizing:border-box; background:transparent; border:none; padding:8px 0 4px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; font-family:inherit; transition:transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);" style-active="transform:translateY(-5px)">
-                        <span style="font-family:'Material Symbols Rounded'; font-weight:normal; font-size:30px; line-height:0.7; color:#8971FF; font-feature-settings:'liga'; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; animation:swipeUpHint 1.7s ease-in-out infinite, arrowHue 7.2s linear infinite;">keyboard_arrow_up</span>
-                        <span style="font-family:'Fredoka','Manrope',sans-serif; font-size:15px; font-weight:600; letter-spacing:0.3px; color:var(--sheet-ink);">{{ homeSwipeLabel }}</span>
-                      </button>
-                    </sc-if>
-                    <sc-if value="{{ dailyDone }}" hint-placeholder-val="{{ false }}">
-                      <div style="position:relative; z-index:1; width:100%; box-sizing:border-box; padding:8px 0 4px; display:flex; flex-direction:column; align-items:center;">
-                        <span style="{{ homeCountdownPillStyle }}">{{ homeCountdownText }}</span>
+                    <div style="{{ homeDockSlotStyle }}">
+                      <div style="{{ homeSwipeCueStyle }}">
+                        <button onClick="{{ startDaily }}" aria-label="{{ homeSwipeLabel }}" style="position:relative; z-index:1; width:100%; box-sizing:border-box; background:transparent; border:none; padding:8px 0 4px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:4px; font-family:inherit; transition:transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);" style-active="transform:translateY(-5px)">
+                          <span style="font-family:'Material Symbols Rounded'; font-weight:normal; font-size:30px; line-height:0.7; color:#8971FF; font-feature-settings:'liga'; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; animation:swipeUpHint 1.7s ease-in-out infinite, arrowHue 7.2s linear infinite;">keyboard_arrow_up</span>
+                          <span style="font-family:'Fredoka','Manrope',sans-serif; font-size:15px; font-weight:600; letter-spacing:0.3px; color:var(--sheet-ink);">{{ homeSwipeLabel }}</span>
+                        </button>
                       </div>
-                    </sc-if>
+                      <div style="{{ homeCountdownWrapStyle }}">
+                        <div style="position:relative; z-index:1; width:100%; box-sizing:border-box; padding:8px 0 4px; display:flex; flex-direction:column; align-items:center;">
+                          <span style="{{ homeCountdownPillStyle }}">{{ homeCountdownText }}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
         </div>
@@ -1461,6 +1463,14 @@ class Component extends DCLogic {
       finale: false, // THE FINALE: 0:00 board-morph guess-off is live (set by endRound, cleared by sworbSubmit on resolve)
       sworbSlots: [], // position-addressable guess slots (Wordle-persistence: green/yellow letters stay after a miss)
       screen: 'home',
+      // TRANSITION POLISH: mirrors dailyConsumed() for DISPLAY only (storm resting state, dock
+      // swipe-cue<->countdown crossfade) — updated ONLY at boot + on every home "landing tick"
+      // (homeReturnAfterRound/_exitGame), never live off of dailyConsumed() directly. Home stays
+      // mounted-but-hidden while another screen is active (see homeScreenStyle), so a live flip
+      // would run its 0.6s/0.3s transitions entirely off-screen the instant a round ends —
+      // exactly the invisible-transition bug this batch fixes. Boot-time value is the real one
+      // (no transition plays on first paint anyway).
+      homeDoneShown: this.dailyConsumed(),
       dictNote: 'loading dictionary\u2026',
       tileSize: this.initialSize(props), vw: window.innerWidth,
       dropMs: ((opts.dropSeconds ?? (props && props.dropSeconds)) || 10) * 1000,
@@ -1703,6 +1713,11 @@ class Component extends DCLogic {
         if (savedRun) this.restoreRun(savedRun, { atBoot: true });
       }
     } catch (e) {}
+    // TRANSITION POLISH: score-strip pour — scheduled AFTER the restoreRun purge above (it wipes
+    // this.timeouts wholesale) so this timer can't be killed before it ever fires. See
+    // _scheduleStripPour for the mechanism; componentDidUpdate reschedules it on every later
+    // homeSeq bump (every fresh home landing), this call covers the very first (boot) one.
+    this._scheduleStripPour(this.state.homeSeq || 0);
     this.loadHomeLb(); // home versus/champion card needs today's standings
     if (window.__sworbleSoomerRaf) cancelAnimationFrame(window.__sworbleSoomerRaf);
     const loop = (now) => {
@@ -1873,6 +1888,12 @@ class Component extends DCLogic {
 
   componentDidUpdate(prevProps, prevState) {
     if (prevState && prevState.screen !== this.state.screen) { try { document.documentElement.style.setProperty('--navfrost', '0'); } catch (e) {} }
+    // TRANSITION POLISH: score-strip pour replays on EVERY fresh home landing, not just the
+    // very first (componentDidMount already covers boot) — homeSeq is the one signal every
+    // landing path (homeReturnAfterRound, _exitGame, and anything that bumps it later) already
+    // shares, so hooking it here (instead of duplicating a schedule call at every call site) is
+    // the single point of truth. See _scheduleStripPour.
+    if (prevState && (prevState.homeSeq || 0) !== (this.state.homeSeq || 0)) this._scheduleStripPour(this.state.homeSeq || 0);
     if (!prevProps) return;
     if (prevProps.cols !== this.props.cols || prevProps.rows !== this.props.rows) {
       this.applySize();
@@ -1973,6 +1994,21 @@ class Component extends DCLogic {
     }, ms);
     this.timeouts.push(id);
     return id;
+  }
+
+  // TRANSITION POLISH: SCORE-STRIP POUR. homeLeadersVals' fill/knob divs live inside the
+  // homeRiseKey-keyed subtree, so they're brand-new DOM nodes on every fresh home landing — but
+  // homeLeadersVals always computed the FINAL width/left straight away, so the mount's very
+  // first paint already showed the poured-to value; the width/left CSS transitions on those divs
+  // never had a "before" state to animate FROM. Fix: homeLeadersVals renders at the dormant
+  // (0%/2%) look until state.stripPouredSeq catches up to state.homeSeq, then this fires ~30ms
+  // after mount (the app's own later(…, ~30ms) idiom) to flip stripPouredSeq — a genuine style
+  // change on an already-mounted node, so width/left actually transition. Guarded so it only
+  // commits if we're still on the SAME homeSeq by the time the tick lands (a fast homeSeq bump
+  // in between — e.g. an instant re-exit — must not stamp a stale seq) and only once per seq (no
+  // re-pour on repeat home renders, e.g. the countdown tick).
+  _scheduleStripPour(seq) {
+    this.later(() => this.setState(s => ((s.homeSeq || 0) === seq && s.stripPouredSeq !== seq) ? { stripPouredSeq: seq } : null), 30);
   }
 
   // === Task 5c: the shared 3·2·1·GO count-in beat ===
@@ -3064,7 +3100,19 @@ class Component extends DCLogic {
   // hunt alone, or a hunt that ran into the finale — ends on the exact same home landing.
   homeReturnAfterRound() {
     this.later(() => {
-      this.setState({ screen: 'home' });
+      // DOUBLE-FIRE GUARD: a manual exit (_exitGame) during this 1100ms window already lands on
+      // home itself (bumping homeSeq/homeDoneShown there) — if this tick still fired the same
+      // bump on top of that, the homeRise stagger would replay a second time for no reason. Only
+      // actually landing (screen isn't already 'home') gets the bump; already-home is a no-op.
+      this.setState(s => s.screen === 'home' ? null : {
+        screen: 'home',
+        // stagger replay (matches _exitGame's own homeSeq bump) — every finish landing (solve,
+        // miss, timeout) gets a fresh homeRise entrance, not just the very first visit.
+        homeSeq: (s.homeSeq || 0) + 1,
+        // storm/dock resting-state sync happens HERE, once home is about to actually be visible,
+        // so their opacity transitions play on-screen instead of finishing invisibly beforehand.
+        homeDoneShown: this.dailyConsumed(),
+      });
     }, 1100);
   }
   // FINALE SOLVE only: guessSworb's bonus lands AFTER endRound's banking already ran (the
@@ -5574,12 +5622,22 @@ class Component extends DCLogic {
         // above for display, and is otherwise redundant here — a hit (you >= top > 0)
         // already implies you > 0, i.e. played, so the pure fn doesn't need it as an input.
         const { pct: pctNum, hit } = SworbleStatus.progressToTop(bestT, topScoreRaw);
+        // TRANSITION POLISH (SCORE-STRIP POUR): fill/knob mount at the dormant 0%/2% look and
+        // only render their real target once stripPouredSeq catches up to homeSeq (bumped by
+        // _scheduleStripPour ~30ms after every fresh home landing \u2014 see componentDidMount/
+        // componentDidUpdate). Before that tick lands, `show` is false even on a played day, so
+        // the width/left CSS transitions below have an actual "before" state to animate FROM
+        // instead of mounting straight at the poured value. Caps naturally at once-per-homeSeq:
+        // once stripPouredSeq matches, repeat home renders (e.g. the countdown tick) keep
+        // recomputing the SAME show=true values, so nothing re-pours.
+        const poured = (st.stripPouredSeq || -1) === (st.homeSeq || 0);
+        const show = !dormant && poured;
         const homeSlim = {
           youText: dormant ? '0' : fmt(bestT),
           youStyle: 'font-family:\'Fredoka\',\'Manrope\',sans-serif; font-weight:600; font-size:18px; color:' + (dormant ? 'var(--ghost)' : 'var(--sheet-ink)') + ';',
-          fillStyle: 'position:absolute; left:0; top:50%; transform:translateY(-50%); height:5px; border-radius:999px; width:' + (dormant ? 0 : pctNum) + '%; background:color-mix(in srgb, #8971FF 80%, transparent); filter:blur(1px); box-shadow:0 0 9px -1px #8971FF; opacity:' + (dormant ? 0 : 1) + '; transition:width 0.5s cubic-bezier(0.22,1,0.36,1);',
-          knobStyle: dormant
-            ? 'position:absolute; top:50%; left:2%; transform:translate(-50%,-50%); width:17px; height:17px; border-radius:6px; box-sizing:border-box; background:var(--home-bg); border:2px dashed var(--line); opacity:0.45;'
+          fillStyle: 'position:absolute; left:0; top:50%; transform:translateY(-50%); height:5px; border-radius:999px; width:' + (show ? pctNum : 0) + '%; background:color-mix(in srgb, #8971FF 80%, transparent); filter:blur(1px); box-shadow:0 0 9px -1px #8971FF; opacity:' + (show ? 1 : 0) + '; transition:width 0.5s cubic-bezier(0.22,1,0.36,1);',
+          knobStyle: !show
+            ? 'position:absolute; top:50%; left:2%; transform:translate(-50%,-50%); width:17px; height:17px; border-radius:6px; box-sizing:border-box; background:var(--home-bg); border:2px dashed var(--line); opacity:0.45; transition:left 0.5s cubic-bezier(0.22,1,0.36,1);'
             : (hit
               ? 'position:absolute; top:50%; left:' + pctNum + '%; transform:translate(-50%,-50%); width:17px; height:17px; border-radius:6px; box-sizing:border-box; background:#A78BFA; border:none; box-shadow:inset 0 -3px 0 #7C5CE0, 0 0 10px -1px #A78BFA; transition:left 0.5s cubic-bezier(0.22,1,0.36,1);'
               : 'position:absolute; top:50%; left:' + pctNum + '%; transform:translate(-50%,-50%); width:17px; height:17px; border-radius:6px; box-sizing:border-box; background:var(--home-bg); border:2px dashed var(--line); transition:left 0.5s cubic-bezier(0.22,1,0.36,1);'),
@@ -5619,13 +5677,13 @@ class Component extends DCLogic {
     // home. Re-entering (startDaily's resume branch) re-arms gamePaused fresh, still fair.
     this.cancelCountIn();
     if (this._dailyLive && !this.state.over && !this.practiceMode()) {
-      this.setState({ opts, screen: 'home', paused: true, gamePaused: false, countIn: null, path: [], banner: null, homeSeq: (this.state.homeSeq || 0) + 1, ...sworbReset });
+      this.setState({ opts, screen: 'home', paused: true, gamePaused: false, countIn: null, path: [], banner: null, homeSeq: (this.state.homeSeq || 0) + 1, homeDoneShown: this.dailyConsumed(), ...sworbReset });
       this.loadHomeLb();
       return;
     }
     this.timeLeftV = this.roundSecs();
     this.progV = 0;
-    this.setState({ opts, screen: 'home', paused: false, gamePaused: false, countIn: null, over: false, tiles: [], path: [], banner: null, bombArmed: false, boom: null, rattle: 0, score: 0, scoreShown: 0, streak: 0, prog: 0, timeLeft: 120, homeSeq: (this.state.homeSeq || 0) + 1, ...sworbReset });
+    this.setState({ opts, screen: 'home', paused: false, gamePaused: false, countIn: null, over: false, tiles: [], path: [], banner: null, bombArmed: false, boom: null, rattle: 0, score: 0, scoreShown: 0, streak: 0, prog: 0, timeLeft: 120, homeSeq: (this.state.homeSeq || 0) + 1, homeDoneShown: this.dailyConsumed(), ...sworbReset });
     this.loadHomeLb();
   }
   renderVals() {
@@ -6137,8 +6195,15 @@ class Component extends DCLogic {
               // here. Gray stays reserved for missed CLUE pills only (see homeClueFan below).
               const pal = PALETTE[this.tileColorFor(answer[i].toLowerCase(), i)] || PALETTE[0];
               // THE SOLVE DETONATES (home context — finale continued from home): same fast
-              // 60ms-staggered pop as the in-game stepper, gated to the transient win instant only.
-              const pop = winning ? ('animation:bombIn 0.3s cubic-bezier(0.34, 1.5, 0.55, 1) ' + (i * 0.06).toFixed(2) + 's backwards;') : '';
+              // 60ms-staggered pop as the in-game stepper. TRANSITION POLISH: was gated to the
+              // transient `winning` instant only, which plays entirely OFF-SCREEN — home sits
+              // hidden (opacity:0) for the whole finale celebration on the game screen, and
+              // sworbWin already resets to false in the same tick that hands off to
+              // homeReturnAfterRound, well before home is ever shown. Gating on solved||failed
+              // instead means these blocks are freshly created (this whole subtree remounts
+              // every homeSeq bump) exactly when the arrival is actually visible, so the pop
+              // plays on-screen — for BOTH a win reveal and a lost-finale reveal.
+              const pop = (solved || failed) ? ('animation:bombIn 0.3s cubic-bezier(0.34, 1.5, 0.55, 1) ' + (i * 0.06).toFixed(2) + 's backwards;') : '';
               blocks.push({ k: 'hh' + i, ch: answer[i], style: box + ' color:#1F1442; background:' + pal.bg + '; box-shadow:inset 0 -4px 0 ' + pal.edge + ', ' + blockShadow + ';' + pop });
             } else if (guessing) {
               const ch = (slots[i] || '').toUpperCase();
@@ -6806,11 +6871,24 @@ class Component extends DCLogic {
       // CSS rule above (see the storm keyframes block). document.hidden is folded in too
       // (part c) — onVis (componentDidMount) forceUpdates on visibilitychange so this
       // recomputes the instant the tab is backgrounded/foregrounded, not just on screen swaps.
-      stormWrapStyle: 'position:absolute; left:0; right:0; bottom:' + (mobile ? 'calc(-16px - env(safe-area-inset-bottom))' : '-22px') + '; height:260px; overflow:hidden; pointer-events:none; z-index:0; opacity:' + (this.dailyConsumed() ? 0.4 : 1) + '; filter:saturate(' + (this.dailyConsumed() ? 0.55 : 1) + '); transition:opacity 0.6s ease, filter 0.6s ease; animation-play-state:' + ((st.screen === 'home' && !document.hidden) ? 'running' : 'paused') + ';',
-      // hides the swipe-up dock once today's daily is fully spent (dailyConsumed) — a played
-      // day has nothing left to (re)start; the v18 dock instead shows the countdown below.
-      dailyNotDone: !this.dailyConsumed(),
-      dailyDone: this.dailyConsumed(),
+      // TRANSITION POLISH: was live this.dailyConsumed() + a `filter 0.6s ease` transition leg —
+      // dailyConsumed() flips the instant a round ends (endRound writes DONE_PREFIX synchronously),
+      // well before home is actually visible (home sits opacity:0/visibility:hidden while another
+      // screen is active), so the whole 0.6s ease played out fully off-screen. Now driven by
+      // homeDoneShown (only updated once home is about to be shown — see homeReturnAfterRound/
+      // _exitGame) so the opacity fade is actually seen. filter is still a static state
+      // difference (brewing vs resting look different instantly) but is no longer itself
+      // animated — de-compositing filter transitions are exactly what this batch avoids adding.
+      stormWrapStyle: 'position:absolute; left:0; right:0; bottom:' + (mobile ? 'calc(-16px - env(safe-area-inset-bottom))' : '-22px') + '; height:260px; overflow:hidden; pointer-events:none; z-index:0; opacity:' + (st.homeDoneShown ? 0.4 : 1) + '; filter:saturate(' + (st.homeDoneShown ? 0.55 : 1) + '); transition:opacity 0.6s ease; animation-play-state:' + ((st.screen === 'home' && !document.hidden) ? 'running' : 'paused') + ';',
+      // DOCK CROSSFADE (was a hard sc-if swap): swipe-up cue and countdown pill are now BOTH
+      // always mounted, stacked in one CSS-grid cell (homeDockSlotStyle) — swapping is a pure
+      // opacity crossfade, zero height shift, same idiom as homeHintsLayerStyle/homeKbLayerStyle
+      // above. Gated on homeDoneShown (not live dailyConsumed()) for the same reason as
+      // stormWrapStyle: dailyConsumed() flips off-screen mid-landing, which would otherwise burn
+      // the whole 0.3s crossfade invisibly before home is ever shown.
+      homeDockSlotStyle: { position: 'relative', width: '100%', display: 'grid' },
+      homeSwipeCueStyle: { gridColumn: '1', gridRow: '1', opacity: st.homeDoneShown ? 0 : 1, pointerEvents: st.homeDoneShown ? 'none' : 'auto', transition: 'opacity 0.3s ease' },
+      homeCountdownWrapStyle: { gridColumn: '1', gridRow: '1', opacity: st.homeDoneShown ? 1 : 0, pointerEvents: st.homeDoneShown ? 'auto' : 'none', transition: 'opacity 0.3s ease' },
       nextPuzzleIn: (() => { try { const ms = SworbleCore.msToNextDay(new Date()); const h = Math.floor(ms / 3600000); const m = Math.floor((ms % 3600000) / 60000); return h > 0 ? (h + 'h ' + m + 'm') : (m + 'm'); } catch (e) { return ''; } })(),
       // v18 dock countdown: H:MM:SS to the next dailyKey rollover (local midnight), re-read
       // fresh every render — _tickHomeCountdown (componentDidMount) forces a render each
