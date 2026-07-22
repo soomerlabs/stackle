@@ -302,7 +302,6 @@
             </div>
             <div style="{{ sworbGuess.captionStyle }}">{{ sworbGuess.caption }}</div>
           </div>
-          <div style="{{ stepperHintStyle }}">{{ stepperHintGlyph }}</div>
         </sc-if>
       </div>
 
@@ -341,6 +340,16 @@
             </div>
           </sc-if>
         </div>
+        <sc-if value="{{ boardPauseShow }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ boardPauseCoverStyle }}">
+            <span style="{{ boardPauseGlyphStyle }}">pause_circle</span>
+            <div style="{{ boardPauseTitleStyle }}">paused</div>
+            <div style="{{ boardPauseTimeStyle }}">{{ pauseRemainingText }} left</div>
+            <button onClick="{{ resumeGame }}" style="{{ pauseResumeBtnStyle }}">RESUME</button>
+            <!-- keep settings reachable mid-round without leaving pause -->
+            <button onClick="{{ openSettings }}" style="{{ boardPauseSettingsBtnStyle }}">SETTINGS</button>
+          </div>
+        </sc-if>
       </div>
       <sc-if value="{{ clueFan.show }}" hint-placeholder-val="{{ false }}">
         <div style="{{ clueFan.wrapStyle }}">
@@ -386,27 +395,21 @@
     </div>
   </div>
 
-  <!-- LIVE-PLAYTEST item B: count-in + pause overlays live at ROOT level now (siblings of the
-       appBar div above), not nested inside the game wrap's z10 stacking context. A stacking
-       context traps ALL descendant z-index values, including position:fixed ones, inside its own
-       slot in the parent's paint order — so the overlays' old z55 only ever competed against
-       OTHER game-wrap children, never against the home/profile/lb/wordbank screen layers sitting
-       beside the wrap at root. Moved out here, they get real root-level z-index (60/58) that
-       properly outranks every screen layer. Show-conditions are unchanged (still gate on
-       screen==='game' — see countInShow/pauseOverlayShow) so neither renders on home. -->
+  <!-- LIVE-PLAYTEST item B: count-in overlay lives at ROOT level (sibling of the appBar div
+       above), not nested inside the game wrap's z10 stacking context. A stacking context traps
+       ALL descendant z-index values, including position:fixed ones, inside its own slot in the
+       parent's paint order — so the old z55 only ever competed against OTHER game-wrap children,
+       never against the home/profile/lb/wordbank screen layers sitting beside the wrap at root.
+       Moved out here, it gets a real root-level z-index (60) that properly outranks every screen
+       layer. Show-condition is unchanged (still gates on screen==='game' — see countInShow) so it
+       never renders on home.
+       Fair-pause is NO LONGER a full-screen overlay here — owner feedback called the old root-
+       level takeover too heavy. It now lives BOARD-LOCAL (see boardPauseShow/boardPauseCoverStyle
+       in the board card template above): only the tile grid gets covered/blurred, the rest of the
+       game screen (HUD, stepper, clue fan) stays visible and un-dimmed. -->
   <sc-if value="{{ countInShow }}" hint-placeholder-val="{{ false }}">
     <div style="{{ countInOverlayStyle }}">
       <div key="{{ countInKey }}" style="{{ countInTextStyle }}">{{ countInText }}</div>
-    </div>
-  </sc-if>
-  <sc-if value="{{ pauseOverlayShow }}" hint-placeholder-val="{{ false }}">
-    <div style="{{ pauseOverlayStyle }}">
-      <span style="{{ pauseOverlayGlyphStyle }}">pause_circle</span>
-      <div style="{{ pauseOverlayTitleStyle }}">paused</div>
-      <div style="{{ pauseOverlayTimeStyle }}">{{ pauseRemainingText }} left</div>
-      <button onClick="{{ resumeGame }}" style="{{ pauseResumeBtnStyle }}">RESUME</button>
-      <!-- LIVE-PLAYTEST item D: settings stays reachable mid-round without leaving pause -->
-      <button onClick="{{ openSettings }}" style="{{ pauseSettingsBtnStyle }}">SETTINGS</button>
     </div>
   </sc-if>
 
@@ -5903,6 +5906,9 @@ class Component extends DCLogic {
               ptsStyle: 'font-size:11.5px; font-weight:700; opacity:0.65;',
             };
           });
+          // a partially-played day (1-4 banked words) still fills out to 5 slots — pad the
+          // rest with the same dashed ghost blocks the pre-play state uses, filled first.
+          for (let i = items.length; i < 5; i++) items.push({ k: 'sw' + i, word: '', pts: '', style: ghostStyle, ptsStyle: 'display:none;' });
           return { show: true, items };
         } catch (e) { return { show: true, items: [] }; }
       })(),
@@ -6528,6 +6534,7 @@ class Component extends DCLogic {
         background: 'var(--card)', borderRadius: 20, padding: '12px 12px ' + (12 + Math.max(3, Math.round(st.tileSize * 0.08))) + 'px', margin: '12px auto 0',
         boxShadow: '0 6px 0 var(--card-edge)', display: 'flex', justifyContent: 'center',
         width: boardW + 24, boxSizing: 'border-box',
+        position: 'relative', // anchors the board-local pause cover (boardPauseCoverStyle) below
         // v2 refills enter the well from behind the card's top edge (Tetris-style);
         // without the clip they floated visibly over the message card before falling.
         // v1 stays unclipped: its rows hand off from the hopper across the gap.
@@ -6603,35 +6610,41 @@ class Component extends DCLogic {
         textShadow: '0 4px 0 rgba(0,0,0,0.28)', lineHeight: 1,
         animation: (st.countIn === 'GO' ? 'countPopGo' : 'countPop') + ' 0.5s cubic-bezier(0.34,1.56,0.64,1)',
       },
-      // FAIR PAUSE: full-screen blur/obscure (no free scanning) + remaining time + RESUME,
-      // which replays the count-in above rather than snapping straight back to a running clock.
-      pauseOverlayShow: !!st.gamePaused && st.screen === 'game', // defense-in-depth: never stranded showing over another screen
-      // LIVE-PLAYTEST item B: moved to ROOT level alongside countInOverlayStyle, z-index 58 (just
-      // under the count-in's 60, so a resume-triggered count-in still wins if both are ever
-      // mid-transition at once).
-      pauseOverlayStyle: {
-        position: 'fixed', inset: 0, zIndex: 58, display: 'flex', flexDirection: 'column', gap: 14,
-        alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 32px', boxSizing: 'border-box',
-        background: dark ? 'rgba(16,16,20,0.88)' : 'rgba(237,239,247,0.9)',
-        backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)',
+      // FAIR PAUSE (owner feedback: "I don't like the full-screen UI"): now BOARD-LOCAL — only
+      // the tile grid's card gets covered, the rest of the game screen (HUD, stepper, clue fan)
+      // stays visible and un-dimmed. Lives inside the board card template (boardCardRef), which
+      // is now position:'relative' to anchor this inset cover. Input is already locked via the
+      // existing `paused` guards (boardDown etc.) — this cover also physically blocks tile taps.
+      boardPauseShow: !!st.gamePaused && st.screen === 'game', // defense-in-depth: never stranded showing over another screen
+      boardPauseCoverStyle: {
+        position: 'absolute', inset: 0, zIndex: 45, borderRadius: 20, // matches boardCardStyle's own corner radius
+        display: 'flex', flexDirection: 'column', gap: 8,
+        alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 16px', boxSizing: 'border-box',
+        // fixed candy-dark, not theme-conditional: letters underneath must never be readable in
+        // EITHER theme, and near-opaque + blur together make sure of it regardless of tile color.
+        background: 'rgba(16,16,20,0.94)',
+        backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
         opacity: (st.gamePaused && st.screen === 'game') ? 1 : 0, pointerEvents: (st.gamePaused && st.screen === 'game') ? 'auto' : 'none',
         transition: 'opacity 0.22s ease',
       },
-      pauseOverlayGlyphStyle: { fontFamily: "'Material Symbols Rounded'", fontWeight: 'normal', fontSize: 52, lineHeight: 1, color: 'var(--ink)', fontFeatureSettings: "'liga'", WebkitFontFeatureSettings: "'liga'", WebkitFontSmoothing: 'antialiased' },
-      pauseOverlayTitleStyle: { fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 26, fontWeight: 600, letterSpacing: 0.5, color: 'var(--ink)', textTransform: 'uppercase' },
-      pauseOverlayTimeStyle: { fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 16, fontWeight: 600, color: 'var(--ghost)', fontVariantNumeric: 'tabular-nums' },
+      boardPauseGlyphStyle: { fontFamily: "'Material Symbols Rounded'", fontWeight: 'normal', fontSize: 38, lineHeight: 1, color: '#FFFFFF', fontFeatureSettings: "'liga'", WebkitFontFeatureSettings: "'liga'", WebkitFontSmoothing: 'antialiased' },
+      boardPauseTitleStyle: { fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 19, fontWeight: 600, letterSpacing: 0.5, color: '#FFFFFF', textTransform: 'uppercase' },
+      boardPauseTimeStyle: { fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.72)', fontVariantNumeric: 'tabular-nums' },
       pauseRemainingText: (() => { const shown = Math.max(0, Math.ceil(st.timeLeft)); return Math.floor(shown / 60) + ':' + String(shown % 60).padStart(2, '0'); })(),
+      // RESUME: unchanged shape/handler, reused as-is on the board-local cover.
       pauseResumeBtnStyle: {
         marginTop: 8, background: '#8971FF', color: '#FFFFFF', border: 'none', borderRadius: 14,
         padding: '13px 34px', fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 15, fontWeight: 800,
         letterSpacing: 0.8, cursor: 'pointer', boxShadow: '0 4px 0 #5A43C9', WebkitTapHighlightColor: 'transparent',
       },
-      // LIVE-PLAYTEST item D: secondary ghost button on the pause overlay so settings stays
-      // reachable mid-round without leaving pause (mirrors pauseResumeBtnStyle's shape/sizing).
-      pauseSettingsBtnStyle: {
-        marginTop: 2, background: 'transparent', color: 'var(--ghost)', border: '2px solid var(--line)', borderRadius: 14,
-        padding: '11px 30px', fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 13, fontWeight: 800,
-        letterSpacing: 0.8, cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
+      // small ghost button so settings stays reachable mid-round without leaving pause — sized
+      // down from the old full-screen version to fit the narrower board card, and colored against
+      // the cover's fixed dark background rather than var(--ghost)/var(--line) (which would go
+      // near-invisible in light mode against a background that no longer follows the theme).
+      boardPauseSettingsBtnStyle: {
+        marginTop: 0, background: 'transparent', color: 'rgba(255,255,255,0.72)', border: '2px solid rgba(255,255,255,0.32)', borderRadius: 12,
+        padding: '8px 20px', fontFamily: "'Fredoka','Manrope',sans-serif", fontSize: 11.5, fontWeight: 800,
+        letterSpacing: 0.6, cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
       },
       sheetRef: this.sheetRef,
       // idle stack-coach ghost: a translucent twin slides from tile A onto tile B
@@ -6870,12 +6883,6 @@ class Component extends DCLogic {
       // (scale+fade) in BOTH directions; the grid wells behind it stay put as the frame.
       boardMorphKey: 'bm' + (st.sworbTyping ? 't' : 'a'),
       boardMorphLayerStyle: { position: 'absolute', inset: 0, animation: 'boardMorph 0.28s ease both' },
-      stepperHintStyle: {
-        position: 'absolute', top: 6, right: 8, zIndex: 4, fontFamily: "'Material Symbols Rounded'",
-        fontSize: 15, lineHeight: 1, color: 'var(--ghost)', opacity: 0.65, pointerEvents: 'none',
-        fontFeatureSettings: "'liga'", WebkitFontFeatureSettings: "'liga'",
-      },
-      stepperHintGlyph: st.stepperMode === 'sworb' ? 'sync' : 'flip_camera_android',
       // ---- CLUE FAN: the 5 clue words live as tile-block pills fanned + drifting under the
       // board (replaces the old CLUES stat cell). Found clues flip face-up in their candy
       // color; unfound stay ghosted with their length as a length hint. Gentle bob like the
