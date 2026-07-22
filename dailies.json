@@ -56,5 +56,130 @@
       "weed",
       "sprout"
     ]
+  },
+  "2026-07-23": {
+    "sworb": "storm",
+    "themeWords": [
+      "cold",
+      "warm",
+      "gale",
+      "haze",
+      "snow",
+      "sunny",
+      "foggy",
+      "gusty",
+      "humid",
+      "muggy",
+      "chill",
+      "squall",
+      "breeze"
+    ]
+  },
+  "2026-07-24": {
+    "sworb": "chorus",
+    "themeWords": [
+      "song",
+      "beat",
+      "drum",
+      "bass",
+      "horn",
+      "tempo",
+      "choir",
+      "organ",
+      "cello",
+      "banjo",
+      "piano",
+      "guitar",
+      "encore"
+    ]
+  },
+  "2026-07-25": {
+    "sworb": "batter",
+    "themeWords": [
+      "bake",
+      "cake",
+      "loaf",
+      "malt",
+      "flour",
+      "sugar",
+      "yeast",
+      "knead",
+      "glaze",
+      "crumb",
+      "pastry",
+      "muffin"
+    ]
+  },
+  "2026-07-26": {
+    "sworb": "rocket",
+    "themeWords": [
+      "star",
+      "moon",
+      "void",
+      "dust",
+      "comet",
+      "orbit",
+      "solar",
+      "lunar",
+      "flare",
+      "probe",
+      "galaxy",
+      "meteor",
+      "cosmos"
+    ]
+  },
+  "2026-07-27": {
+    "sworb": "canopy",
+    "themeWords": [
+      "tree",
+      "bark",
+      "pine",
+      "glen",
+      "grove",
+      "trail",
+      "acorn",
+      "maple",
+      "birch",
+      "cedar",
+      "timber",
+      "willow",
+      "branch"
+    ]
+  },
+  "2026-07-28": {
+    "sworb": "hammer",
+    "themeWords": [
+      "nail",
+      "bolt",
+      "file",
+      "rasp",
+      "drill",
+      "screw",
+      "level",
+      "blade",
+      "clamp",
+      "gauge",
+      "pliers",
+      "chisel",
+      "wrench"
+    ]
+  },
+  "2026-07-29": {
+    "sworb": "shadow",
+    "themeWords": [
+      "dusk",
+      "dark",
+      "glow",
+      "veil",
+      "quiet",
+      "sleep",
+      "dream",
+      "shade",
+      "cloak",
+      "haunt",
+      "candle",
+      "silent",
+      "gloomy"
+    ]
   }
 }
