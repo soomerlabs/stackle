@@ -14,4 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: npm ci   # eslint is the repo's first devDependency (lint gates npm test)
       - run: npm test
