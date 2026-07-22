@@ -17,7 +17,8 @@
       "swell",
       "spray",
       "abyss"
-    ]
+    ],
+    "definition": "the vast body of salt water that covers most of the earth"
   },
   "2026-07-21": {
     "sworb": "kitchen",
@@ -37,7 +38,8 @@
       "stove",
       "grill",
       "sink"
-    ]
+    ],
+    "definition": "the room where meals are cooked and prepared"
   },
   "2026-07-22": {
     "sworb": "bloom",
@@ -55,7 +57,8 @@
       "moss",
       "weed",
       "sprout"
-    ]
+    ],
+    "definition": "to produce flowers; to flourish or thrive"
   },
   "2026-07-23": {
     "sworb": "storm",
@@ -74,7 +77,8 @@
       "squall",
       "breeze",
       "thunder"
-    ]
+    ],
+    "definition": "a violent weather disturbance with wind, rain, or thunder"
   },
   "2026-07-24": {
     "sworb": "chorus",
@@ -92,7 +96,8 @@
       "piano",
       "guitar",
       "encore"
-    ]
+    ],
+    "definition": "the part of a song sung by many voices together; a refrain"
   },
   "2026-07-25": {
     "sworb": "batter",
@@ -109,7 +114,8 @@
       "crumb",
       "pastry",
       "muffin"
-    ]
+    ],
+    "definition": "a beaten mixture of flour, eggs, and liquid, ready for baking"
   },
   "2026-07-26": {
     "sworb": "rocket",
@@ -128,7 +134,8 @@
       "meteor",
       "cosmos",
       "gravity"
-    ]
+    ],
+    "definition": "a vehicle propelled by burning fuel, built to leave the earth"
   },
   "2026-07-27": {
     "sworb": "canopy",
@@ -146,7 +153,8 @@
       "timber",
       "willow",
       "branch"
-    ]
+    ],
+    "definition": "the uppermost leafy layer of a forest, spread like a roof"
   },
   "2026-07-28": {
     "sworb": "hammer",
@@ -164,7 +172,8 @@
       "pliers",
       "chisel",
       "wrench"
-    ]
+    ],
+    "definition": "a hand tool with a weighted head, used for driving nails"
   },
   "2026-07-29": {
     "sworb": "shadow",
@@ -182,6 +191,7 @@
       "candle",
       "silent",
       "gloomy"
-    ]
+    ],
+    "definition": "the dark shape cast when a body blocks the light"
   }
 }

@@ -30,7 +30,8 @@ fences — just the raw JSON, shaped exactly like this:
 {
   "YYYY-MM-DD": {
     "sworb": "ocean",
-    "themeWords": ["tide", "coral", "wave", "reef", "salt", "shore", "kelp", "surf", "foam", "brine", "pearl", "shell", "swell", "spray", "abyss"]
+    "themeWords": ["tide", "coral", "wave", "reef", "salt", "shore", "kelp", "surf", "foam", "brine", "pearl", "shell", "swell", "spray", "abyss"],
+    "definition": "the vast body of salt water that covers most of the earth"
   },
   "YYYY-MM-DD": {
     "sworb": "...",
@@ -39,7 +40,9 @@ fences — just the raw JSON, shaped exactly like this:
 }
 ```
 
-One top-level key per day, keys in ascending date order.
+One top-level key per day, keys in ascending date order. **Every day includes a `definition`** —
+one clean, dictionary-style sentence for the sworb (lowercase, no leading article fuss, ≤14 words,
+elegant not clinical: it's shown to the player as the day's payoff — "word of the day" style).
 
 ### HARD RULES (guardrail-enforced — `node tests/dailies-check.js` fails the whole day if any is violated)
 
@@ -87,7 +90,8 @@ One top-level key per day, keys in ascending date order.
 ```json
 "2026-07-20": {
   "sworb": "ocean",
-  "themeWords": ["tide", "coral", "wave", "reef", "salt", "shore", "kelp", "surf", "foam", "brine", "pearl", "shell", "swell", "spray", "abyss"]
+  "themeWords": ["tide", "coral", "wave", "reef", "salt", "shore", "kelp", "surf", "foam", "brine", "pearl", "shell", "swell", "spray", "abyss"],
+    "definition": "the vast body of salt water that covers most of the earth"
 },
 "2026-07-21": {
   "sworb": "galley",
