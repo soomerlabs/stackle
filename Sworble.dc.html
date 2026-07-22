@@ -2717,20 +2717,33 @@ class Component extends DCLogic {
   // when the new score beats the standing best, so a re-call the SAME as before writes nothing.
   bankFinaleBonus() {
     if (this.practiceMode()) return;
+    const d = this.dailyKey || this.dayKey(new Date());
+    // FINALE RE-ENTRY: exiting mid-finale resets state.score to 0 (_exitGame's home reset),
+    // and a reload lands enterFinale on the fresh-boot default — either way state.score at
+    // solve time is bonus-ONLY (guessSworb does `score = (s.score||0) + bonus`), not the true
+    // day total. Reconstruct it from sources that survive re-entry: the standing daily best
+    // (same value mergeDailySeven/dailySeven read) + the persisted bonus (sw.bonus, saved by
+    // guessSworb — read it directly rather than inferring from score deltas). Uninterrupted
+    // play has state.score == storedBest + bonus already (they're equal); re-entry has
+    // state.score == bonus alone (storedBest + bonus wins) — Math.max is correct either way.
+    const storedBest = parseInt(LS.getItem(K.DAILY_PREFIX + d) || '0', 10) || 0;
+    const bonus = this.sworbState().bonus || 0;
+    const banked = Math.max(this.state.score || 0, storedBest + bonus);
     try {
-      const best = this.mergeDailySeven(this.state.roundWords, this.state.score);
+      const best = this.mergeDailySeven(this.state.roundWords, banked);
       this._tb = best; this._tbKey = this.dailyKey;
     } catch (e) {}
     try {
-      const d = this.dailyKey || this.dayKey(new Date()), k = K.PUZZLE_BEST_PREFIX + d, p = Number(LS.getItem(k) || 0) || 0;
-      if ((this.state.score || 0) > p) LS.setItem(k, String(this.state.score || 0));
+      const k = K.PUZZLE_BEST_PREFIX + d, p = Number(LS.getItem(k) || 0) || 0;
+      if (banked > p) LS.setItem(k, String(banked));
     } catch (e) {}
     // RUNS history: endRound already pushed the pre-finale score at 0:00 — replace that same
-    // entry with the bonus-inflated final score rather than pushing a second one (one run per day).
+    // entry with the banked total, but never DOWNWARD (re-entry's banked total is reconstructed,
+    // not authoritative over an already-correct entry) — one run per day, never regressed.
     try {
-      const d = this.dailyKey || this.dayKey(new Date()), rk = K.RUNS_PREFIX + d;
+      const rk = K.RUNS_PREFIX + d;
       const runs = JSON.parse(LS.getItem(rk) || '[]');
-      if (runs.length) runs[runs.length - 1] = this.state.score || 0;
+      if (runs.length) runs[runs.length - 1] = Math.max(runs[runs.length - 1] || 0, banked);
       LS.setItem(rk, JSON.stringify(runs.slice(-40)));
     } catch (e) {}
     this.submitDaily();
@@ -6038,7 +6051,7 @@ class Component extends DCLogic {
         try {
           const LS = SworbleStore.LS, K = SworbleStore.K;
           const day = this.dailyKey || this.dayKey(new Date());
-          [K.DONE_PREFIX, K.DAILY_PREFIX, K.SEVEN_PREFIX, K.RUNS_PREFIX, K.ATT_PREFIX, K.TIME_PREFIX, K.FOUND_PREFIX, K.TARGETS_PREFIX, K.PUZZLE_BEST_PREFIX, K.PUZZLE_PAR_PREFIX, K.RUN_PREFIX].forEach(p => { try { LS.removeItem(p + day); } catch (e) {} });
+          [K.DONE_PREFIX, K.DAILY_PREFIX, K.SEVEN_PREFIX, K.RUNS_PREFIX, K.ATT_PREFIX, K.TIME_PREFIX, K.FOUND_PREFIX, K.TARGETS_PREFIX, K.PUZZLE_BEST_PREFIX, K.PUZZLE_PAR_PREFIX, K.RUN_PREFIX, K.SWORB_PREFIX, K.THEME_PREFIX].forEach(p => { try { LS.removeItem(p + day); } catch (e) {} });
           [K.LB_ME_PREFIX + day, K.LB_ME_PREFIX + day + '|puzzle'].forEach(k => { try { LS.removeItem(k); } catch (e) {} }); // leaderboard "me" submit (board id = day OR day|puzzle) — else YOU lingers on the standing graph
         } catch (e) {}
         this._dailyLive = false;
