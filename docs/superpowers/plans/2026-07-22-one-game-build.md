@@ -143,8 +143,9 @@ finale) / `done` (after-state). No `armedMode`, no picker, one leaderboard parti
 
 ### Task 5: Home v18 rebuild
 
-**Files:** Modify `index.html` home template (360-480 region: keep nav/date/divider; REBUILD the
-body to v18: word blocks + fan(4/2) → link-bar → standings graph → dock) + its render-vals
+**Files:** Modify `index.html` home template (360-480 region: keep nav; header becomes ONE subtitle
+line `TUESDAY JULY 21 · Nº 214` (big date + "daily puzzle" copy REMOVED) + divider; REBUILD the
+body to v18: word blocks + fan(4/2) → link-bar → best-words strip → standings graph (no title) → dock) + its render-vals
 (`homeSworb` → word-light blocks/pills; NEW `progBar` vals {scoreBig, topScore, topName, pct,
 chaseLine, hit, dormant}; standings vals gain per-node `check` + YOU ring (exists); dock vals
 {chevron+"swipe up to play"} vs {countdown to next dailyKey}); floaters table (grep `FLOATERS`
@@ -162,9 +163,13 @@ skeleton (no layout shift between them).
   (found = candy pill w/ ledge, unfound = dashed ghost) — replaces the old sworb card + tag/hint
   lines. Delete `modePicker` remnants (Task 4) and the old "sworb safe"/"standings" list rows the
   v18 layout drops.
-- [ ] Step 2: progress-to-top link-bar under the fan (per mock: bigScore+pts / crown+top·name /
-  dashed track / glowing fill at `min(100, round(you/top*100))%` / dashed-block knob → candy
-  `hit` when you ≥ top / chase line `▲ N to overtake NAME` / pct). Dormant styling pre-play.
+- [ ] Step 2: progress-to-top link-bar under the fan (per mock: bigScore+pts / crown+topScore+
+  leaderName (no "TOP·" prefix) / dashed track / glowing fill at `min(100, round(you/top*100))%` /
+  dashed-block knob → candy `hit` when you ≥ top). NO chase line, NO percentage. Under the bar:
+  **best-words strip** — top 5 distinct words by pts as candy word-blocks (word + small pts,
+  PALETTE colors + ledge), ONE horizontal-scroll row (`overflow-x`, hidden scrollbar); pre-play =
+  5 dashed ghost blocks. Data: `dailyStatus().seven.words.slice(0,5)` (the words-list machinery —
+  this is its NEW home surface). Dormant styling pre-play.
 - [ ] Step 3: standings graph — add the mint ✓ mini-tile on solver nodes; order from Task 4.
 - [ ] Step 4: dock — before: chevron + Fredoka "swipe up to play"; after: countdown ONLY
   (`H:MM:SS` to next dailyKey, ticking). Entrance stagger (`rise` pattern) on all sections.

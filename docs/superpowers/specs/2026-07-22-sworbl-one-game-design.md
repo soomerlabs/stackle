@@ -36,10 +36,11 @@ states) · `../mocks/2026-07-22-storm-aurora-blocks-v11.html` (storm feel, blur 
 
 ONE page (no pager, no mode picker), two states sharing an IDENTICAL skeleton so nothing shifts:
 
-**Skeleton (top → bottom):** iOS-normal nav (profile · logo-tile+wordmark · settings) → eyebrow
-(`SWORBL · Nº 214`) → big lowercase Fredoka date (`tuesday july 21`, MD in violet) → divider →
-**word-of-the-day blocks** → **clue fan** (4 pills top row / 2 bottom row) → **progress-to-top
-link-bar** → **standings x/y graph** → storm + dock.
+**Skeleton (top → bottom):** iOS-normal nav (profile · logo-tile+wordmark · settings) → ONE
+subtitle line (`TUESDAY JULY 21 · Nº 214`, eyebrow style — NO big date, NO "daily puzzle" copy) →
+divider → **word-of-the-day blocks** → **clue fan** (4 pills top row / 2 bottom row) →
+**progress-to-top link-bar** → **top-5 best-words strip** → **standings x/y graph** (NO section
+title — it flows directly) → storm + dock.
 
 - **Before play:** dashed empty word blocks; 6 dashed ghost pill slots (4/2); link-bar dormant
   (gray `0 pts`, fully dashed path, dashed block at the start, `▲ 1,480 to overtake maya · 0%`);
@@ -47,9 +48,11 @@ link-bar** → **standings x/y graph** → storm + dock.
   Fredoka **"swipe up to play"**.
 - **After play (solved):** word revealed as **candy gameplay tiles** (per-letter PALETTE color +
   ledge, ink `#1F1442`); found clues as candy pills + remaining ghosts; link-bar alive (big Fredoka
-  `1,240 pts`, crown + `1,480 / TOP · MAYA` right, glowing violet **link-line** drawn to 84% over
-  the dashed path, **dashed block riding the head** — fills candy violet with ledge only when you
-  ACTUALLY beat the top (`hit` state), `▲ 240 to overtake maya · 84%`); YOU ringed violet on the
+  `1,240 pts`, crown + `1,480` + leader name right — NO "TOP·" prefix, NO chase line, NO
+  percentage; glowing violet **link-line** drawn proportionally over the dashed path, **dashed
+  block riding the head** — fills candy violet with ledge only when you ACTUALLY beat the top
+  (`hit` state)); under the bar, **top-5 best words** as candy word-blocks (word + small pts) in
+  ONE horizontally-scrolling row (pre-play: 5 dashed ghost blocks); YOU ringed violet on the
   graph with your mint ✓; storm **dim/desaturated** (it did its job); dock = countdown timer ONLY
   (`14:32:11`, Fredoka violet — no label).
 - **After play (not solved):** identical, except the word reveals in **GRAY blocks** (candy colors

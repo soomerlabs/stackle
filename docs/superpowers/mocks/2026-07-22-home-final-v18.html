@@ -49,7 +49,7 @@
   .date .d2c{color:var(--violet)}
   .divider{height:1.5px;background:var(--line);margin-top:16px}
 
-  .sworb{margin-top:30px;display:flex;flex-direction:column;align-items:center;gap:16px;position:relative;z-index:3}
+  .sworb{margin-top:26px;display:flex;flex-direction:column;align-items:center;gap:16px;position:relative;z-index:3}
   .blocks{display:flex;gap:7px}
   .blk{flex:none;width:54px;height:60px;border-radius:13px;display:flex;align-items:center;justify-content:center;
     font-family:'Fredoka','Manrope',sans-serif;font-size:28px;font-weight:600;background:transparent;border:2.5px dashed var(--line);color:var(--sheet-ink)}
@@ -94,6 +94,13 @@
   .knob{position:absolute;top:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:8px;
     background:var(--home-bg);border:2.5px dashed var(--line);box-sizing:border-box}
   .knob.hit{border:none;background:#A78BFA;box-shadow:inset 0 -3px 0 #7C5CE0, 0 0 14px -2px #A78BFA}
+  /* best words — one horizontal-scroll row of candy word blocks */
+  .bw{display:flex;gap:9px;overflow-x:auto;padding:2px 2px 8px;-ms-overflow-style:none;scrollbar-width:none}
+  .bw::-webkit-scrollbar{display:none}
+  .bwb{flex:none;display:flex;align-items:baseline;gap:7px;padding:9px 15px;border-radius:12px;
+    font-family:'Fredoka','Manrope',sans-serif;font-weight:600;font-size:15.5px;color:#1F1442}
+  .bwb small{font-size:11.5px;font-weight:700;opacity:.65}
+  .bwb.gst{background:transparent!important;box-shadow:none!important;border:2px dashed var(--line);color:transparent;min-width:74px;height:38px}
   .progFoot{display:flex;align-items:center;justify-content:space-between}
   .chase{display:flex;align-items:center;gap:7px;font-family:'Fredoka','Manrope',sans-serif;font-weight:600;font-size:14.5px;color:#A78BFA}
   .chase .tri{width:0;height:0;border-left:5.5px solid transparent;border-right:5.5px solid transparent;border-bottom:8px solid #A78BFA}
@@ -175,9 +182,8 @@
           <span class="navic">settings</span>
         </div>
 
-        <div class="eyebrow rise d1">daily puzzle &middot; N&ordm; 214</div>
-        <div class="date rise d1"><span>tuesday</span><span class="d2c">july 21</span></div>
-        <div class="divider rise d1"></div>
+        <div class="eyebrow rise d1">tuesday july 21 &middot; N&ordm; 214</div>
+        <div class="divider rise d1" style="margin-top:12px"></div>
 
         <div class="sworb rise d2" style="margin-top:26px">
           <div class="blocks"><div class="blk"></div><div class="blk"></div><div class="blk"></div><div class="blk"></div><div class="blk"></div></div>
@@ -190,14 +196,15 @@
         <div class="prog rise d3">
           <div class="progHead">
             <div class="bigScore"><b style="color:#4A4A56">0</b><span>pts</span></div>
-            <div class="topSide"><div class="topLine"><svg width="19" height="13" viewBox="0 0 34 24" fill="none"><path d="M3 21 L2 7 L10 13 L17 3 L24 13 L32 7 L31 21 Z" fill="#8971FF" stroke="#6A4FE0" stroke-width="1.5" stroke-linejoin="round"/><circle cx="2" cy="6.5" r="2.4" fill="#8971FF"/><circle cx="32" cy="6.5" r="2.4" fill="#8971FF"/><circle cx="17" cy="2.6" r="2.4" fill="#8971FF"/></svg><b>1,480</b></div><div class="topCap">top &middot; maya</div></div>
+            <div class="topSide"><div class="topLine"><svg width="19" height="13" viewBox="0 0 34 24" fill="none"><path d="M3 21 L2 7 L10 13 L17 3 L24 13 L32 7 L31 21 Z" fill="#8971FF" stroke="#6A4FE0" stroke-width="1.5" stroke-linejoin="round"/><circle cx="2" cy="6.5" r="2.4" fill="#8971FF"/><circle cx="32" cy="6.5" r="2.4" fill="#8971FF"/><circle cx="17" cy="2.6" r="2.4" fill="#8971FF"/></svg><b>1,480</b></div><div class="topCap">maya</div></div>
           </div>
           <div class="track"><div class="fill" style="width:0%"></div><div class="knob" style="left:2%;opacity:.45"></div></div>
-          <div class="progFoot"><div class="chase" style="color:var(--ghost)"><span class="tri" style="border-bottom-color:var(--ghost)"></span>1,480 to overtake maya</div><span class="pct">0%</span></div>
+          <div class="bw">
+            <span class="bwb gst">.</span><span class="bwb gst">.</span><span class="bwb gst">.</span><span class="bwb gst">.</span><span class="bwb gst">.</span>
+          </div>
         </div>
 
         <div class="stand rise d4">
-          <div class="standHead"><span class="sname">standings</span><span class="sicon">leaderboard</span></div>
           <div class="graph">
             <span class="axlbl" style="left:2px;top:-6px">y</span>
             <span class="axlbl" style="right:30px;bottom:-4px">x</span>
@@ -266,9 +273,8 @@
           <span class="navic">settings</span>
         </div>
 
-        <div class="eyebrow rise d1">daily puzzle &middot; N&ordm; 214</div>
-        <div class="date rise d1"><span>tuesday</span><span class="d2c">july 21</span></div>
-        <div class="divider rise d1"></div>
+        <div class="eyebrow rise d1">tuesday july 21 &middot; N&ordm; 214</div>
+        <div class="divider rise d1" style="margin-top:12px"></div>
 
         <div class="sworb rise d3" style="margin-top:26px">
           <div class="blocks">
@@ -283,14 +289,19 @@
         <div class="prog rise d3">
           <div class="progHead">
             <div class="bigScore"><b>1,240</b><span>pts</span></div>
-            <div class="topSide"><div class="topLine"><svg width="19" height="13" viewBox="0 0 34 24" fill="none"><path d="M3 21 L2 7 L10 13 L17 3 L24 13 L32 7 L31 21 Z" fill="#8971FF" stroke="#6A4FE0" stroke-width="1.5" stroke-linejoin="round"/><circle cx="2" cy="6.5" r="2.4" fill="#8971FF"/><circle cx="32" cy="6.5" r="2.4" fill="#8971FF"/><circle cx="17" cy="2.6" r="2.4" fill="#8971FF"/></svg><b>1,480</b></div><div class="topCap">top &middot; maya</div></div>
+            <div class="topSide"><div class="topLine"><svg width="19" height="13" viewBox="0 0 34 24" fill="none"><path d="M3 21 L2 7 L10 13 L17 3 L24 13 L32 7 L31 21 Z" fill="#8971FF" stroke="#6A4FE0" stroke-width="1.5" stroke-linejoin="round"/><circle cx="2" cy="6.5" r="2.4" fill="#8971FF"/><circle cx="32" cy="6.5" r="2.4" fill="#8971FF"/><circle cx="17" cy="2.6" r="2.4" fill="#8971FF"/></svg><b>1,480</b></div><div class="topCap">maya</div></div>
           </div>
           <div class="track"><div class="fill" style="width:84%"></div><div class="knob" style="left:84%"></div></div>
-          <div class="progFoot"><div class="chase"><span class="tri"></span>240 to overtake maya</div><span class="pct">84%</span></div>
+          <div class="bw">
+            <span class="bwb" style="background:#A78BFA;box-shadow:inset 0 -3px 0 #7C5CE0">shoal<small>420</small></span>
+            <span class="bwb" style="background:#5FD6A8;box-shadow:inset 0 -3px 0 #38AD7F">waves<small>180</small></span>
+            <span class="bwb" style="background:#F5B84A;box-shadow:inset 0 -3px 0 #CE9022">reef<small>150</small></span>
+            <span class="bwb" style="background:#5BC8F5;box-shadow:inset 0 -3px 0 #2E9FD0">tides<small>140</small></span>
+            <span class="bwb" style="background:#F58FB8;box-shadow:inset 0 -3px 0 #D06090">salt<small>120</small></span>
+          </div>
         </div>
 
         <div class="stand rise d4">
-          <div class="standHead"><span class="sname">standings</span><span class="sicon">leaderboard</span></div>
           <div class="graph" style="aspect-ratio:282/188">
             <svg width="100%" height="100%" viewBox="0 0 282 188" preserveAspectRatio="none" style="position:absolute;inset:0;z-index:0;overflow:visible">
               <path d="M5 172 Q3 88 7 4" fill="none" stroke="var(--ghost)" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.5"/>
