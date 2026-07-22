@@ -1304,8 +1304,10 @@ class Component extends DCLogic {
   }
   // The daily round is the baked default game context — no toggle, no persisted flag. Practice
   // is the one opt-in exception: startPractice sets opts.practiceMode:true for the session ONLY
-  // (never saveOpts'd, so it can never leak into a reload or a returning visit); every path back
-  // to home (_exitGame) clears it again. Absent/false opts.practiceMode == daily, unconditionally.
+  // (never saveOpts'd, so it can never leak into a reload or a returning visit); every setState
+  // that transitions screen -> 'home' clears it again via _optsHomeReset() (see _exitGame,
+  // lbBack, wbBack, profileBack), plus a defensive re-heal in startDaily. Absent/false
+  // opts.practiceMode == daily, unconditionally.
   practiceMode() { return !!this.optVal('practiceMode', false); }
   // fade-out for sheet dismissal: keep the sheet mounted, drop scrim opacity to 0,
   // then apply the real state change once the 200ms transition has finished
@@ -5239,11 +5241,18 @@ class Component extends DCLogic {
         };
       }
 
+  // shared "home == daily default" invariant (C1 fix): practiceMode is a session-only opt-in
+  // (see startPractice) that must never survive a trip back to home. Every setState that
+  // transitions screen -> 'home' applies this same opts patch, not just _exitGame — lbBack/
+  // wbBack/profileBack all route through screens (lb/wordbank/profile) that are reachable
+  // right after a practice round ends, so skipping this on those paths let practiceMode leak
+  // into the next PLAY (silent: practice board, no daily seed/banking/DONE).
+  _optsHomeReset() { return { ...(this.state.opts || {}), practiceMode: false }; }
   _exitGame() {
     this.sfxClick();
     // leaving the game screen always exits practice (session-only opt-in) back to the baked
     // daily default — practiceMode never survives a trip through home.
-    const opts = { ...(this.state.opts || {}), practiceMode: false };
+    const opts = this._optsHomeReset();
     // leaving the board drops any in-progress sworb typing + returns the stepper to play.
     // finale:false here is a display reset ONLY — leaving mid-finale doesn't forfeit it
     // (finalePending/enterFinale re-derive "still pending" from persisted state on the way back in).
@@ -5839,7 +5848,7 @@ class Component extends DCLogic {
         } catch (e) { return { show: true, items: [] }; }
       })(),
       goWordBank: () => { if (this._swiped) return; this.sfxClick(); this.setState({ screen: 'wordbank', wbQuery: '' }); },
-      wbBack: () => { this.sfxClick(); this.setState({ screen: 'home' }); },
+      wbBack: () => { this.sfxClick(); this.setState({ opts: this._optsHomeReset(), screen: 'home' }); },
       // ---- BELOW-HINTS SWAP SLOT (v15 pattern, Task 5b/5): superlatives+standings <-> the
       // finale-continued A-Z keyboard, stacked in the same CSS-grid cell (gridColumn/Row:1 on
       // both layers) so the slot always sizes to the taller of the two — swapping never
@@ -6132,8 +6141,10 @@ class Component extends DCLogic {
         if (this.dailyConsumed()) return;
         // (reload-resume happens at BOOT now — componentDidMount rehydrates the saved run
         // into memory, so the in-memory branch above already covers the reload case)
-        // no opts write needed here: practiceMode is cleared on every path back to home
-        // (_exitGame), so it's already false by the time PLAY can reach this branch.
+        // defensive: home implies daily — heals any missed home-return path. practiceMode is
+        // already cleared on every screen:'home' transition (see _optsHomeReset()), so this is
+        // belt-and-braces insurance against a future path nobody audited, not the primary fix.
+        if (this.practiceMode()) this.setState({ opts: this._optsHomeReset() });
         this.setState({ screen: 'game', sworbTyping: false, stepperMode: 'play' }, () => {
           this.newGame(true);
           if (this.firstRunPending) this.setState({ activeModal: 'howto', modalW: 350, paused: true });
@@ -6280,7 +6291,7 @@ class Component extends DCLogic {
           if (scr === 'home' && dy < 0 && (!el || el.scrollTop <= 4) && this._startDaily) { this._startDaily(); } // swipe-up GESTURE always starts THE daily round, same as the dock BUTTON
           return;
         }
-        if (scr === 'wordbank' && dx > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) { this.sfxClick(); this.setState({ screen: 'home' }); }
+        if (scr === 'wordbank' && dx > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) { this.sfxClick(); this.setState({ opts: this._optsHomeReset(), screen: 'home' }); }
       },
       homeScreenStyle: {
         position: 'fixed', inset: 0, zIndex: 20, boxSizing: 'border-box',
@@ -6635,7 +6646,7 @@ class Component extends DCLogic {
       statsBtnHover: { borderColor: '#8971FF', color: '#8971FF' },
       statsBtnActive: { transform: 'scale(0.97)' },
       closeStats: () => { this.sfxClick(); this.closeModal(); },
-      profileBack: () => { this.sfxClick(); this.setState({ screen: 'home' }); },
+      profileBack: () => { this.sfxClick(); this.setState({ opts: this._optsHomeReset(), screen: 'home' }); },
       editName: () => this.goModal('name'),
       profileName: (this.playerName || 'you').toUpperCase(),
       profileSince: (() => { try { let s = LS.getItem(K.SINCE); if (!s) { s = String(Date.now()); LS.setItem(K.SINCE, s); } const d = new Date(Number(s) || Date.now()); return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase(); } catch (e) { return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase(); } })(),
@@ -6653,7 +6664,7 @@ class Component extends DCLogic {
       ...((st.screen === 'profile' || st.activeModal === 'stats') ? this.statsVals() : {}),
       openLb: () => { if (this._swiped) return; this.doOpenLb(); },
       closeLb: () => { this.sfxClick(); this.closeModal(); },
-      lbBack: () => { this.sfxClick(); this.setState({ screen: 'home', over: false, justFinished: false }); this.loadHomeLb(); },
+      lbBack: () => { this.sfxClick(); this.setState({ opts: this._optsHomeReset(), screen: 'home', over: false, justFinished: false }); this.loadHomeLb(); },
       lbScreenStyle: {
         position: 'fixed', inset: 0, zIndex: 25, boxSizing: 'border-box', background: 'var(--home-bg)',
         overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch',
