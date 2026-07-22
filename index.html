@@ -3578,39 +3578,9 @@ class Component extends DCLogic {
     const prevPt = this.lastPt2; // previous move's point — the interpolation baseline
     let path = this.state.path.slice(); // local copy: interpolation may add several tiles this move; commit once at the end
 
-    // BACKTRACK MAGNET — retracing must feel as easy as selecting. Selection gets
-    // predictive scoring, but unlinking needed a dead-center hit on the previous
-    // tile (cellAt's tight mid-word radius returns null in the gaps). Now anywhere
-    // near the previous tile pops the last one — very close always counts, and the
-    // radius widens when the finger is clearly traveling back toward it.
-    if (path.length > 1) {
-      const bEl = this.boardRef.current;
-      const bR = bEl ? bEl.getBoundingClientRect() : null;
-      const prevTile = this.byId(path[path.length - 2]);
-      if (bR && prevTile) {
-        const sz = this.state.tileSize, cellB = sz + this.gap(sz);
-        const dx = (nowPt.x - bR.left) - (prevTile.col * cellB + sz / 2);
-        const dy = (nowPt.y - bR.top) - (prevTile.row * cellB + sz / 2);
-        const d = Math.hypot(dx, dy);
-        const hlen = Math.hypot(this.hx || 0, this.hy || 0);
-        // ±40° cone (was ±70°): a diagonal step past the previous tile is 45° off
-        // straight-back and must NOT read as a retrace
-        const headingBack = hlen > 2 && ((-dx * this.hx - dy * this.hy) / (hlen * Math.max(1, d))) > 0.75;
-        // finger sitting in a NEW linkable tile's core = aiming at a new link — never pop
-        let aimingNew = false;
-        const fx = nowPt.x - bR.left, fy = nowPt.y - bR.top;
-        const fc = Math.floor(fx / cellB), fr = Math.floor(fy / cellB);
-        if (fr >= 0 && fr < this.rows() && fc >= 0 && fc < this.cols()) {
-          const tn = this.tileAt(fr, fc);
-          if (tn && !path.includes(tn.id) && Math.hypot(fx - (fc * cellB + sz / 2), fy - (fr * cellB + sz / 2)) < sz * 0.55) aimingNew = true;
-        }
-        if (!aimingNew && (d < sz * 0.5 || (headingBack && d < sz * 0.85))) {
-          this.setState({ path: path.slice(0, -1) });
-          this.sfxPop();
-          return;
-        }
-      }
-    }
+    // BACKTRACK MAGNET (T3 split → _backtrackMagnet): retracing near the previous tile pops
+    // the last one. Pops + returns here when it fires — the rest of the move is skipped.
+    if (this._backtrackMagnet(nowPt, path)) return;
 
     // FAST-SWIPE INTERPOLATION — pointermove events land 1+ tiles apart on a quick
     // flick; sampling only the current point skips the crossed tile, and with
@@ -3653,63 +3623,10 @@ class Component extends DCLogic {
       if (idxIn !== -1 && idxIn < path.length - 1) { path = path.slice(0, idxIn + 1); changed = true; this.sfxPop(); continue; }
       const last = this.byId(path[path.length - 1]);
       if (!last || path.includes(t.id) || !this.adjacent(last, t)) continue;
-      // PREDICTIVE acceptance (leading point only): two signals, blended —
-      //   position: where the finger sits relative to the anchor tile (noise-free)
-      //   heading:  the smoothed EMA of travel (captures intent through curves)
-      // A candidate joins only as the CLEAR top-scorer; near-ties defer a few px
-      // until the finger disambiguates. Deferral, never rejection.
-      if (leading) {
-        const bEl = this.boardRef.current;
-        const bR = bEl ? bEl.getBoundingClientRect() : null;
-        if (bR) {
-          const sz = this.state.tileSize;
-          const cellA = sz + this.gap(sz);
-          const pvx = (pt.x - bR.left) - (last.col * cellA + sz / 2);
-          const pvy = (pt.y - bR.top) - (last.row * cellA + sz / 2);
-          const plen = Math.hypot(pvx, pvy);
-          const hlen = Math.hypot(this.hx || 0, this.hy || 0);
-          const useH = hlen > 2.5;
-          // DEEP-CENTER OVERRIDE — finger sitting in the candidate's inner core is
-          // positional certainty; prediction must never veto it (the deferral could
-          // stall a tile the finger was dead-center on when the heading disagreed)
-          const deep = Math.hypot(
-            (pt.x - bR.left) - (t.col * cellA + sz / 2),
-            (pt.y - bR.top) - (t.row * cellA + sz / 2)) < sz * 0.4;
-          if (!deep && plen > sz * 0.3) {
-            // VELOCITY-ADAPTIVE blend (spatiotemporal): a fast flick's heading EMA is
-            // committed intent — trust it up to 50%; a slow crawl is wobble — lean on
-            // position (~72/28). hlen ≈ px/event, so /90 maps flicks into the cap.
-            const hw = useH ? Math.min(0.5, 0.28 + hlen / 90) : 0;
-            const score = (cdx, cdy) => {
-              const clen = Math.hypot(cdx, cdy);
-              const pd = (pvx * cdx + pvy * cdy) / (plen * clen);
-              const hd = useH ? ((this.hx * cdx + this.hy * cdy) / (hlen * clen)) : pd;
-              return (1 - hw) * pd + hw * hd;
-            };
-            // DICTIONARY BIAS (gesture-keyboard style): a candidate that keeps the
-            // path a valid word prefix gets a small nudge over one that kills it —
-            // ties break toward what the player could actually be spelling. Prefix
-            // set only covers ≤6 chars; beyond that no tile gets the nudge (no info).
-            let cur = '';
-            for (const pid of path) { const pt2 = this.byId(pid); if (pt2) cur += this.expandLetter(pt2.letter); }
-            const pBias = (tile) => {
-              const s2 = cur + this.expandLetter(tile.letter);
-              return (s2.length <= 6 && this.prefixes && this.prefixes.has(s2)) ? 0.06 : 0;
-            };
-            // margin deferral: a candidate joins only as the clear top-scorer;
-            // near-ties wait a few px for the finger to commit (defer, never reject)
-            const mine = score(t.col - last.col, t.row - last.row) + pBias(t);
-            if (mine < 0.2) continue; // not where this swipe is going
-            let best = -1;
-            for (const nb of this.liveTiles()) {
-              if (nb.clearing || nb.spawn || nb.fallDur || path.includes(nb.id) || !this.adjacent(last, nb)) continue;
-              const d = score(nb.col - last.col, nb.row - last.row) + pBias(nb);
-              if (d > best) best = d;
-            }
-            if (mine < best - 0.09) continue; // near-tie: wait for the finger to commit
-          }
-        }
-      }
+      // PREDICTIVE acceptance (leading point only, T3 split → _predictiveDefer): position +
+      // heading blended; a candidate joins only as the CLEAR top-scorer, near-ties defer a
+      // few px until the finger commits (deferral = `continue`, never rejection).
+      if (leading && this._predictiveDefer(t, last, pt, path)) continue;
       // RETROACTIVE TRANSIT FIX — the fat-thumb diagonal: leaving a tile at ~45°, the
       // thumb's first px of travel often genuinely reads "right", so the orthogonal
       // flank wins the score fairly and no margin can stop it — then the REAL target
@@ -3736,6 +3653,93 @@ class Component extends DCLogic {
       this.setState({ path });
       if (sfxLen) this.sfxSelect(sfxLen);
     }
+  }
+
+  // BACKTRACK MAGNET (extracted from boardMove, T3): near the previous tile, or clearly
+  // heading back toward it, pop the last link. Returns true (and pops + sfx) when it fires,
+  // so the caller aborts the rest of the move; false = no retrace this frame.
+  _backtrackMagnet(nowPt, path) {
+    if (path.length <= 1) return false;
+    const bEl = this.boardRef.current;
+    const bR = bEl ? bEl.getBoundingClientRect() : null;
+    const prevTile = this.byId(path[path.length - 2]);
+    if (!(bR && prevTile)) return false;
+    const sz = this.state.tileSize, cellB = sz + this.gap(sz);
+    const dx = (nowPt.x - bR.left) - (prevTile.col * cellB + sz / 2);
+    const dy = (nowPt.y - bR.top) - (prevTile.row * cellB + sz / 2);
+    const d = Math.hypot(dx, dy);
+    const hlen = Math.hypot(this.hx || 0, this.hy || 0);
+    // ±40° cone (was ±70°): a diagonal step past the previous tile is 45° off
+    // straight-back and must NOT read as a retrace
+    const headingBack = hlen > 2 && ((-dx * this.hx - dy * this.hy) / (hlen * Math.max(1, d))) > 0.75;
+    // finger sitting in a NEW linkable tile's core = aiming at a new link — never pop
+    let aimingNew = false;
+    const fx = nowPt.x - bR.left, fy = nowPt.y - bR.top;
+    const fc = Math.floor(fx / cellB), fr = Math.floor(fy / cellB);
+    if (fr >= 0 && fr < this.rows() && fc >= 0 && fc < this.cols()) {
+      const tn = this.tileAt(fr, fc);
+      if (tn && !path.includes(tn.id) && Math.hypot(fx - (fc * cellB + sz / 2), fy - (fr * cellB + sz / 2)) < sz * 0.55) aimingNew = true;
+    }
+    if (!aimingNew && (d < sz * 0.5 || (headingBack && d < sz * 0.85))) {
+      this.setState({ path: path.slice(0, -1) });
+      this.sfxPop();
+      return true;
+    }
+    return false;
+  }
+
+  // PREDICTIVE acceptance (leading point only, extracted from boardMove, T3). Blends finger
+  // position vs the anchor tile with the smoothed heading EMA, plus a dictionary-prefix nudge;
+  // a candidate joins only as the clear top-scorer. Returns true when the swipe should DEFER
+  // this candidate a few px (the caller's `continue`) — never a hard rejection. A deep-center
+  // hit or a null board rect always accepts (returns false).
+  _predictiveDefer(t, last, pt, path) {
+    const bEl = this.boardRef.current;
+    const bR = bEl ? bEl.getBoundingClientRect() : null;
+    if (!bR) return false;
+    const sz = this.state.tileSize;
+    const cellA = sz + this.gap(sz);
+    const pvx = (pt.x - bR.left) - (last.col * cellA + sz / 2);
+    const pvy = (pt.y - bR.top) - (last.row * cellA + sz / 2);
+    const plen = Math.hypot(pvx, pvy);
+    const hlen = Math.hypot(this.hx || 0, this.hy || 0);
+    const useH = hlen > 2.5;
+    // DEEP-CENTER OVERRIDE — finger sitting in the candidate's inner core is positional
+    // certainty; prediction must never veto it (the deferral could stall a tile the finger
+    // was dead-center on when the heading disagreed)
+    const deep = Math.hypot(
+      (pt.x - bR.left) - (t.col * cellA + sz / 2),
+      (pt.y - bR.top) - (t.row * cellA + sz / 2)) < sz * 0.4;
+    if (deep || plen <= sz * 0.3) return false;
+    // VELOCITY-ADAPTIVE blend (spatiotemporal): a fast flick's heading EMA is committed
+    // intent — trust it up to 50%; a slow crawl is wobble — lean on position (~72/28).
+    // hlen ≈ px/event, so /90 maps flicks into the cap.
+    const hw = useH ? Math.min(0.5, 0.28 + hlen / 90) : 0;
+    const score = (cdx, cdy) => {
+      const clen = Math.hypot(cdx, cdy);
+      const pd = (pvx * cdx + pvy * cdy) / (plen * clen);
+      const hd = useH ? ((this.hx * cdx + this.hy * cdy) / (hlen * clen)) : pd;
+      return (1 - hw) * pd + hw * hd;
+    };
+    // DICTIONARY BIAS (gesture-keyboard style): a candidate that keeps the path a valid word
+    // prefix gets a small nudge over one that kills it. Prefix set only covers ≤6 chars.
+    let cur = '';
+    for (const pid of path) { const pt2 = this.byId(pid); if (pt2) cur += this.expandLetter(pt2.letter); }
+    const pBias = (tile) => {
+      const s2 = cur + this.expandLetter(tile.letter);
+      return (s2.length <= 6 && this.prefixes && this.prefixes.has(s2)) ? 0.06 : 0;
+    };
+    // margin deferral: a candidate joins only as the clear top-scorer; near-ties wait a few px
+    const mine = score(t.col - last.col, t.row - last.row) + pBias(t);
+    if (mine < 0.2) return true; // not where this swipe is going
+    let best = -1;
+    for (const nb of this.liveTiles()) {
+      if (nb.clearing || nb.spawn || nb.fallDur || path.includes(nb.id) || !this.adjacent(last, nb)) continue;
+      const d = score(nb.col - last.col, nb.row - last.row) + pBias(nb);
+      if (d > best) best = d;
+    }
+    if (mine < best - 0.09) return true; // near-tie: wait for the finger to commit
+    return false;
   }
 
   boardUp() { this.endDrag(); }
