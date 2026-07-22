@@ -179,6 +179,37 @@ skeleton (no layout shift between them).
 - [ ] Step 6: mirror + `npm test` + browser both states pixel-sane vs the mock, no `{{ }}` holes,
   nothing shifts between states. Commit `feat: home v18 — word-light sworb, link-bar, ✓ standings, countdown dock`.
 
+### Task 5b: Home interactions + polish (owner batch, 2026-07-22)
+
+**Files:** index.html (+mirror). Browser-verified by controller.
+**Interfaces:** consumes finalePending() (T3), word bank surface (exists), sworbKb (exists).
+
+- [ ] Hero block scaling: home word blocks size by word length (5 → 54px; 6-7 → shrink so the row
+  fits 375w with gaps; same idiom as in-game guess row). Engine already length-agnostic.
+- [ ] Crown fix: the slim strip's crown SVG renders as 3 dots (path fill lost in port) — render the
+  full crown (mock's svg, inline).
+- [ ] Sworb-safe row REMOVED; the superlatives cluster becomes TAPPABLE → opens the word bank
+  (rebrands as the "superlatives safe"). Keep reachability; delete the old row + vals.
+- [ ] FINALE-PENDING home keyboard: when (round played) && (sworb unsolved) && (guesses left),
+  tapping the word-of-the-day BLUR-REPLACES everything below the hints with the A–Z guess keyboard
+  (v15 swap: opacity/blur, ZERO height change; reuse sworbKb + guess flow = the finale continued on
+  home). Fresh day: tap does nothing. Day done: nothing. LOCKED decision (owner 2026-07-22).
+
+### Task 5c: Timed-round citizenship — count-in, pause, no warmup (owner batch, 2026-07-22)
+
+**Files:** index.html (+mirror). Browser-verified by controller.
+**Interfaces:** consumes roundSecs/roundEndAt anchoring (T1), restoreRun remaining-time (T1 fix).
+
+- [ ] REMOVE the warmup (`tut`) flow entirely (state, HUD WARMUP arm, template bits) — onboarding
+  is the future tutorial (backlog). Grep `tut` carefully; delete dead vals with templates.
+- [ ] COUNT-IN: round start shows a 3·2·1 beat before the clock anchors (board locked during it);
+  the clock/roundEndAt anchors only when the count-in completes.
+- [ ] PAUSE (fair): pause button + AUTO-PAUSE on visibilitychange/pagehide/blur. While paused: clock
+  frozen (shift roundEndAt on resume — the frame() pause idiom exists), input locked, **board
+  BLURRED/obscured** (fairness: no free scanning). RESUME replays the count-in (3·2·1) then
+  re-anchors. Reload mid-round = paused-at-boot (restoreRun already computes remaining; keep).
+- [ ] Fairness note: pause count/duration NOT limited for now (trust) — revisit with backend.
+
 ### Task 6: Storm — aurora-of-blocks
 
 **Files:** Modify `index.html` (replace the dock storm FX at 463-471 (`storm.colorBg/animA/...`

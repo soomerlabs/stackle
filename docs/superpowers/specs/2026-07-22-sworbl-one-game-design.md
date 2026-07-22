@@ -64,10 +64,12 @@ title — it flows directly) → storm + dock.
   the middle.
 - **Word-light rule:** no counts ("3/7"), no "solved" caption, no stakes copy, no share button (for
   now), no "next sworbl in" label. The blocks, pills, ✓s, bar, and timer carry the meaning.
-- **Keyboard (home guessing is GONE):** the home never opens a guess keyboard — guessing exists
-  only in the in-game finale. (The v15 keyboard-swap pattern — bottom content opacity-swaps into
-  the keyboard with ZERO height change — is the reference for the FINALE's layout behavior and any
-  future in-place swap.)
+- **Home keyboard = the finale, continued (LOCKED 2026-07-22):** on a FINALE-PENDING day only
+  (round played, sworb unsolved, guesses left), tapping the word-of-the-day blur-replaces
+  everything below the hints with the A–Z guess keyboard (v15 swap, zero height change). Fresh
+  day: tap does nothing (play first). Day done: nothing. Guessing never exists before the round.
+- **Superlatives = the safe:** the sworb-safe row is gone; tapping the superlatives cluster opens
+  the word bank ("superlatives safe").
 
 ## The storm (LOCKED)
 
@@ -89,10 +91,12 @@ desaturated, post-play). Future (in-game): may intensify as the round clock runs
 - At 0:00: no "round over" sheet — the board MORPHS into the finale (the built board→keyboard
   crossfade), guess blocks above, 6 pips. Solve → candy celebration → home (after-state). Fail all
   6 → gray reveal → home.
-- Mid-round quit/reload: the round clock is wall-anchored (`roundEndAt`); leaving does not pause
-  the finale contract — resume within the same day returns to the round if time remains, else to
-  the finale if unplayed guesses remain, else to the after-state. One shot means the DAY is
-  consumed once the finale resolves (or time+guesses are exhausted).
+- **Count-in + pause (LOCKED 2026-07-22, supersedes wall-anchored-no-pause):** every round starts
+  with a 3·2·1 count-in (clock anchors only after it). Pause allowed: button + AUTO-pause on
+  visibility/pagehide/blur; while paused the clock freezes AND the board blurs (no free scanning);
+  resume replays the count-in. Reload mid-round resumes with remaining time, paused. The WARMUP
+  (`tut`) flow is REMOVED (onboarding = the future tutorial). One shot: the DAY is consumed when
+  the finale resolves (or time+guesses exhaust).
 
 ## Cross-cutting UX requirements (apply to every screen, this build and after)
 
