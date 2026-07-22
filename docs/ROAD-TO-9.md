@@ -1,5 +1,10 @@
 # Road to 9 — codebase excellence plan (2026-07-22)
 
+> ⚠️ PARTIALLY SUPERSEDED (same day, owner decision): Sprints 2-3 are replaced by the FULL RN
+> REBUILD — see `docs/MOBILE-PLAN.md`. Don't decompose a shell that's being retired. Sprint 1
+> (honest numbers) still applies — it hardens the engine that transfers. The next cold review
+> scores the RN codebase.
+
 Two independent cold reviews: 7.0 → 7.5 (judgment rated 8.5; artifact maturity 6.5). Every
 remaining ceiling-limiter is named. This plan clears them in three sprints — and every step
 doubles as **React Native prep**: the shell shrinks, the portable pure core grows. (RN decision
