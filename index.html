@@ -4296,22 +4296,21 @@ class Component extends DCLogic {
   checkTargetCatch(word) {
     // record a found theme word into the per-day safe — daily only (practice has no sworb)
     if (this.practiceMode() || !word) return null;
-    const day = this.dailyKey, w = ('' + word).toLowerCase();
+    const day = this.dailyKey;
     let targets = [];
     try { targets = JSON.parse(LS.getItem(K.TARGETS_PREFIX + day) || '[]') || []; } catch (e) { return null; }
     const entry = this.dailyEntry();
-    const bankWord = entry ? SworbleDaily.clueFor(w, entry) : (targets.indexOf(w) >= 0 ? w : null);
-    if (!bankWord) return null;
     const fkey = K.FOUND_PREFIX + day;
     let found = [];
     try { found = JSON.parse(LS.getItem(fkey) || '[]') || []; } catch (e) {}
-    // SworbleDaily.bankClue (sworble-daily.js): dedupe-safe append, pinned by tests. Same
+    // SworbleDaily.resolveCatch (sworble-daily.js): the catch decision (clue-vs-exact-target
+    // match, SworbleDaily.bankClue's dedupe-safe append) — pure, pinned by tests. Same
     // reference back == nothing new to bank (already collected today; extension of an
     // already-banked clue no-ops identically to a repeat exact spell).
-    const banked = SworbleDaily.bankClue(found, bankWord);
-    if (banked === found) return null;
-    try { LS.setItem(fkey, JSON.stringify(banked)); } catch (e) {}
-    return { n: targets.filter(t => banked.indexOf(t) >= 0).length, total: targets.length, isClue: !!entry };
+    const res = SworbleDaily.resolveCatch({ word, entry, targets, found });
+    if (!res.isNew) return null;
+    try { LS.setItem(fkey, JSON.stringify(res.banked)); } catch (e) {}
+    return { n: targets.filter(t => res.banked.indexOf(t) >= 0).length, total: targets.length, isClue: !!entry };
   }
 
   // --- daily streak + 7-day history (local only, derived from sworble_daily_* keys) ---

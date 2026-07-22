@@ -254,4 +254,65 @@ console.log('sworble-daily: applySworbGuess passed');
 }
 console.log('sworble-daily: nextSlots passed');
 
+// --- resolveCatch(args) -> {clue, banked, isNew} — checkTargetCatch's catch decision,
+// extracted pure. On a sworb day (entry present), banking targets the matched CLUE itself
+// (clueFor) — a longer spelled word that only EXTENDS a clue still banks the clue, once.
+// Without an entry (no sworb today), falls back to exact-match against the top-5 collectible
+// targets list. banked comes straight from bankClue's dedupe-safe append (reference-equality
+// preserved: same array back == nothing new banked). ---
+{
+  assert.strictEqual(typeof D.resolveCatch, 'function', 'resolveCatch exported');
+  const kitchen = { sworb: 'kitchen', themeWords: ['trim', 'seed', 'oven'] };
+
+  // extension banks the clue: "trims" isn't a clue verbatim, but it extends "trim"
+  {
+    const r = D.resolveCatch({ word: 'trims', entry: kitchen, targets: ['trim', 'seed', 'oven'], found: [] });
+    assert.strictEqual(r.clue, 'trim', 'extension resolves to the base clue');
+    assert.deepStrictEqual(r.banked, ['trim']);
+    assert.strictEqual(r.isNew, true);
+  }
+  // dedup no-op, reference-equality preserved: "trim" already found -> re-spelling (or
+  // extending) it again must return the SAME array reference, not an equal-but-new one
+  {
+    const found = ['trim'];
+    const r = D.resolveCatch({ word: 'trimmed', entry: kitchen, targets: ['trim', 'seed', 'oven'], found });
+    assert.strictEqual(r.clue, 'trim');
+    assert.strictEqual(r.banked, found, 'same reference back — nothing new banked');
+    assert.strictEqual(r.isNew, false);
+  }
+  // entry-null safety: no sworb today -> falls back to EXACT match against targets
+  {
+    const r1 = D.resolveCatch({ word: 'trim', entry: null, targets: ['trim', 'seed'], found: [] });
+    assert.strictEqual(r1.clue, 'trim', 'exact target match with no entry');
+    assert.strictEqual(r1.isNew, true);
+    const r2 = D.resolveCatch({ word: 'trims', entry: null, targets: ['trim', 'seed'], found: [] });
+    assert.strictEqual(r2.clue, null, 'no entry -> no prefix/extension matching, exact only');
+    assert.strictEqual(r2.isNew, false);
+    assert.deepStrictEqual(r2.banked, [], 'no-op returns found unchanged');
+  }
+  // targets-vs-entry fallback ORDER: when an entry exists, it always wins — clueFor decides
+  // even if the exact spelled word also happens to sit in the targets list verbatim
+  {
+    const r = D.resolveCatch({ word: 'oven', entry: kitchen, targets: ['nomatch'], found: [] });
+    assert.strictEqual(r.clue, 'oven', 'entry-driven clueFor match ignores the (irrelevant) targets list entirely');
+  }
+  // no match at all (entry present, word matches no clue) -> null, no-op
+  {
+    const r = D.resolveCatch({ word: 'zzz', entry: kitchen, targets: ['trim'], found: ['seed'] });
+    assert.strictEqual(r.clue, null);
+    assert.strictEqual(r.isNew, false);
+    assert.deepStrictEqual(r.banked, ['seed']);
+  }
+  // word-null/empty safety — never throws, always a clean no-op
+  {
+    const found = ['trim'];
+    assert.deepStrictEqual(D.resolveCatch({ word: '', entry: kitchen, targets: [], found }), { clue: null, banked: found, isNew: false });
+    assert.deepStrictEqual(D.resolveCatch({ word: null, entry: kitchen, targets: [], found }), { clue: null, banked: found, isNew: false });
+  }
+  // malformed/missing args never throw
+  assert.strictEqual(D.resolveCatch({}).clue, null);
+  assert.strictEqual(D.resolveCatch(null).clue, null);
+}
+console.log('sworble-daily: resolveCatch passed');
+
 console.log('sworble-daily: all passed');

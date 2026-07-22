@@ -162,7 +162,30 @@
     return { slots: slots, colors: colors.some(Boolean) ? colors : null };
   }
 
-  var API = { parseEntry: parseEntry, isClue: isClue, clueFor: clueFor, checkGuess: checkGuess, guessReward: guessReward, scoreGuess: scoreGuess, bankClue: bankClue, applySworbGuess: applySworbGuess, nextSlots: nextSlots, BACKSPACE: BACKSPACE, REWARD: REWARD };
+  // checkTargetCatch's catch decision, extracted pure: does this committed word match an
+  // un-caught target, and if so bank it. On a sworb day (entry present) banking targets the
+  // matched CLUE itself (clueFor) — a longer spelled word that only EXTENDS a clue (trims,
+  // trimmed, trimming) still banks "trim", once. Without an entry (no sworb today), falls
+  // back to exact-match against the top-5 collectible `targets` list — clueFor is never
+  // consulted, so `targets` only matters when there's no entry to defer to.
+  //
+  // args = { word, entry, targets, found } -> { clue, banked, isNew }
+  //   clue: the matched clue/target, or null on no match. banked: the result of bankClue
+  //   (SAME reference as `found` when nothing new was banked — dedupe-safe, reference-
+  //   equality preserved). isNew: true only when a fresh clue actually got banked.
+  function resolveCatch(args) {
+    var a = args || {};
+    var found = Array.isArray(a.found) ? a.found : [];
+    var word = a.word ? String(a.word).toLowerCase() : '';
+    if (!word) return { clue: null, banked: found, isNew: false };
+    var targets = Array.isArray(a.targets) ? a.targets : [];
+    var clue = a.entry ? clueFor(word, a.entry) : (targets.indexOf(word) >= 0 ? word : null);
+    if (!clue) return { clue: null, banked: found, isNew: false };
+    var banked = bankClue(found, clue);
+    return { clue: clue, banked: banked, isNew: banked !== found };
+  }
+
+  var API = { parseEntry: parseEntry, isClue: isClue, clueFor: clueFor, checkGuess: checkGuess, guessReward: guessReward, scoreGuess: scoreGuess, bankClue: bankClue, applySworbGuess: applySworbGuess, nextSlots: nextSlots, BACKSPACE: BACKSPACE, resolveCatch: resolveCatch, REWARD: REWARD };
   root.SworbleDaily = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);
