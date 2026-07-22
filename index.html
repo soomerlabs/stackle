@@ -1268,14 +1268,6 @@ class Component extends DCLogic {
         opts.g2 = 1;
         LS.setItem(K.OPTS, JSON.stringify(opts));
       }
-      // legacy heal: the mode toggle is gone — dailyMode:false is not a valid persisted
-      // state anymore. A returning user stuck with it from before mode-collapse would boot
-      // to home with homeLeadersVals() gated off (blank slim strip) until the next daily
-      // start healed it late. Heal it here, at boot, so first paint is never stale.
-      if (opts.dailyMode === false) {
-        opts.dailyMode = true;
-        LS.setItem(K.OPTS, JSON.stringify(opts));
-      }
     } catch (e) {}
     // first-launch onboarding: show how-to once, then never again
     let firstRun = false;
@@ -1328,6 +1320,11 @@ class Component extends DCLogic {
     const o = (this.state && this.state.opts) || this.initOpts || {};
     return o[k] ?? this.props[k] ?? dflt;
   }
+  // The daily round is the baked default game context — no toggle, no persisted flag. Practice
+  // is the one opt-in exception: startPractice sets opts.practiceMode:true for the session ONLY
+  // (never saveOpts'd, so it can never leak into a reload or a returning visit); every path back
+  // to home (_exitGame) clears it again. Absent/false opts.practiceMode == daily, unconditionally.
+  practiceMode() { return !!this.optVal('practiceMode', false); }
   // fade-out for sheet dismissal: keep the sheet mounted, drop scrim opacity to 0,
   // then apply the real state change once the 200ms transition has finished
   fadeClose(patch, after) {
@@ -1422,11 +1419,11 @@ class Component extends DCLogic {
   // the live countdown.
   // A daily round is "live" while it's actually running — dealt, on the game screen, not
   // yet ended. This is the TIME HUD / low-time warning's key.
-  liveDaily(st) { st = st || this.state; return st.screen === 'game' && this.optVal('dailyMode', true) && !st.over; }
+  liveDaily(st) { st = st || this.state; return st.screen === 'game' && !this.practiceMode() && !st.over; }
   // A live "hunt" is any in-progress timed round on the board — daily OR practice, both now
   // share one clock (see frame()'s ONE-GAME pivot note) — not yet over, not the untimed finale.
   // THE predicate gating count-in + pause (Task 5c): both surfaces and both auto-pause listeners
-  // read this so a hunt is pausable/count-in'd the same way regardless of dailyMode.
+  // read this so a hunt is pausable/count-in'd the same way regardless of daily vs. practice.
   liveHunt(st) { st = st || this.state; return st.screen === 'game' && !st.over && !st.finale; }
   // The Sworble Seven: 7 words per run (dev-tunable). Fewer picks = each one is high-stakes
   // (grab the safe word or hunt the monster?) — that agony IS the game.
@@ -1443,11 +1440,11 @@ class Component extends DCLogic {
   // Task 4: the daily round PINS the board to 5x6 — clue packing (SWORB_CLUE_COUNT=6) and
   // the leaderboard both depend on every player getting the identical board shape, so the
   // dev cols/rows knobs (settings sheet +/-) must not be able to skew a daily run. Practice
-  // still honors them (it's the dev/tuning surface). optVal('dailyMode', true) is the same
-  // flag that already distinguishes "the daily experience" (live round, resume, finale) from
+  // still honors them (it's the dev/tuning surface). practiceMode() is the same predicate
+  // that already distinguishes "the daily experience" (live round, resume, finale) from
   // practice everywhere else in this file — reusing it here is the narrowest possible seam.
-  cols() { return this.optVal('dailyMode', true) ? 5 : Math.max(4, Math.min(9, Math.round(this.optVal('cols', 5)))); }
-  rows() { return this.optVal('dailyMode', true) ? 6 : Math.max(4, Math.min(14, Math.round(this.optVal('rows', 6)))); }
+  cols() { return !this.practiceMode() ? 5 : Math.max(4, Math.min(9, Math.round(this.optVal('cols', 5)))); }
+  rows() { return !this.practiceMode() ? 6 : Math.max(4, Math.min(14, Math.round(this.optVal('rows', 6)))); }
   diag() { return true; } // diagonals are always on — never a toggle
   saveOpts(opts) { try { LS.setItem(K.OPTS, JSON.stringify(opts)); } catch (e) {} }
   isDark() { return this.optVal('theme', this.prefersDark ? 'dark' : 'light') === 'dark'; }
@@ -1541,7 +1538,7 @@ class Component extends DCLogic {
     // home immediately shows the run's score + seven and PLAY reads RESUME. The board
     // itself re-enters through the normal in-memory resume path when they tap PLAY.
     try {
-      if (this.optVal('dailyMode', true)) {
+      if (!this.practiceMode()) {
         const savedRun = this.loadRunState();
         if (savedRun) this.restoreRun(savedRun, { atBoot: true });
       }
@@ -2023,16 +2020,16 @@ class Component extends DCLogic {
   // flipping back re-renders the board exactly as it was.
   // FINALE-ONLY GUESSING: guessing is no longer a mid-hunt side-trip — it only opens once
   // the board morphs into the keyboard at 0:00 (endRound's finale gate). So the flip is a
-  // no-op while a daily round is still being hunted (LIVE: screen 'game', dailyMode, not
+  // no-op while a daily round is still being hunted (LIVE: screen 'game', daily, not
   // over, not yet in the finale) — nothing to flip to yet. It's ALSO a no-op once the
   // finale itself is live: the morph is locked to the sworb face for its whole duration —
   // flipping away would drop sworbTyping and re-arm the frozen board's taps (over stays
   // false through the finale by design; see endRound) with nothing left to play. Practice
-  // (dailyMode:false) is unaffected by either guard.
+  // is unaffected by either guard.
   flipStepper() {
     const e = this.dailyEntry();
     if (!e) return; // no sworb today: the strip has one face, nothing to flip
-    const daily = this.optVal('dailyMode', true) && this.state.screen === 'game';
+    const daily = !this.practiceMode() && this.state.screen === 'game';
     const liveHunting = daily && !this.state.over && !this.state.finale;
     if (liveHunting || this.state.finale) return;
     this.sfxClick();
@@ -2280,7 +2277,7 @@ class Component extends DCLogic {
     // daily mode: everyone gets the same letter sequence for the calendar day
     const d = new Date();
     this.dailyKey = SworbleCore.dayKey(d);
-    if (this.optVal('dailyMode', true)) {
+    if (!this.practiceMode()) {
       const seedN = SworbleCore.hashSeed(this.dailyKey);
       this.seedN = seedN;                     // profanity scrub reads this so its fixes are identical for every player
       // every seeded stream is wrapped in a call counter (_rngN) so a mid-run snapshot can
@@ -2301,7 +2298,7 @@ class Component extends DCLogic {
         .concat(shuffledBag(BAG, qr), shuffledBag(BAG, qr), shuffledBag(BAG, qr));
       this.queueIdx = 0;
       // count this attempt at today's puzzle
-      if (this.optVal('dailyMode', true)) {
+      if (!this.practiceMode()) {
         if (!this.skipAttCount) {
           try {
             const k = K.ATT_PREFIX + this.dailyKey;
@@ -2360,7 +2357,7 @@ class Component extends DCLogic {
     // retry loop) — the REALIZED set (words that packed AND verify findable) is the source of
     // truth (see SworbleSeed.seedClueLettersTwoPass; dailies-check.js simulates this exact path).
     const _pool = this.themePool();
-    if (_pool && this.optVal('dailyMode', true)) {
+    if (_pool && !this.practiceMode()) {
       // pass 1's candidate pool is the FULL curated theme-word list (not themeTarget()-sliced):
       // a wider pool packs strictly better, and dailies-check.js's guardrail simulates this
       // EXACT full-pool call — slicing here would let the app under-place clues the guardrail
@@ -2416,7 +2413,7 @@ class Component extends DCLogic {
     this.engineQ = []; // a fresh round starts with no pending cycle events
     this.finalDropFired = false;
     this.bestFlashed = false;
-    this._dailyLive = this.optVal('dailyMode', true); // a daily run is now live — visiting home pauses it; PLAY resumes the SAME run (never re-rolls)
+    this._dailyLive = !this.practiceMode(); // a daily run is now live — visiting home pauses it; PLAY resumes the SAME run (never re-rolls)
     this._boardElapsedMs = 0; this._boardTickAt = null; // fresh time-on-board for this run
     this.reloadAt = performance.now() + 800; // intro cascade: hold the roulette ~2.4s
     this.setState({
@@ -2446,7 +2443,7 @@ class Component extends DCLogic {
   }
   saveRunState() { // flush the live run to LS (cheap; called throttled + on tab-hide)
     try {
-      if (!this._dailyLive || this.state.over || !this.optVal('dailyMode', true)) return;
+      if (!this._dailyLive || this.state.over || this.practiceMode()) return;
       let elapsed = this._boardElapsedMs || 0;
       if (this._boardTickAt != null) elapsed += performance.now() - this._boardTickAt;
       const snap = SworbleRun.serializeRun({
@@ -2701,12 +2698,13 @@ class Component extends DCLogic {
     if (this.state.over || this.state.finale) return;
     this.dragging = false;
     this._dailyLive = false; // the run ends here (no hard lock — endless daily resumes within the day) — no resume after this
-    // only CASUAL owns the shared RUN_PREFIX snapshot (stacks is session-only, never saves one) —
-    // gating this on dailyMode stops a finished STACKS round from wiping casual's saved run.
-    if (this.optVal('dailyMode', true)) this.clearRunState(); // the finished run's snapshot must never restore
+    // only the DAILY run owns the shared RUN_PREFIX snapshot (practice is session-only, never
+    // saves one) — gating this on practiceMode() stops a finished practice round from wiping
+    // the daily's saved run.
+    if (!this.practiceMode()) this.clearRunState(); // the finished run's snapshot must never restore
     if (this._boardTickAt != null) { this._boardElapsedMs = (this._boardElapsedMs || 0) + (performance.now() - this._boardTickAt); this._boardTickAt = null; }
     this._timeOnBoard = Math.round((this._boardElapsedMs || 0) / 1000); // seconds actively on the board this run
-    if (this.optVal('dailyMode', true)) {
+    if (!this.practiceMode()) {
       try {
         // best single run: keep the words + score of your HIGHEST run today (mergeDailySeven
         // writes sworble_daily too, and only when this run beats your standing best)
@@ -2717,7 +2715,7 @@ class Component extends DCLogic {
       } catch (e) {}
     }
     // result ladder context: log this run; snapshot best + rank from BEFORE it landed
-    if (this.optVal('dailyMode', true)) {
+    if (!this.practiceMode()) {
       try {
         const d = this.dailyKey || this.dayKey(new Date()), rk = K.RUNS_PREFIX + d;
         const runs = JSON.parse(LS.getItem(rk) || '[]');
@@ -2734,7 +2732,7 @@ class Component extends DCLogic {
       } catch (e) {}
     }
     // par home reads a per-day best so the return visit works even before a name/leaderboard submit
-    if (this.optVal('dailyMode', true)) {
+    if (!this.practiceMode()) {
       try { const d = this.dailyKey || this.dayKey(new Date()), k = K.PUZZLE_BEST_PREFIX + d, p = Number(LS.getItem(k) || 0) || 0; if ((this.state.score || 0) > p) LS.setItem(k, String(this.state.score || 0)); } catch (e) {}
     }
     // PERFECT RUN: every word of a full budget was a best word (legendary, crowned on the result sheet)
@@ -2748,7 +2746,7 @@ class Component extends DCLogic {
     // scroll-lock effect — both wrong mid-finale. sworbSubmit flips `over:true` itself only once
     // the finale resolves (solve or 6th miss), right before routing home the same way this
     // function does for a non-finale ending.
-    const dailyMode = this.optVal('dailyMode', true);
+    const dailyMode = !this.practiceMode();
     const sworbEntry = dailyMode && this.dailyEntry();
     const sworbNow = sworbEntry && this.dailyStatus().sworb;
     const enteringFinale = !!(sworbEntry && sworbNow && sworbNow.active && !sworbNow.solved && sworbNow.guessesLeft > 0);
@@ -2789,7 +2787,7 @@ class Component extends DCLogic {
   // up before the player lands on home. mergeDailySeven is idempotent-safe here: it only writes
   // when the new score beats the standing best, so a re-call the SAME as before writes nothing.
   bankFinaleBonus() {
-    if (!this.optVal('dailyMode', true)) return;
+    if (this.practiceMode()) return;
     try {
       const best = this.mergeDailySeven(this.state.roundWords, this.state.score);
       this._tb = best; this._tbKey = this.dailyKey;
@@ -2817,7 +2815,7 @@ class Component extends DCLogic {
   // state (SWORB_PREFIX, read via dailyStatus().sworb) that's everything required — solved or
   // guesses-exhausted both correctly say "nothing pending" and fall through to a fresh round.
   finalePending() {
-    if (!this.optVal('dailyMode', true)) return false;
+    if (this.practiceMode()) return false;
     try {
       const day = this.dailyKey || this.dayKey(new Date());
       if (!LS.getItem(K.DONE_PREFIX + day)) return false;
@@ -2827,10 +2825,10 @@ class Component extends DCLogic {
   }
   // Task 4 (one-shot day): today's daily is fully spent — the run ended (DONE_PREFIX) AND
   // there's no finale left to resolve — once true, PLAY must not deal a fresh round; the
-  // after-state (home's result surfaces) IS the day. Practice (dailyMode:false) never
-  // locks — it has no daily state to consume.
+  // after-state (home's result surfaces) IS the day. Practice never locks — it has no daily
+  // state to consume.
   dailyConsumed() {
-    if (!this.optVal('dailyMode', true)) return false;
+    if (this.practiceMode()) return false;
     try {
       const day = this.dailyKey || this.dayKey(new Date());
       return !!LS.getItem(K.DONE_PREFIX + day) && !this.finalePending();
@@ -3763,7 +3761,7 @@ class Component extends DCLogic {
     // capture the tiles' colors in swipe order (for the share) before they clear
     const wordColors = ids.map(id => { const t = this.byId(id); return t ? t.color : 0; });
     // the "new best" flash tracks TODAY'S best in daily mode (matches the header), all-time in practice
-    const prevBest = this.optVal('dailyMode', true)
+    const prevBest = !this.practiceMode()
       ? (parseInt(LS.getItem(K.DAILY_PREFIX + this.dailyKey) || '0', 10) || 0)
       : this.state.best;
     // 5f flight vectors (measured before the board changes): the word's letters fly to
@@ -3931,7 +3929,7 @@ class Component extends DCLogic {
   __shareResultInner() {
     const st = this.state;
     const words = st.roundWords || [];
-    const daily = this.optVal('dailyMode', true);
+    const daily = !this.practiceMode();
     // no abstract grids (testers found them confusing) — share only self-explanatory
     // lines. Daily teases the best word's LENGTH as blanks, spoiler-free; practice names it.
     const top = words.length ? words.reduce((a, b) => (b.pts > a.pts ? b : a), words[0]) : null;
@@ -4251,7 +4249,7 @@ class Component extends DCLogic {
   // Today's collectible set: the 5 top-scoring words on the OPENING board (identical for
   // everyone that day). Solve once and cache; found words persist separately per day.
   ensureDailyTargets() {
-    if (!this.optVal('dailyMode', true) || !this.openingSnapshot) return;
+    if (this.practiceMode() || !this.openingSnapshot) return;
     if (this.themePool()) return; // theme day: targets ARE the realized theme words, written at seed time
     const key = K.TARGETS_PREFIX + this.dailyKey;
     try { if (LS.getItem(key)) return; } catch (e) { return; }
@@ -4278,7 +4276,7 @@ class Component extends DCLogic {
   // collectible targets (no entry -> dailyEntry() is null -> clueFor is never consulted).
   checkTargetCatch(word) {
     // record a found theme word into the per-day safe — daily only (practice has no sworb)
-    if (!this.optVal('dailyMode', true) || !word) return null;
+    if (this.practiceMode() || !word) return null;
     const day = this.dailyKey, w = ('' + word).toLowerCase();
     let targets = [];
     try { targets = JSON.parse(LS.getItem(K.TARGETS_PREFIX + day) || '[]') || []; } catch (e) { return null; }
@@ -4358,7 +4356,7 @@ class Component extends DCLogic {
     this.lbRemote(date).then(remote => { if (remote) this.setState({ homeLb: remote }); });
   }
   submitDaily() {
-    if (!this.playerName || !this.optVal('dailyMode', true)) return;
+    if (!this.playerName || this.practiceMode()) return;
     const date = this.dailyKey || this.dayKey(new Date());
     // seed from THIS mode's own board record — never the all-mode sworble_daily_ best,
     // which would leak a classic score onto the puzzle board (and vice-versa)
@@ -5307,7 +5305,9 @@ class Component extends DCLogic {
 
   _exitGame() {
     this.sfxClick();
-    const opts = { ...(this.state.opts || {}), dailyMode: true };
+    // leaving the game screen always exits practice (session-only opt-in) back to the baked
+    // daily default — practiceMode never survives a trip through home.
+    const opts = { ...(this.state.opts || {}), practiceMode: false };
     // leaving the board drops any in-progress sworb typing + returns the stepper to play.
     // finale:false here is a display reset ONLY — leaving mid-finale doesn't forfeit it
     // (finalePending/enterFinale re-derive "still pending" from persisted state on the way back in).
@@ -5317,7 +5317,7 @@ class Component extends DCLogic {
     // the player here (X, swipe-down, mid count-in) never leaves them stranded showing over
     // home. Re-entering (startDaily's resume branch) re-arms gamePaused fresh, still fair.
     this.cancelCountIn();
-    if (this._dailyLive && !this.state.over && this.optVal('dailyMode', true)) {
+    if (this._dailyLive && !this.state.over && !this.practiceMode()) {
       this.setState({ opts, screen: 'home', paused: true, gamePaused: false, countIn: null, path: [], banner: null, homeSeq: (this.state.homeSeq || 0) + 1, ...sworbReset });
       this.loadHomeLb();
       return;
@@ -5663,7 +5663,7 @@ class Component extends DCLogic {
     const compact = colW < 380;
     const valFont = compact ? 20 : 26;
     const smNow = this.streakMult(st.streak);
-    const dailyOn = this.optVal('dailyMode', true);
+    const dailyOn = !this.practiceMode();
     const rw = st.roundWords || [];
     let recapLine = 'No words this round';
     if (rw.length) {
@@ -6098,7 +6098,7 @@ class Component extends DCLogic {
         } catch (e) {}
         this._dailyLive = false;
         this._tb = 0; this._tbKey = null; // clear header "today's best" cache
-        const opts = { ...(this.state.opts || {}), dailyMode: true };
+        const opts = { ...(this.state.opts || {}), practiceMode: false }; // unsticks practice-only, back to daily
         this.saveOpts(opts);
         // stay put on the settings sheet — just wipe daily state; closing settings → home shows the reset
         this.setState({ opts, over: false, endModal: false, homeLb: null }, () => {
@@ -6196,9 +6196,9 @@ class Component extends DCLogic {
         if (this.dailyConsumed()) return;
         // (reload-resume happens at BOOT now — componentDidMount rehydrates the saved run
         // into memory, so the in-memory branch above already covers the reload case)
-        const opts = { ...(this.state.opts || {}), dailyMode: true };
-        this.saveOpts(opts); // also heals any stale dailyMode:false from the removed toggle
-        this.setState({ opts, screen: 'game', sworbTyping: false, stepperMode: 'play' }, () => {
+        // no opts write needed here: practiceMode is cleared on every path back to home
+        // (_exitGame), so it's already false by the time PLAY can reach this branch.
+        this.setState({ screen: 'game', sworbTyping: false, stepperMode: 'play' }, () => {
           this.newGame(true);
           if (this.firstRunPending) this.setState({ activeModal: 'howto', modalW: 350, paused: true });
         });
@@ -6206,7 +6206,7 @@ class Component extends DCLogic {
       startPractice: (this._startPractice = () => {
         this.sfxClick();
         // session-only: never persisted, so daily is always the default experience
-        const opts = { ...(this.state.opts || {}), dailyMode: false };
+        const opts = { ...(this.state.opts || {}), practiceMode: true };
         // launched from settings now — close the sheet on the way out
         this.setState({ opts, screen: 'game', activeModal: null, modalStack: [], endModal: false }, () => {
           this.newGame(true);
@@ -6247,7 +6247,7 @@ class Component extends DCLogic {
       ...(this._ov = this.overParVals(st, dailyOn)),
       // Quiet home: top-3 leaders (your row folds in, highlighted) — no target on the front door
       ...this.homeLeadersVals(st, dailyOn),
-      ...(this.dailyStatus().resumable && this.optVal('dailyMode', true) ? { homePlayLabel: 'RESUME' } : {}), // a paused live run resumes on PLAY, it never restarts — even across a reload (the selector knows both)
+      ...(this.dailyStatus().resumable && !this.practiceMode() ? { homePlayLabel: 'RESUME' } : {}), // a paused live run resumes on PLAY, it never restarts — even across a reload (the selector knows both)
       homeSwipeLabel: 'swipe up to play',
       againLabel: dailyOn ? 'REPLAY' : 'PLAY AGAIN',
       isDaily: dailyOn,
@@ -6424,7 +6424,7 @@ class Component extends DCLogic {
       bestText: (() => {
         // daily mode: the number to chase is TODAY'S best on THIS board (resets each day),
         // not the all-time high — which spans a different board every day, so it never falls
-        if (!this.optVal('dailyMode', true)) return st.best.toLocaleString();
+        if (this.practiceMode()) return st.best.toLocaleString();
         const dk = this.dailyKey || this.dayKey(new Date()); // home renders before the first newGame sets dailyKey
         if (this._tbKey !== dk) { this._tbKey = dk; this._tb = parseInt(LS.getItem(K.DAILY_PREFIX + dk) || '0', 10) || 0; }
         return Math.max(this._tb || 0, st.score).toLocaleString();
@@ -6684,7 +6684,7 @@ class Component extends DCLogic {
       fillLabel: live.length + ' / ' + capacity,
       dictNote: st.dictNote,
       justFinished: !!st.justFinished, finBannerShow: !!st.justFinished && !!(this._ov && this._ov.parOverShow),
-      endRoundShow: !!st.over && st.screen === 'game' && !this.optVal('dailyMode', true), boardCelebrateShow: !!st.over && st.screen === 'game' && this.optVal('dailyMode', true), resultToastShow: !!st.endModal && st.screen === 'home', resultToast: { head: (this._ov && this._ov.ldHead) || 'nice run', score: (st.score || 0).toLocaleString(), rankSuffix: (this._ov && this._ov.parOverShow && this._ov.parRankText) ? (' \u00b7 ' + this._ov.parRankText + ' today') : '' }, dismissEnd: () => { this.sfxClick(); this.setState({ endModal: false }); }, endRound: { head: (this._ov && this._ov.ldHead) || 'round over', score: (st.score || 0).toLocaleString(), rank: (this._ov && this._ov.parRankText) || '', rankShow: !!(this._ov && this._ov.parOverShow && this._ov.parRankText) },
+      endRoundShow: !!st.over && st.screen === 'game' && this.practiceMode(), boardCelebrateShow: !!st.over && st.screen === 'game' && !this.practiceMode(), resultToastShow: !!st.endModal && st.screen === 'home', resultToast: { head: (this._ov && this._ov.ldHead) || 'nice run', score: (st.score || 0).toLocaleString(), rankSuffix: (this._ov && this._ov.parOverShow && this._ov.parRankText) ? (' \u00b7 ' + this._ov.parRankText + ' today') : '' }, dismissEnd: () => { this.sfxClick(); this.setState({ endModal: false }); }, endRound: { head: (this._ov && this._ov.ldHead) || 'round over', score: (st.score || 0).toLocaleString(), rank: (this._ov && this._ov.parRankText) || '', rankShow: !!(this._ov && this._ov.parOverShow && this._ov.parRankText) },
       modalOpen: !!st.activeModal,
       isSettings: st.activeModal === 'settings',
       isHowto: st.activeModal === 'howto',
