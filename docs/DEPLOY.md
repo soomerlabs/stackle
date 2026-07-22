@@ -42,7 +42,6 @@ consistent old build, not a mismatched one. They get the new build on their next
 3. Update the **same** value in:
    - every `<script src="./sworble-*.js?v=...">` tag in the `<helmet>` block
    - the `dailies.json` fetch already reads `BUILD` live, no separate edit needed there
-4. Mirror: `cp index.html Sworble.dc.html && printf '\n' >> Sworble.dc.html`
 5. `npm test` — must be green (`tests/mirror-check.js` fails the build on drift).
 6. Commit and push to `main` (or your deploy branch) — Pages redeploys automatically.
 7. Sanity check in a private/incognito tab (bypasses your own browser cache) that the

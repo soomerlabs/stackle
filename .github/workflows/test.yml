@@ -1,5 +1,5 @@
 # Runs the full test suite (determinism contract, status selector, store/migration,
-# run snapshots, mirror check) on every push. Pages deploys straight from main, so
+# run snapshots) on every push. Pages deploys straight from main, so
 # this is the only gate between a push and production — keep it green.
 name: test
 on:
