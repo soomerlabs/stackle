@@ -38,15 +38,9 @@ for (const w of allWords) { if (w.length >= 4 && w.length <= 6) { byLen[w.length
 function pick(arr, rng) { return arr[Math.floor(rng() * arr.length)]; }
 
 // A pool word A that is a strict prefix of pool word B breaks clueFor's longest-match banking —
-// the content guardrail forbids it, so synthetic pools that model the regime must exclude it too.
-function hasPrefixPair(words) {
-  for (let i = 0; i < words.length; i++) for (let j = 0; j < words.length; j++) {
-    if (i === j) continue;
-    if (words[j].length > words[i].length && words[j].indexOf(words[i]) === 0) return true;
-  }
-  return false;
-}
-
+// the content guardrail forbids it, so synthetic pools that model the regime must exclude it too
+// (drawPool's `words.some(...)` check below inlines this same prefix-pair test per candidate).
+//
 // Draw `size` DISTINCT words, each length chosen by lenOf(rng), rejecting a draw that repeats a
 // word or introduces a prefix-pair. rng is seeded, so the pool is reproducible.
 function drawPool(size, lenOf, rng) {

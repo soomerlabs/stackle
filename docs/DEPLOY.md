@@ -4,6 +4,12 @@ sworble ships as a static site on GitHub Pages — `index.html` plus the `sworbl
 modules, `support.js` (the dc-runtime), `vendor/` (self-hosted React), `dailies.json`,
 `dictionary.txt`, and assets. There is no build step; what's committed is what's served.
 
+**Runtime stays zero-dependency.** `eslint` (see `eslint.config.js`) is the repo's first
+`package.json` dependency, ever — it's `devDependencies`-only, a local lint/test-time tool.
+Nothing served to a player is built, bundled, or transpiled from it; `node_modules/` never
+ships. If a future change adds a real runtime dependency, it needs its own build step and
+this doc needs a rewrite — that's a deliberate, not accidental, architecture change.
+
 ## GitHub Pages caching
 
 Pages serves static files with `Cache-Control: max-age=600` (10 minutes) by default —
@@ -42,7 +48,8 @@ consistent old build, not a mismatched one. They get the new build on their next
 3. Update the **same** value in:
    - every `<script src="./sworble-*.js?v=...">` tag in the `<helmet>` block
    - the `dailies.json` fetch already reads `BUILD` live, no separate edit needed there
-5. `npm test` — must be green (`tests/mirror-check.js` fails the build on drift).
+5. `npm test` — must be green (runs `npm run lint` first, then the pure-module + dailies-content
+   test suite).
 6. Commit and push to `main` (or your deploy branch) — Pages redeploys automatically.
 7. Sanity check in a private/incognito tab (bypasses your own browser cache) that the
    Settings sheet's ghost-text footer shows the new build stamp.
