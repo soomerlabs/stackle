@@ -467,12 +467,12 @@
                         <div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
                           <div style="display:flex; gap:8px; justify-content:center;">
                             <sc-for list="{{ homeClueFan.row1 }}" as="cf" hint-placeholder-count="4">
-                              <span style="{{ cf.style }}">{{ cf.word }}</span>
+                              <div style="{{ cf.wrapStyle }}"><div style="{{ cf.bobStyle }}"><div style="{{ cf.innerStyle }}">{{ cf.word }}</div></div></div>
                             </sc-for>
                           </div>
                           <div style="display:flex; gap:8px; justify-content:center;">
                             <sc-for list="{{ homeClueFan.row2 }}" as="cf" hint-placeholder-count="2">
-                              <span style="{{ cf.style }}">{{ cf.word }}</span>
+                              <div style="{{ cf.wrapStyle }}"><div style="{{ cf.bobStyle }}"><div style="{{ cf.innerStyle }}">{{ cf.word }}</div></div></div>
                             </sc-for>
                           </div>
                         </div>
@@ -2219,6 +2219,33 @@ class Component extends DCLogic {
     if (v >= 5) return 3;                                 // pink (premium)
     if (v >= 2) return 0;                                 // violet (mid)
     return pick ? 1 : 2;                                  // cyan / mint (common)
+  }
+  // ---- CLUE PILL + BOB (shared idiom): the ONE token builder for both clue fans — the
+  // in-game `clueFan` under the board and the home hero's `homeClueFan`. Both read this same
+  // recipe for pill styling (padding/radius/type) AND motion (the clueBob drift + its
+  // per-index stagger), so they cannot drift apart again. states:
+  //  'found'  -> candy pill (PALETTE hue by slot), pops in with clueLand
+  //  'missed' -> gray pill (done-state reveal only — home has no live "missed" state, the
+  //              in-game fan never shows this) — same gray family as a failed sworb tile
+  //  'ghost'  -> dashed placeholder pill, dot-per-letter hint text
+  clueToken(i, word, state, dk) {
+    const pal = PALETTE[i % PALETTE.length];
+    const base = {
+      padding: '5px 10px', borderRadius: 9, fontFamily: "'Fredoka','Manrope',sans-serif",
+      fontSize: 12.5, fontWeight: 700, letterSpacing: '1px', whiteSpace: 'nowrap', lineHeight: 1,
+      animation: state === 'found' ? 'clueLand 0.5s cubic-bezier(0.34,1.56,0.64,1) both' : 'none',
+    };
+    const skin = state === 'found'
+      ? { background: pal.bg, color: '#1F1442', boxShadow: '0 3px 0 ' + pal.edge, textTransform: 'uppercase' }
+      : state === 'missed'
+      ? { background: dk ? '#3A3A44' : '#C8C4D2', color: dk ? '#8A8A96' : '#6B6775', boxShadow: '0 3px 0 ' + (dk ? '#26262E' : '#A9A5B3'), textTransform: 'uppercase' }
+      : { background: dk ? 'rgba(255,255,255,0.03)' : 'rgba(31,20,66,0.03)', color: 'var(--ghost)', border: '2px dashed var(--line)' };
+    return {
+      k: 'clue' + i, word, found: state === 'found',
+      wrapStyle: { display: 'inline-flex' },
+      bobStyle: { animation: 'clueBob ' + (3.4 + i * 0.3).toFixed(1) + 's ease-in-out ' + (i * 0.35).toFixed(2) + 's infinite' },
+      innerStyle: Object.assign({}, base, skin),
+    };
   }
   makeTile(letter, row, col) {
     const id = this.tileSeq++;
@@ -5830,12 +5857,14 @@ class Component extends DCLogic {
       closeWords: () => { this.sfxClick(); this.closeModal(); },
       htBombShow: this.optVal('debugMine', false), // bombs are dev-only now (debugMine) — surface the how-to line there
       // SWORB home reveal (v18, word-light): the hero word blocks — dashed pre-play, per-letter
-      // PALETTE candy on solve (reuses the tileColorFor convention the word-bank hero tiles
-      // already use — a deterministic hue per letter+position, not a flat green), GRAY reveal
-      // on a spent-but-unsolved day. No tag/hint/card chrome: the v18 word-light rule drops
-      // counts and captions here — the blocks + clue fan + ✓s carry the meaning. Sized by word
-      // length so a 7-letter sworb still fits the 375w row (gaps stay 7px): 3-5 letters is the
-      // original 54x60/r13/f28; 6 shrinks to 46x52/r11/f24; 7 to 40x46/r10/f21.
+      // PALETTE candy on reveal (reuses the tileColorFor convention the word-bank hero tiles
+      // already use — a deterministic hue per letter+position, not a flat green). Owner reversal:
+      // the reveal is ALWAYS candy, solved OR failed alike — no gray "you lost" tell on home
+      // (the standings ✓/✗ already differentiates). Gray reveal is reserved for missed CLUE
+      // pills only. No tag/hint/card chrome: the v18 word-light rule drops counts and captions
+      // here — the blocks + clue fan + ✓s carry the meaning. Sized by word length so a 7-letter
+      // sworb still fits the 375w row (gaps stay 7px): 3-5 letters is the original 54x60/r13/f28;
+      // 6 shrinks to 46x52/r11/f24; 7 to 40x46/r10/f21.
       // FINALE-PENDING HOME KEYBOARD (Task 5b/5): these blocks double as the finale-continued
       // guess row — while st.finale is live (armed by tapping the blocks on a finale-pending
       // day, see homeHeroTap below), they render the CURRENT typed guess with Wordle colors,
@@ -5864,12 +5893,12 @@ class Component extends DCLogic {
           const slots = st.sworbSlots || [];
           const colors = st.sworbColors;
           for (let i = 0; i < len; i++) {
-            if (solved) {
+            if (solved || failed) {
+              // owner reversal: the revealed answer is ALWAYS candy on home, win or lose — the
+              // standings ✓/✗ already carries solved-vs-failed, no gray "you lost" tell needed
+              // here. Gray stays reserved for missed CLUE pills only (see homeClueFan below).
               const pal = PALETTE[this.tileColorFor(answer[i].toLowerCase(), i)] || PALETTE[0];
               blocks.push({ k: 'hh' + i, ch: answer[i], style: box + ' color:#1F1442; background:' + pal.bg + '; box-shadow:inset 0 -4px 0 ' + pal.edge + ', ' + blockShadow + ';' });
-            } else if (failed) {
-              const bg = dk ? '#3A3A44' : '#C8C4D2', edge = dk ? '#26262E' : '#A9A5B3', ink = dk ? '#8A8A96' : '#6B6775';
-              blocks.push({ k: 'hh' + i, ch: answer[i], style: box + ' color:' + ink + '; background:' + bg + '; box-shadow:inset 0 -4px 0 ' + edge + ', ' + blockShadow + ';' });
             } else if (guessing) {
               const ch = (slots[i] || '').toUpperCase();
               const col = colors ? colors[i] : null;
@@ -5902,10 +5931,13 @@ class Component extends DCLogic {
         this.setState({ finale: true, sworbTyping: true, sworbSlots: [], sworbColors: null, sworbShake: 0, sworbWin: false });
       },
       homeHeroWrapStyle: (() => { let c = 'default'; try { c = (!st.finale && this.finalePending()) ? 'pointer' : 'default'; } catch (e) {} return { display: 'flex', gap: 7, cursor: c }; })(),
-      // ---- HOME CLUE FAN (v18): 6 slots, 4 top row / 2 bottom row. Found = candy pill (word,
-      // lowercase, palette color + ledge); unfound = dashed ghost oval. Distinct from the
-      // in-game `clueFan` (bobbing tokens under the board) — same underlying found-set, its
-      // own v18 styling/layout for the home hero.
+      // ---- HOME CLUE FAN (v18): 6 slots, 4 top row / 2 bottom row — the home hero's OWN
+      // layout, but the pills themselves are the SAME idiom as the in-game `clueFan` (bobbing
+      // tokens under the board): both read clueToken() above, so the pill styling (padding/
+      // radius/type/candy) and the bob drift/stagger can never drift apart again. Found =
+      // candy pill; day CONSUMED (dailyConsumed) + unfound = GRAYED "missed" pill (same gray
+      // family a failed sworb tile uses — never reveal mid-play); still-live day + unfound =
+      // dashed ghost pill with a dot-per-letter length hint, same as in-game.
       homeClueFan: (() => {
         try {
           const e = this.dailyEntry();
@@ -5914,27 +5946,14 @@ class Component extends DCLogic {
           const day = this.dailyKey || this.dayKey(new Date());
           let found = []; try { found = JSON.parse(LS.getItem(K.FOUND_PREFIX + day) || '[]'); } catch (x) {}
           const clues = e.themeWords || [];
-          // day CONSUMED (dailyConsumed): no re-guessing is left, so an unfound clue's blank
-          // dashed ghost stops protecting anything — reveal the real word as a GRAYED pill
-          // (same gray family the failed sworb tiles use) instead. Still-live day: stays a
-          // blank ghost, same as before (never reveal mid-play).
           const done = this.dailyConsumed();
           const dk = this.isDark();
-          const missedBg = dk ? '#3A3A44' : '#C8C4D2', missedEdge = dk ? '#26262E' : '#A9A5B3', missedInk = dk ? '#8A8A96' : '#6B6775';
           const tokens = clues.map((w, i) => {
             const word = String(w).toLowerCase();
             const isF = found.indexOf(word) >= 0;
-            if (isF) {
-              const pal = PALETTE[i % PALETTE.length];
-              return { k: 'hc' + i, found: true, word: word,
-                style: 'font-family:\'Fredoka\',\'Manrope\',sans-serif; font-size:13px; font-weight:600; letter-spacing:0.4px; padding:6px 14px; border-radius:999px; color:#1F1442; box-shadow:inset 0 -2px 0 rgba(0,0,0,0.18); background:' + pal.bg + ';' };
-            }
-            if (done) {
-              return { k: 'hc' + i, found: false, word: word,
-                style: 'font-family:\'Fredoka\',\'Manrope\',sans-serif; font-size:13px; font-weight:600; letter-spacing:0.4px; padding:6px 14px; border-radius:999px; color:' + missedInk + '; box-shadow:inset 0 -2px 0 ' + missedEdge + '; background:' + missedBg + ';' };
-            }
-            return { k: 'hc' + i, found: false, word: '',
-              style: 'width:46px; height:27px; border-radius:999px; border:2px dashed var(--line); box-sizing:border-box;' };
+            if (isF) return this.clueToken(i, word.toUpperCase(), 'found', dk);
+            if (done) return this.clueToken(i, word.toUpperCase(), 'missed', dk);
+            return this.clueToken(i, '· '.repeat(word.length).trim(), 'ghost', dk);
           });
           return { show: true, row1: tokens.slice(0, 4), row2: tokens.slice(4, 6) };
         } catch (e) { return { show: false, row1: [], row2: [] }; }
@@ -6996,7 +7015,9 @@ class Component extends DCLogic {
       // ---- CLUE FAN: the 5 clue words live as tile-block pills fanned + drifting under the
       // board (replaces the old CLUES stat cell). Found clues flip face-up in their candy
       // color; unfound stay ghosted with their length as a length hint. Gentle bob like the
-      // background floaters. This IS the clue tracker now.
+      // background floaters. This IS the clue tracker now. Pill styling + bob motion come from
+      // the shared clueToken() idiom (see tileColorFor above) — homeClueFan reads the exact
+      // same recipe so the two fans can't drift apart.
       clueFan: (() => {
         const e = this.dailyEntry();
         const sw = this.dailyStatus().sworb;
@@ -7007,21 +7028,7 @@ class Component extends DCLogic {
         const tokens = e.themeWords.map((w, i) => {
           const word = String(w).toLowerCase();
           const isF = found.indexOf(word) >= 0;
-          const pal = PALETTE[i % PALETTE.length];
-          const inner = {
-            padding: '5px 10px', borderRadius: 9, fontFamily: "'Fredoka','Manrope',sans-serif",
-            fontSize: 12.5, fontWeight: 700, letterSpacing: '1px', whiteSpace: 'nowrap', lineHeight: 1,
-            animation: isF ? 'clueLand 0.5s cubic-bezier(0.34,1.56,0.64,1) both' : 'none',
-            ...(isF
-              ? { background: pal.bg, color: '#1F1442', boxShadow: '0 3px 0 ' + pal.edge, textTransform: 'uppercase' }
-              : { background: dk ? 'rgba(255,255,255,0.03)' : 'rgba(31,20,66,0.03)', color: 'var(--ghost)', border: '2px dashed var(--line)' }),
-          };
-          return {
-            k: 'clue' + i, word: isF ? word.toUpperCase() : '· '.repeat(word.length).trim(), found: isF,
-            wrapStyle: { display: 'inline-flex' },
-            bobStyle: { animation: 'clueBob ' + (3.4 + i * 0.3).toFixed(1) + 's ease-in-out ' + (i * 0.35).toFixed(2) + 's infinite' },
-            innerStyle: inner,
-          };
+          return this.clueToken(i, isF ? word.toUpperCase() : '· '.repeat(word.length).trim(), isF ? 'found' : 'ghost', dk);
         });
         return { show: true, tokens, wrapStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 7, margin: '16px auto 0', minHeight: 40, width: '100%' } };
       })(),
