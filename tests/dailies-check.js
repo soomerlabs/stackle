@@ -1,8 +1,9 @@
 // tests/dailies-check.js — content guardrail for the AI-generated daily regime. Every day must:
 //   • parse (Daily.parseEntry)
-//   • sworb: a real dictionary word, 4-6 letters (owner rule 2026-07-22; see report — kitchen's
+//   • sworb: a real dictionary word, 5-7 letters (owner rule 2026-07-22 FINAL: big answers are
 //     historical 7-letter sworb was retired for cross-day consistency, nothing depends on 7)
-//   • theme words: real dictionary words, each 4-6 letters (no 3s, no 7s — owner rule 2026-07-22)
+//   • theme words: real dictionary words, each 4-7 letters, AT MOST 2 sevens per day (owner
+//     FINAL rule 2026-07-22: sevens are rare "stretcher" clues — engine-measured safe at ≤3)
 //   • pool size 10-15 theme words (enough candidates for the two-pass to lock 6, not a firehose)
 //   • NO prefix-pairs: no pool word may be a prefix of another pool word the same day. The
 //     clue-extension feature (clueFor / starts-with banking) resolves a spelled word to its clue
@@ -22,8 +23,11 @@ const dailies = JSON.parse(fs.readFileSync(path.join(root, 'dailies.json'), 'utf
 const dict = new Set(fs.readFileSync(path.join(root, 'dictionary.txt'), 'utf8').split(/\r?\n/).map(w => w.trim()).filter(Boolean));
 
 const CLUE_COUNT = 6;      // realized theme words per day ("6 to find")
-const WORD_MIN = 4;        // theme + sworb minimum length (owner rule: no 3-letter words)
-const WORD_MAX = 6;        // theme + sworb maximum length (owner rule: no 7-letter words)
+const WORD_MIN = 4;        // theme-word minimum length (owner rule: no 3-letter words)
+const WORD_MAX = 7;        // theme-word maximum length (owner FINAL rule 2026-07-22: 4-7, sevens are rare "stretchers")
+const SEVEN_CAP = 2;       // at most 2 seven-letter theme words per day (soft rule made hard here)
+const SWORB_MIN = 5;       // sworb 5-7 (owner: 4s too slight for the daily climax; 7s encouraged — e.g. KITCHEN)
+const SWORB_MAX = 7;
 const POOL_MIN = 10;       // candidate pool floor
 const POOL_MAX = 15;       // candidate pool ceiling
 
@@ -45,21 +49,26 @@ for (const day of Object.keys(dailies)) {
   const e = Daily.parseEntry(dailies, day);
   assert.ok(e, day + ': parses');
 
-  // sworb: real word, 4-6 letters
+  // sworb: real word, 5-7 letters
   assert.ok(dict.has(e.sworb), day + ': sworb "' + e.sworb + '" is in dictionary.txt');
-  assert.ok(e.sworb.length >= WORD_MIN && e.sworb.length <= WORD_MAX,
-    day + ': sworb "' + e.sworb + '" is ' + WORD_MIN + '-' + WORD_MAX + ' letters (got ' + e.sworb.length + ')');
+  assert.ok(e.sworb.length >= SWORB_MIN && e.sworb.length <= SWORB_MAX,
+    day + ': sworb "' + e.sworb + '" is ' + SWORB_MIN + '-' + SWORB_MAX + ' letters (got ' + e.sworb.length + ')');
 
   // pool size 10-15
   assert.ok(e.themeWords.length >= POOL_MIN && e.themeWords.length <= POOL_MAX,
     day + ': pool has ' + POOL_MIN + '-' + POOL_MAX + ' theme words (got ' + e.themeWords.length + ')');
 
-  // theme words: real dictionary words, each 4-6 letters
+  // theme words: real dictionary words, each 4-7 letters
   for (const w of e.themeWords) {
     assert.ok(dict.has(w), day + ': theme word "' + w + '" is in dictionary.txt');
     assert.ok(w.length >= WORD_MIN && w.length <= WORD_MAX,
       day + ': theme word "' + w + '" is ' + WORD_MIN + '-' + WORD_MAX + ' letters (got ' + w.length + ')');
   }
+
+  // at most SEVEN_CAP seven-letter theme words (stretchers stay rare + board stays packable)
+  const sevens = e.themeWords.filter(w => w.length === 7);
+  assert.ok(sevens.length <= SEVEN_CAP,
+    day + ': ' + sevens.length + ' seven-letter theme words (' + sevens.join(', ') + ') — max ' + SEVEN_CAP);
 
   // NO prefix-pairs (clueFor longest-match ambiguity guard)
   const pair = findPrefixPair(e.themeWords);
@@ -77,4 +86,4 @@ for (const day of Object.keys(dailies)) {
   assert.strictEqual(out.realized.length, CLUE_COUNT, day + ': realized theme set is exactly ' + CLUE_COUNT + ' (got ' + out.realized.length + ')');
   days++;
 }
-console.log('dailies-check: ' + days + ' days valid (sworb+theme 4-6, pool 10-15, no prefix-pairs, each locking exactly ' + CLUE_COUNT + ' clues)');
+console.log('dailies-check: ' + days + ' days valid (sworb 5-7, hints 4-7 (≤2 sevens), pool 10-15, no prefix-pairs, each locking exactly ' + CLUE_COUNT + ' clues)');

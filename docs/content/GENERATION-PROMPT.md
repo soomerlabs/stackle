@@ -43,12 +43,14 @@ One top-level key per day, keys in ascending date order.
 
 ### HARD RULES (guardrail-enforced — `node tests/dailies-check.js` fails the whole day if any is violated)
 
-1. **Sworb length: 4-6 letters.** The sworb must be a real dictionary word, 4-6 letters.
-   *(Note: earlier content had one 7-letter sworb — `kitchen` — which was retired to `galley` for
-   cross-day consistency. The current, enforced rule is 4-6 for every sworb; do not generate 7-letter
-   sworbs.)*
+1. **Sworb length: 5-7 letters.** The sworb must be a real dictionary word, 5-7 letters.
+   7-letter sworbs are ENCOURAGED — the answer is where a big word earns its drama (`kitchen` is
+   the canonical example). 4-letter answers are banned: too slight for the daily climax.
 2. **The sworb is NOT one of the theme words.** It must not appear anywhere in `themeWords`.
-3. **Theme word length: 4-6 letters each.** No 3-letter words, no 7-letter words.
+3. **Theme word length: 4-7 letters each** (no 3-letter words). **At most TWO 7-letter theme
+   words per day** (guardrail-enforced): sevens are the rare "stretcher" clues — a trophy find,
+   not the norm. Engine-measured: pools with 1-3 sevens still pack the board's exactly-6 at
+   ~100%, so a stretcher never risks the day.
 4. **Pool size: 10-15 theme words** per day.
 5. **Every word — sworb and all theme words — must be a real, common English dictionary word.**
    No proper nouns (no names/brands/places), no abbreviations, no hyphenated words, no

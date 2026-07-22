@@ -20,7 +20,7 @@
     ]
   },
   "2026-07-21": {
-    "sworb": "galley",
+    "sworb": "kitchen",
     "themeWords": [
       "oven",
       "fork",
@@ -72,7 +72,8 @@
       "muggy",
       "chill",
       "squall",
-      "breeze"
+      "breeze",
+      "thunder"
     ]
   },
   "2026-07-24": {
@@ -125,7 +126,8 @@
       "probe",
       "galaxy",
       "meteor",
-      "cosmos"
+      "cosmos",
+      "gravity"
     ]
   },
   "2026-07-27": {
