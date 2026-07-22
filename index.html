@@ -1779,6 +1779,21 @@ class Component extends DCLogic {
     // triggers a render while actually on home, so it can't leak ticking into other screens;
     // off-home it just keeps counting quietly in the background so the string is fresh the
     // instant home comes back into view.
+    //
+    // Road-to-9 Sprint 1 #4 (1-Hz throttle) investigated and INTENTIONALLY left as-is —
+    // reality check, not a missed optimization: support.js's StreamableComponent.render()
+    // (see its `vals = { ...userProps, ...this.logic.renderVals() || {} }`) calls
+    // renderVals() UNCONDITIONALLY on every commit — there is no shouldComponentUpdate/memo
+    // layer in this dc-runtime, and __setLogicState's `__v` counter bump forces React to
+    // re-render regardless of which state field changed. So EVERY setState anywhere in this
+    // component (not just this tick) already pays one full renderVals() rebuild; that's true
+    // today independent of this timer. Moving homeCountdownText's computation into `state`
+    // and having the template bind that state string directly (the naive fix) would NOT skip
+    // the renderVals() rebuild — renderVals() still runs in full on the same setState, just
+    // computing one fewer inline value inside it. There is no cheaper-than-this shape
+    // available without changing the runtime itself (Sprint 3 territory, not this file).
+    // What's already true and IS the real throttle: one setState call, once per second,
+    // gated to home-only — the cheapest observable unit of work this architecture allows.
     // own timer handle (this._cdTimer), NOT this.later()/this.timeouts: newGame() and
     // restoreRun() both purge this.timeouts wholesale ("nothing scheduled by a previous
     // game may fire into this one") — a tick parked in that array dies at the very first
