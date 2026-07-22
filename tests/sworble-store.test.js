@@ -9,6 +9,7 @@ const LS = S.LS;
 
 assert.strictEqual(typeof S.migrateLegacy, 'function', 'store must export migrateLegacy');
 assert.strictEqual(S.K.MIGRATED_STACKLE, 'sworble_migrated_stackle', 'flag key must be registered in K');
+assert.strictEqual(S.K.HINT_TOKENS_PREFIX, 'sworble_hint_tokens_', 'HINT AIDS token-bank prefix must be registered in K');
 
 // --- first run: copies every stackle_* key whose sworble_* twin is absent ---------
 LS.setItem('stackle_best', '4200');

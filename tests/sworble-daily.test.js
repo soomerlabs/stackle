@@ -315,4 +315,79 @@ console.log('sworble-daily: nextSlots passed');
 }
 console.log('sworble-daily: resolveCatch passed');
 
+// --- hintTokenEvents(args) -> {grant} — the HINT AIDS token seam: grant ONE token once the
+// player has spelled >=7 words this round WHILE clues remain unfound, and only once per
+// round (tokensEarnedAlready guards the repeat). Pure decision only — the caller owns
+// persistence + the on-brand grant fx. ---
+{
+  assert.strictEqual(typeof D.hintTokenEvents, 'function', 'hintTokenEvents exported');
+
+  // under the word threshold -> no grant, even with clues outstanding
+  assert.strictEqual(D.hintTokenEvents({ wordsSpelledThisRound: 6, cluesFound: 0, cluesTotal: 5, tokensEarnedAlready: 0 }).grant, false, 'fewer than 7 words -> no grant');
+
+  // at/over threshold, clues still outstanding, nothing granted yet -> grant
+  assert.strictEqual(D.hintTokenEvents({ wordsSpelledThisRound: 7, cluesFound: 2, cluesTotal: 5, tokensEarnedAlready: 0 }).grant, true, '7 words, clues remain -> grant');
+  assert.strictEqual(D.hintTokenEvents({ wordsSpelledThisRound: 12, cluesFound: 4, cluesTotal: 5, tokensEarnedAlready: 0 }).grant, true, 'well over threshold still grants once');
+
+  // all clues already found -> nothing to hint at, no grant
+  assert.strictEqual(D.hintTokenEvents({ wordsSpelledThisRound: 9, cluesFound: 5, cluesTotal: 5, tokensEarnedAlready: 0 }).grant, false, 'clues fully found -> no grant');
+
+  // already granted this round -> no repeat grant (one per round for now)
+  assert.strictEqual(D.hintTokenEvents({ wordsSpelledThisRound: 9, cluesFound: 1, cluesTotal: 5, tokensEarnedAlready: 1 }).grant, false, 'already granted this round -> no repeat');
+
+  // malformed/missing args never throw, and never grant
+  assert.strictEqual(D.hintTokenEvents({}).grant, false, 'empty args -> no grant, never throws');
+  assert.strictEqual(D.hintTokenEvents(null).grant, false, 'null args -> no grant, never throws');
+  assert.strictEqual(D.hintTokenEvents({ wordsSpelledThisRound: 7, cluesFound: 0, cluesTotal: 0, tokensEarnedAlready: 0 }).grant, false, 'no clues at all today -> nothing to hint at, no grant');
+}
+console.log('sworble-daily: hintTokenEvents passed');
+
+// --- firstUnfoundClue(themeWords, found) -> word|null — MERCY PULSE's deterministic pick:
+// the first still-unfound clue in REALIZED (themeWords) order, lowercased. ---
+{
+  assert.strictEqual(typeof D.firstUnfoundClue, 'function', 'firstUnfoundClue exported');
+  const themeWords = ['tide', 'coral', 'wave', 'reef', 'salt'];
+
+  assert.strictEqual(D.firstUnfoundClue(themeWords, []), 'tide', 'nothing found yet -> first in realized order');
+  assert.strictEqual(D.firstUnfoundClue(themeWords, ['tide']), 'coral', 'skips already-found clues, in order');
+  assert.strictEqual(D.firstUnfoundClue(themeWords, ['tide', 'coral', 'wave']), 'reef', 'keeps skipping through the middle');
+  assert.strictEqual(D.firstUnfoundClue(themeWords, themeWords), null, 'everything found -> null, nothing to pulse');
+  assert.strictEqual(D.firstUnfoundClue(themeWords, ['CORAL']), 'tide', 'found-list case is normalized before comparing');
+
+  // malformed/missing args never throw
+  assert.strictEqual(D.firstUnfoundClue(null, []), null, 'null themeWords -> null, never throws');
+  assert.strictEqual(D.firstUnfoundClue(themeWords, null), 'tide', 'null found -> treated as empty');
+  assert.strictEqual(D.firstUnfoundClue([], []), null, 'empty themeWords -> null');
+}
+console.log('sworble-daily: firstUnfoundClue passed');
+
+// --- mercyPulseShouldFire(args) -> boolean — the automatic, token-free mercy pulse: fires
+// exactly on the tick the round clock CROSSES the 2:00-remaining threshold (matches the
+// existing low-time-warning edge-detection idiom: prevSecsLeft > threshold && secsLeft <=
+// threshold), only when the player has found <=2 clues, and never twice in a round
+// (alreadyFired guards the repeat — the caller owns that guard as an in-memory flag so a
+// reload naturally re-arms it; see the HINT AIDS integrity rules). ---
+{
+  assert.strictEqual(typeof D.mercyPulseShouldFire, 'function', 'mercyPulseShouldFire exported');
+
+  // the exact crossing tick (121 -> 120) with <=2 clues found -> fire
+  assert.strictEqual(D.mercyPulseShouldFire({ prevSecsLeft: 121, secsLeft: 120, cluesFound: 2, alreadyFired: false }), true, 'crossing 2:00 with <=2 clues -> fire');
+  assert.strictEqual(D.mercyPulseShouldFire({ prevSecsLeft: 121, secsLeft: 120, cluesFound: 0, alreadyFired: false }), true, 'zero clues found also qualifies');
+
+  // not actually crossing the threshold this tick -> no fire
+  assert.strictEqual(D.mercyPulseShouldFire({ prevSecsLeft: 130, secsLeft: 125, cluesFound: 1, alreadyFired: false }), false, 'still above 2:00 -> no fire');
+  assert.strictEqual(D.mercyPulseShouldFire({ prevSecsLeft: 90, secsLeft: 89, cluesFound: 1, alreadyFired: false }), false, 'already past 2:00 (not the crossing tick) -> no fire');
+
+  // too many clues already found -> the mercy isn't needed
+  assert.strictEqual(D.mercyPulseShouldFire({ prevSecsLeft: 121, secsLeft: 120, cluesFound: 3, alreadyFired: false }), false, 'more than 2 clues found -> no fire');
+
+  // already fired this round -> never again
+  assert.strictEqual(D.mercyPulseShouldFire({ prevSecsLeft: 121, secsLeft: 120, cluesFound: 0, alreadyFired: true }), false, 'already fired this round -> no repeat');
+
+  // malformed/missing args never throw, and never fire
+  assert.strictEqual(D.mercyPulseShouldFire({}), false, 'empty args -> no fire, never throws');
+  assert.strictEqual(D.mercyPulseShouldFire(null), false, 'null args -> no fire, never throws');
+}
+console.log('sworble-daily: mercyPulseShouldFire passed');
+
 console.log('sworble-daily: all passed');

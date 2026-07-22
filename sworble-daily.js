@@ -185,7 +185,71 @@
     return { clue: clue, banked: banked, isNew: banked !== found };
   }
 
-  var API = { parseEntry: parseEntry, isClue: isClue, clueFor: clueFor, checkGuess: checkGuess, guessReward: guessReward, scoreGuess: scoreGuess, bankClue: bankClue, applySworbGuess: applySworbGuess, nextSlots: nextSlots, BACKSPACE: BACKSPACE, resolveCatch: resolveCatch, REWARD: REWARD };
+  // ---- HINT AIDS (owner-locked 2026-07-22, docs/superpowers/specs/2026-07-21-app-redesign-
+  // scope.md "HINT AIDS + MONETIZATION SEAM"): three free aids — first-letter ghost pills
+  // (see index.html's clueToken), earned hint TOKENS (the seam, decided here), and an
+  // automatic token-free MERCY PULSE (also decided here). All pure: these fns only ANSWER
+  // "should X happen right now" — index.html owns persistence, setState, and the glow fx.
+
+  // one grant per round for now; a number (not a bool) so a future "earn up to N" tuning
+  // knob is a one-line change here, not a reshape of the caller's contract.
+  var MAX_HINT_GRANTS_PER_ROUND = 1;
+  var HINT_TOKEN_WORD_THRESHOLD = 7;
+  var MERCY_THRESHOLD_SECS = 120; // "2:00 remaining"
+  var MERCY_MAX_CLUES_FOUND = 2;
+
+  // hintTokenEvents(args) -> {grant: bool} — grants ONE token once the player has spelled
+  // >=7 words THIS ROUND while clues remain unfound (cluesFound < cluesTotal), and only if
+  // a token hasn't already been earned this round (tokensEarnedAlready, guards the repeat —
+  // the caller persists this per day so it survives a reload). cluesTotal<=0 (no sworb
+  // today, or nothing left to find) never grants — there'd be nothing to hint at.
+  function hintTokenEvents(args) {
+    var a = args || {};
+    var words = Number(a.wordsSpelledThisRound) || 0;
+    var cluesFound = Number(a.cluesFound) || 0;
+    var cluesTotal = Number(a.cluesTotal) || 0;
+    var already = Number(a.tokensEarnedAlready) || 0;
+    if (already >= MAX_HINT_GRANTS_PER_ROUND) return { grant: false };
+    if (words < HINT_TOKEN_WORD_THRESHOLD) return { grant: false };
+    if (cluesTotal <= 0 || cluesFound >= cluesTotal) return { grant: false };
+    return { grant: true };
+  }
+
+  // firstUnfoundClue(themeWords, found) -> word|null — MERCY PULSE's deterministic target:
+  // the first still-unfound clue in REALIZED (themeWords) order. `found` entries are
+  // compared case-insensitively (FOUND_PREFIX always banks lowercase, but this stays
+  // defensive rather than trusting the caller).
+  function firstUnfoundClue(themeWords, found) {
+    var list = Array.isArray(themeWords) ? themeWords : [];
+    var f = (Array.isArray(found) ? found : []).map(function (w) { return String(w || '').toLowerCase(); });
+    for (var i = 0; i < list.length; i++) {
+      var w = String(list[i] || '').toLowerCase();
+      if (w && f.indexOf(w) < 0) return w;
+    }
+    return null;
+  }
+
+  // mercyPulseShouldFire(args) -> bool — fires exactly on the tick the round clock CROSSES
+  // the 2:00-remaining mark (same crossing idiom as index.html's low-time banner:
+  // prevSecsLeft > threshold && secsLeft <= threshold — never a level check, or a slow tab
+  // re-render could re-fire it every tick), only when <=2 clues are found, and never once
+  // alreadyFired (the caller's in-memory-only guard — deliberately NOT persisted, so a
+  // reload re-arms it; see the HINT AIDS integrity rules).
+  function mercyPulseShouldFire(args) {
+    var a = args || {};
+    if (a.alreadyFired) return false;
+    var prev = Number(a.prevSecsLeft);
+    var now = Number(a.secsLeft);
+    if (!isFinite(prev) || !isFinite(now)) return false;
+    var crossed = prev > MERCY_THRESHOLD_SECS && now <= MERCY_THRESHOLD_SECS;
+    if (!crossed) return false;
+    var cluesFound = Number(a.cluesFound) || 0;
+    return cluesFound <= MERCY_MAX_CLUES_FOUND;
+  }
+
+  var API = { parseEntry: parseEntry, isClue: isClue, clueFor: clueFor, checkGuess: checkGuess, guessReward: guessReward, scoreGuess: scoreGuess, bankClue: bankClue, applySworbGuess: applySworbGuess, nextSlots: nextSlots, BACKSPACE: BACKSPACE, resolveCatch: resolveCatch, REWARD: REWARD,
+    hintTokenEvents: hintTokenEvents, firstUnfoundClue: firstUnfoundClue, mercyPulseShouldFire: mercyPulseShouldFire,
+    HINT_TOKEN_WORD_THRESHOLD: HINT_TOKEN_WORD_THRESHOLD, MAX_HINT_GRANTS_PER_ROUND: MAX_HINT_GRANTS_PER_ROUND, MERCY_THRESHOLD_SECS: MERCY_THRESHOLD_SECS, MERCY_MAX_CLUES_FOUND: MERCY_MAX_CLUES_FOUND };
   root.SworbleDaily = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);
