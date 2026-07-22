@@ -104,6 +104,16 @@ amber-red-pink), and the color must **glide smooth-as-butter** on page switch (a
   enough to be a first-class screen).
 - Audit other modals for the same treatment.
 
+## HINT AIDS + MONETIZATION SEAM (owner-locked 2026-07-22)
+Chosen aids (all free): ghost pills show FIRST LETTER always; EARNED HINT — spell ~7 words while
+clues remain unfound → earn a hint token; tapping a ghost pill spends a token → that clue's path
+flashes on the board; MERCY PULSE — at 2:00 left with ≤2 clues found, one unfound clue pulses once
+(automatic, token-free). Declined: spend-score-for-hints.
+MONETIZATION DIRECTION: never sell advantage in the daily (leaderboard trust is the product).
+Future paid surfaces: archive days, streak insurance, cosmetics (tile skins/storm palettes),
+practice packs. The hint-TOKEN seam is deliberately future-proof: today tokens are earned-only;
+a purchasable top-up would be a business toggle, and even then aimed at practice/archive boards.
+
 ## NEW SCREENS / SYSTEMS (backlog — decompose into sub-projects)
 - **First-time interactive tutorial** (full screen, minimal words, not annoying/confusing):
   1) the block, 2) **link words with an interactive gesture** — user must swipe correctly to unlock
