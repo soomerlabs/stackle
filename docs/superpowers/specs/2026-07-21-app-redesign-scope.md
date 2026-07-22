@@ -114,6 +114,10 @@ Future paid surfaces: archive days, streak insurance, cosmetics (tile skins/stor
 practice packs. The hint-TOKEN seam is deliberately future-proof: today tokens are earned-only;
 a purchasable top-up would be a business toggle, and even then aimed at practice/archive boards.
 
+## AWAITING OWNER DESIGNS (2026-07-22 — do NOT build ahead)
+Owner has updated designs coming for: PROFILE, LEADERBOARD, SETTINGS (new full screen), and
+DAILY-SCORE SHARING. Hold these surfaces until the mocks arrive; current versions are placeholders.
+
 ## NEW SCREENS / SYSTEMS (backlog — decompose into sub-projects)
 - **First-time interactive tutorial** (full screen, minimal words, not annoying/confusing):
   1) the block, 2) **link words with an interactive gesture** — user must swipe correctly to unlock
