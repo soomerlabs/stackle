@@ -2139,16 +2139,21 @@ class Component extends DCLogic {
     this.feverUntil = 0;         // mine-catch fever window
     this.juiceNext = 0;          // pending friendly deals
     // SWORB day: two-pass pack EXACTLY SWORB_CLUE_COUNT (6) theme words onto the opening board
-    // ("6 to find, 6 to crack it"). Pass 1 best-effort-packs the wider themeTarget() candidate
-    // pool; the first 6 realized become the target set. Pass 2 re-packs a FRESH board with ONLY
-    // those 6, on a fresh rng from the SAME seed, so the final board stamps ONLY the 6 targets —
-    // no leftover bonus words from the wider pass-1 pool. Deterministic: same seed + same pool
+    // ("6 to find, 6 to crack it"). Pass 1 best-effort-packs the FULL curated theme-word pool
+    // (see below — not themeTarget()-sliced); the first 6 realized become the target set.
+    // Pass 2 re-packs a FRESH board with ONLY those 6, on a fresh rng from the SAME seed, so
+    // the final board stamps ONLY the 6 targets — no leftover bonus words from the wider
+    // pass-1 pool. Deterministic: same seed + same pool
     // → same 6, always. Packing is deterministic and never fails (unlike the old all-or-nothing
     // retry loop) — the REALIZED set (words that packed AND verify findable) is the source of
     // truth (see SworbleSeed.seedClueLettersTwoPass; dailies-check.js simulates this exact path).
     const _pool = this.themePool();
     if (_pool && (this.optVal('dailyMode', true) || this.stacklOn())) {
-      const wanted = _pool.themeWords.slice(0, this.themeTarget());
+      // pass 1's candidate pool is the FULL curated theme-word list (not themeTarget()-sliced):
+      // a wider pool packs strictly better, and dailies-check.js's guardrail simulates this
+      // EXACT full-pool call — slicing here would let the app under-place clues the guardrail
+      // never catches. themeTarget() remains a dev-only stepper elsewhere (see its other uses).
+      const wanted = _pool.themeWords;
       const byCell = {}; tiles.forEach(t => { byCell[t.row + ',' + t.col] = t; });
       const dailySeed = this.dailyKey + '|sworb';
       const rngFactory = () => mulberry32(SworbleCore.hashSeed(dailySeed) >>> 0);
@@ -2158,6 +2163,9 @@ class Component extends DCLogic {
       // should, by construction). cand.usedFallback (content day is thin/misconfigured — should
       // never happen with curated pools; caught by dailies-check.js) leaves any pass-1 extras
       // stamped on the board as unmarked bonus words, but only the 6 targets are ever persisted.
+      if (cand.usedFallback || cand.realized.length !== SWORB_CLUE_COUNT) {
+        console.warn('sworbl: day under-placed clues', this.dailyKey, 'realized', cand.realized.length, 'of', SWORB_CLUE_COUNT, 'usedFallback', cand.usedFallback);
+      }
       const realized = cand.realized.filter(w => SworbleSolver.findWord(tiles, { word: w, expand: SworbleCore.expandLetter, diag: this.diag() }));
       if (realized.length) {
         this._activeTheme = realized;
