@@ -66,6 +66,7 @@ export function GameBoard({
   const [tiles, setTiles] = useState<TileT[]>(() => initialTiles ?? deal.tiles);
   // id → position-in-swipe (pop stagger rides the seq; web clearSeq)
   const [clearingIds, setClearingIds] = useState<Map<number, number>>(new Map());
+  const [flights, setFlights] = useState<Map<number, { dx: number; dy: number }>>(new Map());
   const [verdict, setVerdict] = useState<{ word: string; pts?: number; ok: boolean; clue?: string; mult?: number } | null>(null);
   const [trace, setTrace] = useState({ word: '', ci: 0 });
   const [jsPath, setJsPath] = useState<TraceTile[]>([]); // web connector mirror
@@ -511,12 +512,39 @@ export function GameBoard({
       onScore && onScore(scoreRef.current);
       playedRef.current.add(word);
       const gone = new Map(ids.map((id, i) => [id, i]));
+      // 5f flight vectors (web stepperFly): from each tile's center to its
+      // chip slot on the stepper — center-spread, chip width min(32, strip/n)
+      const stripW = boardW + 24;
+      const cw = Math.min(32, (stripW - 20) / ids.length);
+      // stepper center in tile coordinates: card pad 12 + stepper margin 12 +
+      // half the fixed 80 card = 64px above the inner board origin
+      const flights = new Map(
+        ids.map((id, i) => {
+          const t = tilesMirror.current.find((x) => x.id === id);
+          if (!t) return [id, { dx: 0, dy: 0 }] as const;
+          const tx = t.col * cell + size / 2;
+          const ty = t.row * cell + size / 2;
+          return [
+            id,
+            {
+              dx: Math.round(boardW / 2 + (i - (ids.length - 1) / 2) * cw - tx),
+              dy: Math.round(-64 - ty),
+            },
+          ] as const;
+        })
+      );
+      setFlights((cur) => new Map([...cur, ...flights]));
       // additive/subtractive ops (audit weakness #4b): overlapping commits must
       // not wipe each other's clearing state
       setClearingIds((cur) => new Map([...cur, ...gone]));
       // settle AFTER the last tile's staggered pop (45ms/tile, web clearSeq)
       setTimeout(() => {
         setClearingIds((cur) => {
+          const next = new Map(cur);
+          gone.forEach((_v, id) => next.delete(id));
+          return next;
+        });
+        setFlights((cur) => {
           const next = new Map(cur);
           gone.forEach((_v, id) => next.delete(id));
           return next;
@@ -660,6 +688,7 @@ export function GameBoard({
               gap={gap}
               sPath={sPath}
               clearingSeq={clearingIds.get(t.id)}
+              flight={flights.get(t.id)}
               nope={nope.seqs.has(t.id) ? nope.key : 0}
               nopeSeq={nope.seqs.get(t.id) ?? 0}
               nopeTotal={nope.total}
