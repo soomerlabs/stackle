@@ -193,5 +193,143 @@
       "gloomy"
     ],
     "definition": "the dark shape cast when a body blocks the light"
+  },
+  "2026-07-30": {
+    "archetype": "straight-category",
+    "sworb": "circus",
+    "themeWords": [
+      "tent",
+      "ring",
+      "lion",
+      "mime",
+      "clown",
+      "stilt",
+      "juggle",
+      "tumble",
+      "cannon",
+      "parade",
+      "trapeze",
+      "acrobat"
+    ],
+    "definition": "a traveling show of acrobats, clowns, and rings"
+  },
+  "2026-07-31": {
+    "archetype": "connector",
+    "sworb": "water",
+    "themeWords": [
+      "fall",
+      "mark",
+      "shed",
+      "melon",
+      "proof",
+      "tight",
+      "front",
+      "color",
+      "fresh",
+      "spout",
+      "under",
+      "works"
+    ],
+    "definition": "every word on this board is thirsty for the same partner"
+  },
+  "2026-08-01": {
+    "archetype": "sibling",
+    "sworb": "garnet",
+    "themeWords": [
+      "opal",
+      "ruby",
+      "jade",
+      "onyx",
+      "amber",
+      "topaz",
+      "beryl",
+      "agate",
+      "quartz",
+      "zircon",
+      "jasper",
+      "emerald",
+      "diamond"
+    ],
+    "definition": "one deep-red treasure is still buried in the board"
+  },
+  "2026-08-02": {
+    "archetype": "lateral",
+    "sworb": "broken",
+    "themeWords": [
+      "news",
+      "bone",
+      "home",
+      "heart",
+      "chain",
+      "glass",
+      "habit",
+      "record",
+      "mirror",
+      "spirit",
+      "window",
+      "promise",
+      "silence"
+    ],
+    "definition": "what everything on this board can end up being \u2014 handle with care"
+  },
+  "2026-08-03": {
+    "archetype": "connector",
+    "sworb": "board",
+    "themeWords": [
+      "card",
+      "dash",
+      "clip",
+      "bill",
+      "wash",
+      "over",
+      "chalk",
+      "score",
+      "white",
+      "skate",
+      "spring",
+      "switch",
+      "mother"
+    ],
+    "definition": "flat, sturdy, and shared \u2014 every word here wants to be attached to it"
+  },
+  "2026-08-04": {
+    "archetype": "wordplay",
+    "sworb": "safari",
+    "themeWords": [
+      "grape",
+      "clasp",
+      "wheel",
+      "prowl",
+      "carpet",
+      "pantry",
+      "goatee",
+      "berate",
+      "aboard",
+      "shared",
+      "coward",
+      "pigment",
+      "scatter"
+    ],
+    "definition": "a creature hides inside every word \u2014 where would you go to spot them all?"
+  },
+  "2026-08-05": {
+    "archetype": "sibling",
+    "sworb": "basil",
+    "themeWords": [
+      "sage",
+      "mint",
+      "dill",
+      "thyme",
+      "cumin",
+      "clove",
+      "chive",
+      "fennel",
+      "ginger",
+      "nutmeg",
+      "pepper",
+      "parsley",
+      "oregano"
+    ],
+    "definition": "the rack is missing one more leaf \u2014 pesto knows which"
   }
 }
