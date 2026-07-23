@@ -84,7 +84,7 @@ export function ScoreHeader({ score, target, marks, width, gs = GAME_DARK }: Pro
 
 const styles = StyleSheet.create({
   wrap: {
-    gap: 8, // real air between the track and the reading line (owner)
+    gap: 14, // the knob needs its own airspace above the numbers (owner ×2)
     marginBottom: 8,
   },
   reading: {
