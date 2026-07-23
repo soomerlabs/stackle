@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ToastHost } from '@/components/toast';
 import { useFonts, Fredoka_500Medium, Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { useEffect } from 'react';
 
@@ -56,6 +57,7 @@ export default function RootLayout() {
             animation: 'fade',
           }}
         />
+        <ToastHost />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

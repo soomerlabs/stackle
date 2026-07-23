@@ -26,6 +26,7 @@ import {
 import { ARCHETYPE_LABEL } from '@/components/game/result-view';
 import { TUNING } from '@/game/tuning';
 import { haptic } from '@/game/haptics';
+import { toast } from '@/components/toast';
 
 const LB_MODES: LbFieldMode[] = ['full', '2', '1', '0'];
 
@@ -47,7 +48,6 @@ export default function DevScreen() {
   const theme = useTheme();
   const [stamp, setStamp] = useState(0); // bump → re-derive everything
   const [armWipe, setArmWipe] = useState(false);
-  const [msg, setMsg] = useState('');
   const [flags, setFlags] = useState(readFlags);
 
   const realDay = engine.core.dayKey(new Date());
@@ -58,7 +58,7 @@ export default function DevScreen() {
   const lbMode = flags.lbMode;
 
   const refresh = (note?: string) => {
-    if (note) setMsg(note);
+    if (note) toast(note, { title: 'dev tools', pal: 4 });
     setFlags(readFlags()); // snapshot AFTER the write — the rows render this
     setStamp((s) => s + 1);
   };
@@ -73,7 +73,7 @@ export default function DevScreen() {
   const wipeAll = () => {
     if (!armWipe) {
       setArmWipe(true);
-      setMsg('tap again to wipe EVERYTHING');
+      toast('tap again to wipe EVERYTHING', { title: 'dev tools', pal: 5 });
       return;
     }
     // the wipe also deletes the reset nonce — re-seed it ABOVE its pre-wipe
@@ -326,7 +326,6 @@ export default function DevScreen() {
             <Text style={[styles.actionGlyph, { color: 'rgba(255,255,255,0.7)' }]}>⌫</Text>
           </Pressable>
 
-          {!!msg && <Text style={[styles.msg, { color: CLUE_GREEN }]}>{msg}</Text>}
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -476,11 +475,5 @@ const styles = StyleSheet.create({
   actionGlyph: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 16,
-  },
-  msg: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 12.5,
-    textAlign: 'center',
-    marginTop: 8,
   },
 });
