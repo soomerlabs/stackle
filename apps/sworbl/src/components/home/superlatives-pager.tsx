@@ -5,10 +5,10 @@
 // clue words = green-dashed pills (par-bot big words arrive with the
 // server). The old hint-chips row is absorbed into this — clue intel lives
 // here now. Swipe or tap the dots to flip.
-import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { type Theme, ACCENT, ACCENT_EDGE, CLUE_GREEN, CLUE_GREEN_EDGE } from '@/game/theme';
 import { type BestWord } from '@/game/persist';
 
@@ -56,6 +56,20 @@ function Pill({
 
 export function SuperlativesPager({ theme, bestWords, foundClues, clues }: Props) {
   const [page, setPage] = useState(0);
+  // BOTH pages stay mounted, absolutely stacked; the container holds the
+  // TALLER page's measured height — cycling can never shift the layout
+  // (owner). Crossfade is pure opacity.
+  const [h, setH] = useState<[number, number]>([0, 0]);
+  const onPageLayout = (i: 0 | 1) => (e: LayoutChangeEvent) => {
+    const next = e.nativeEvent.layout.height;
+    setH((cur) => (Math.abs(cur[i] - next) < 1 ? cur : i === 0 ? [next, cur[1]] : [cur[0], next]));
+  };
+  const sPage = useSharedValue(0);
+  useEffect(() => {
+    sPage.value = withTiming(page, { duration: 220 });
+  }, [page]);
+  const gotStyle = useAnimatedStyle(() => ({ opacity: 1 - sPage.value }));
+  const awayStyle = useAnimatedStyle(() => ({ opacity: sPage.value }));
   const flip = Gesture.Pan()
     .activeOffsetX([-20, 20])
     .runOnJS(true)
@@ -72,12 +86,11 @@ export function SuperlativesPager({ theme, bestWords, foundClues, clues }: Props
   return (
     <GestureDetector gesture={flip}>
       <View style={styles.wrap}>
-        {page === 0 ? (
+        <View style={{ height: Math.max(h[0], h[1]) || undefined, minHeight: 60 }}>
           <Animated.View
-            key="got"
-            entering={FadeIn.duration(240)}
-            exiting={FadeOut.duration(160)}
-            style={styles.pageWrap}>
+            pointerEvents={page === 0 ? 'auto' : 'none'}
+            onLayout={onPageLayout(0)}
+            style={[styles.pageWrap, gotStyle]}>
             <Text style={[styles.label, { color: theme.faint }]}>WHAT YOU GOT</Text>
             <View style={styles.pills}>
               {best && <Pill theme={theme} word={best.word} pts={best.pts} kind="best" />}
@@ -94,12 +107,10 @@ export function SuperlativesPager({ theme, bestWords, foundClues, clues }: Props
               )}
             </View>
           </Animated.View>
-        ) : (
           <Animated.View
-            key="away"
-            entering={FadeIn.duration(240)}
-            exiting={FadeOut.duration(160)}
-            style={styles.pageWrap}>
+            pointerEvents={page === 1 ? 'auto' : 'none'}
+            onLayout={onPageLayout(1)}
+            style={[styles.pageWrap, awayStyle]}>
             <Text style={[styles.label, { color: theme.faint }]}>WHAT GOT AWAY</Text>
             <View style={styles.pills}>
               {missedClues.map((c) => (
@@ -112,7 +123,7 @@ export function SuperlativesPager({ theme, bestWords, foundClues, clues }: Props
               )}
             </View>
           </Animated.View>
-        )}
+        </View>
         <View style={styles.dots}>
           {[0, 1].map((i) => (
             <Pressable key={i} onPress={() => setPage(i)} hitSlop={8}>
@@ -134,9 +145,12 @@ const styles = StyleSheet.create({
   wrap: {
     alignSelf: 'stretch',
     gap: 8,
-    minHeight: 96,
   },
   pageWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     gap: 9,
   },
   label: {
