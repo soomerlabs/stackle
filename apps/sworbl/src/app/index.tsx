@@ -58,9 +58,15 @@ import { haptic } from '@/game/haptics';
 //   throw instead of restarting from rest (the dead-hand-off fix)
 const OPEN_SPRING = { mass: 0.7, damping: 29, stiffness: 270 }; // overdamped —
 // the open lands DEAD FLAT (owner: no bounce), snap comes from stiffness
-// park lands FLAT (owner reversal: "i don't want it to bounce") — overdamped,
-// no overshoot, no squash; the dock tap is the landing statement
-const PARK_SPRING = { mass: 0.9, damping: 32, stiffness: 210 };
+// park lands FLAT and ENDS CRISP (owner: the overdamped tail crawled its
+// last pixels for ~a second) — rest thresholds cut the asymptote
+const PARK_SPRING = {
+  mass: 0.85,
+  damping: 30,
+  stiffness: 250,
+  restDisplacementThreshold: 0.4,
+  restSpeedThreshold: 4,
+};
 
 const twistLabel = (a: string) => ARCHETYPE_LABEL[a] ?? null;
 
@@ -229,9 +235,13 @@ export default function HomeScreen() {
     closingRef.current = true;
     setFrostLive(true); // pre-mount the frost — it must be WARM before landing
     finishClose();
-    sheetY.value = withSpring(closedY, PARK_SPRING, () => {
-      'worklet';
-      runOnJS(closeSettled)();
+    requestAnimationFrame(() => {
+      // the spring starts one frame AFTER the close's JS burst (frost mount +
+      // state batch) — its first frames stay clean
+      sheetY.value = withSpring(closedY, PARK_SPRING, () => {
+        'worklet';
+        runOnJS(closeSettled)();
+      });
     });
     // day state may have changed inside the round (finish/lock)
     setTimeout(refreshDay, 300);
@@ -381,10 +391,10 @@ export default function HomeScreen() {
   const commitClose = useCallback(() => {
     sheetRef.current?.pauseForClose();
     closingRef.current = true;
-    setFrostLive(true); // pre-mount the frost before the descent lands
-    finishClose();
+    finishClose(); // frost already warmed at drag start
     setTimeout(refreshDay, 300);
   }, [finishClose, refreshDay]);
+  const prepFrost = useCallback(() => setFrostLive(true), []);
   const closeDrag = useMemo(
     () =>
       Gesture.Pan()
@@ -392,6 +402,11 @@ export default function HomeScreen() {
         // math would TELEPORT the sheet on a downward touch
         .enabled(sheetOpen)
         .activeOffsetY(15)
+        .onStart(() => {
+          'worklet';
+          // frost warms at drag START — the commit moment stays lean
+          runOnJS(prepFrost)();
+        })
         .onUpdate((e) => {
           'worklet';
           sheetY.value = Math.min(closedY, Math.max(0, e.translationY));
@@ -419,7 +434,7 @@ export default function HomeScreen() {
             sheetY.value = withSpring(0, { ...OPEN_SPRING, velocity: e.velocityY });
           }
         }),
-    [height, closedY, sheetOpen, commitClose, detentIn, detentOut]
+    [height, closedY, sheetOpen, commitClose, prepFrost, detentIn, detentOut]
   );
 
   // PERF: transform ONLY — animating border radius on a clipped full-screen
