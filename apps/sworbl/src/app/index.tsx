@@ -68,6 +68,10 @@ export default function HomeScreen() {
   const finishClose = useCallback(() => setSheetOpen(false), []);
   const closeSheet = useCallback(() => {
     sheetRef.current?.pauseForClose();
+    // AUDIT BLOCKER #1: sheetOpen must flip false SYNCHRONOUSLY at close-start —
+    // if it waits for the animation, the arm effect re-fires and the count-in
+    // restarts invisibly behind the closed sheet, burning the round
+    setSheetOpen(false);
     sheetY.value = withTiming(height, { duration: 260 }, (fin) => {
       'worklet';
       if (fin) runOnJS(finishClose)();
@@ -125,11 +129,13 @@ export default function HomeScreen() {
         .onEnd((e) => {
           'worklet';
           if (e.translationY > height * 0.25 || e.velocityY > 900) {
-            sheetY.value = withTiming(height, { duration: 220 }, (fin) => {
-              'worklet';
-              if (fin) runOnJS(finishClose)();
-            });
+            // commit: deactivate NOW (blocker #1 — never let the arm effect
+            // re-fire while the sheet slides away)
+            runOnJS(finishClose)();
+            sheetY.value = withTiming(height, { duration: 220 });
           } else {
+            // abort: sheet springs back OPEN — active stays true, so a
+            // disarmed count-in re-arms fresh from 3 (the intended restart)
             sheetY.value = withSpring(0, SHEET_SPRING);
           }
         }),
