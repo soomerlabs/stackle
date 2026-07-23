@@ -122,6 +122,7 @@ export default function HomeScreen() {
     sheetRef.current?.pauseForClose();
     finishClose();
   }, [finishClose]);
+  const rearmSheet = useCallback(() => sheetRef.current?.rearm(), []);
   const closeDrag = useMemo(
     () =>
       Gesture.Pan()
@@ -142,12 +143,13 @@ export default function HomeScreen() {
             runOnJS(commitClose)();
             sheetY.value = withTiming(height, { duration: 220 });
           } else {
-            // abort: sheet springs back OPEN — active stays true, so a
-            // disarmed count-in re-arms fresh from 3 (the intended restart)
+            // abort: sheet springs back OPEN — explicitly re-arm (arming is
+            // edge-triggered now, and `active` never flipped during the drag)
             sheetY.value = withSpring(0, SHEET_SPRING);
+            runOnJS(rearmSheet)();
           }
         }),
-    [height, prepClose, commitClose]
+    [height, prepClose, commitClose, rearmSheet]
   );
 
   // PERF: transform ONLY — animating border radius on a clipped full-screen

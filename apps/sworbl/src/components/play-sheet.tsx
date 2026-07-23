@@ -37,6 +37,7 @@ type Phase = 'idle' | 'countin' | 'live' | 'paused' | 'finale' | 'done';
 
 export interface PlaySheetHandle {
   pauseForClose: () => void; // home calls this before sliding the sheet away
+  rearm: () => void; // an ABORTED close-drag springs back → fresh 3·2·1
 }
 
 interface PlaySheetProps {
@@ -76,14 +77,23 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
   // the app's foreground state — arming must never happen while backgrounded
   const [awake, setAwake] = useState(true);
 
-  // ARM on dock — and RE-ARM from paused (owner: no visible paused state; a
-  // paused round reopens straight into 3·2·1·GO with its remaining time)
+  // ARM is EDGE-TRIGGERED (owner bug: close-drag pauses at first movement,
+  // and a level-triggered arm started the count-in mid-drag): a count-in
+  // starts only when the sheet ARRIVES — fresh dock or foreground return —
+  // never merely because the sheet is still open.
+  const arm = useCallback(() => {
+    setCountInMounted(true);
+    setPhase('countin');
+  }, []);
+  const prevActive = useRef(false);
+  const prevAwake = useRef(true);
   useEffect(() => {
-    if (awake && active && (phase === 'idle' || phase === 'paused')) {
-      setCountInMounted(true);
-      setPhase('countin');
-    }
-  }, [awake, active, phase]);
+    const docked = active && !prevActive.current;
+    const returned = awake && !prevAwake.current && active;
+    prevActive.current = active;
+    prevAwake.current = awake;
+    if ((docked || returned) && awake && (phase === 'idle' || phase === 'paused')) arm();
+  }, [awake, active, phase, arm]);
 
   // SAFETY NET: a count-in may never survive a closed sheet, whatever path
   // closed it — reopening must always start from 3 (owner rule)
@@ -255,7 +265,10 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
       setPhase('idle');
     }
   }, [phase, pause]);
-  useImperativeHandle(handleRef, () => ({ pauseForClose }), [pauseForClose]);
+  const rearm = useCallback(() => {
+    if (phase === 'idle' || phase === 'paused') arm();
+  }, [phase, arm]);
+  useImperativeHandle(handleRef, () => ({ pauseForClose, rearm }), [pauseForClose, rearm]);
 
   const onFinaleDone = useCallback(
     (r: { solved: boolean; guessesUsed: number; bonus: number }) => {
