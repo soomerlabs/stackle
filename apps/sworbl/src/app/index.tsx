@@ -133,7 +133,9 @@ export default function HomeScreen() {
   // the background BLURS as the sheet rises (fixed-intensity blur layer whose
   // presence fades in with sheet progress — animatable at 60fps)
   const blurStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(sheetY.value, [height, height * 0.15, 0], [0, 0.9, 1]),
+    // input range MUST ascend (descending = undefined output — the "hazy home"
+    // bug): sheet docked (0) → full blur, sheet parked below (height) → zero
+    opacity: interpolate(sheetY.value, [0, height * 0.85, height], [1, 0.9, 0]),
   }));
 
   const dateLine = new Date()
