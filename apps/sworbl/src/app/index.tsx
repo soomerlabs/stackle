@@ -7,7 +7,7 @@
 // into the superlatives pager after) → floating stepped podium + you-block →
 // swipe dock over the storm. Light + dark via the theme tokens.
 import React, { useMemo, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
@@ -172,7 +172,13 @@ export default function HomeScreen() {
           opaque sheet */}
       {!sheetOpen && <Floaters width={width} height={height} />}
       {!sheetOpen && (
-        <View style={[styles.stormWrap, played && styles.stormRest]}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.stormWrap,
+            { height: Math.min(280, height * 0.32) },
+            played && styles.stormRest,
+          ]}>
           <Storm width={width} height={Math.min(280, height * 0.32)} />
         </View>
       )}
@@ -183,10 +189,7 @@ export default function HomeScreen() {
           onSettings={__DEV__ ? () => router.push('/dev') : undefined}
         />
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
           {deal && <DateHeader theme={theme} dayKey={deal.dayKey} />}
 
           {/* word of the day: candy bloom when the day is done, dashed
@@ -255,7 +258,7 @@ export default function HomeScreen() {
           )}
 
           <FloatingPodium theme={theme} entries={entries} you={you} />
-        </ScrollView>
+        </View>
 
         {/* the swipe-to-play GRAB ZONE is the dock area only (owner call) —
             a generous reach above the chevron, not the whole screen */}
@@ -301,13 +304,10 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
   },
-  scroll: {
-    flex: 1,
-  },
   content: {
+    flex: 1,
     paddingHorizontal: 18,
     paddingTop: 14,
-    paddingBottom: 24,
     gap: 16,
     alignItems: 'center',
   },

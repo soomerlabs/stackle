@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
-import { DarkTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts, Fredoka_500Medium, Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
@@ -19,7 +20,7 @@ setTimeout(() => {
 }, 50);
 
 export default function RootLayout() {
-  // sworbl is dark, always (the game's visual identity — not a scheme choice)
+  const scheme = useColorScheme(); // light mode is real now (owner call)
   const [fontsLoaded] = useFonts({ Fredoka_500Medium, Fredoka_600SemiBold });
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
@@ -27,11 +28,11 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={DarkTheme}>
+      <ThemeProvider value={scheme === 'light' ? DefaultTheme : DarkTheme}>
         <Stack
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: '#101014' },
+            contentStyle: { backgroundColor: scheme === 'light' ? '#EDEFF7' : '#101014' },
             animation: 'fade',
           }}
         />
