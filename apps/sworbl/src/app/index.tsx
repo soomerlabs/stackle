@@ -263,6 +263,13 @@ export default function HomeScreen() {
   // the assist-raised sheet SNAPPED to the finger on the first pull frame)
   const sArmed = useSharedValue(0); // PLAY traced → swipe unlocked
   const sGlow = useSharedValue(0); // aurora intensity: muted → FULL GLOW on arm (owner)
+  // the boot MASTER CLOCK — declared with its siblings, ABOVE every style
+  // that reads it (it briefly lived below homeStyle: instant render error)
+  const sBoot = useSharedValue(0);
+  useEffect(() => {
+    sBoot.value = withDelay(20, withTiming(1, { duration: BOOT_MS, easing: Easing.linear }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const sPoke = useSharedValue(-1); // out-of-sequence tap: counter*4 + tileIdx
   const [armed, setArmed] = useState(false);
   const sSquash = useSharedValue(1); // candy squash when the sheet docks at full
@@ -560,16 +567,6 @@ export default function HomeScreen() {
     opacity: interpolate(sheetY.value, [closedY - 170, closedY - 50], [0, 1], Extrapolation.CLAMP),
   }));
   // aurora weather: CALM at rest (dimmed under the frost), IGNITED when the
-  // door arms — brightness + a slow swell, nothing layout-touching. At boot
-  // the weather ROLLS IN over 600ms instead of popping with the Skia canvas
-  // (owner audit: the color pop read as a glitch)
-  const sBoot = useSharedValue(0);
-  useEffect(() => {
-    // the MASTER CLOCK: linear sweep — each link shapes its own curve
-    // inside its window, so the wave itself never decelerates mid-chain
-    sBoot.value = withDelay(20, withTiming(1, { duration: BOOT_MS, easing: Easing.linear }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   // RIDE THE STORM UP (owner pick): the aurora is glued to the sheet's top
   // edge, so the pull literally drags the weather up the screen. Travel
   // SWELLS it (scale from the top edge, blobs spreading over the emerging
