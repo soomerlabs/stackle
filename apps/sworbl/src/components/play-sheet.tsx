@@ -89,6 +89,8 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
   }, []);
   // arrival cascade: the board sets itself the moment the sheet docks
   const [arriveKey, setArriveKey] = useState(0);
+  // the count-in beat the STEPPER renders (count-in itself is headless now)
+  const [countStep, setCountStep] = useState<'3' | '2' | '1' | null>(null);
   // seeded from the INITIAL prop: mounting already-active (state restoration
   // after an OS reclaim) is NOT a dock edge — the round stays paused behind
   // the tap-to-resume cover instead of auto-counting-in on relaunch
@@ -291,6 +293,7 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
       pause();
     } else if (phase === 'countin') {
       setCountInMounted(false);
+      setCountStep(null);
       setPhase('idle');
     }
   }, [phase, pause]);
@@ -304,6 +307,7 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
       pause();
     } else if (phase === 'countin') {
       setCountInMounted(false);
+      setCountStep(null);
       setPhase('idle');
     }
   }, [phase, pause]);
@@ -447,6 +451,7 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
                   gestureRef={boardPanRef}
                   concealed={phase !== 'live' && phase !== 'finale'}
                   arrive={arriveKey}
+                  countIn={phase === 'countin' ? countStep : null}
                   finale={
                     phase === 'finale'
                       ? {
@@ -460,7 +465,14 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
                 />
               </View>
               {countInMounted && phase === 'countin' && (
-                <CountIn gs={gs} onRelease={onRelease} onUnmount={() => setCountInMounted(false)} />
+                <CountIn
+                  onStep={setCountStep}
+                  onRelease={onRelease}
+                  onUnmount={() => {
+                    setCountInMounted(false);
+                    setCountStep(null);
+                  }}
+                />
               )}
               {active && (phase === 'paused' || phase === 'idle') && (
                 <Animated.View

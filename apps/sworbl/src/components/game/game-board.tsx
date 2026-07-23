@@ -43,6 +43,7 @@ interface Props {
   gestureRef?: React.MutableRefObject<PanGesture | undefined>; // the sheet's close-drag yields to this
   concealed?: boolean; // pre-GO / paused: blocks render, letters DON'T (anti-stare)
   arrive?: number; // sheet-dock counter — the board's arrival micro-cascade
+  countIn?: string | null; // the stepper speaks the 3·2·1 (no overlay)
   // THE IN-PLACE FINALE (owner loop): at 0:00 the BOARD becomes the keyboard,
   // the STEPPER hosts the guess — the player never leaves the gameboard
   finale?: {
@@ -54,7 +55,7 @@ interface Props {
 }
 
 export function GameBoard({
-  deal, size, gap, initialTiles, initialFound, initialScore, secsLeft, onScore, onClues, onTiles, onWordSpelled, mercySecs, gestureRef, finale, concealed, arrive,
+  deal, size, gap, initialTiles, initialFound, initialScore, secsLeft, onScore, onClues, onTiles, onWordSpelled, mercySecs, gestureRef, finale, concealed, arrive, countIn,
 }: Props) {
   // LIGHT MODE (owner): one stable surface object per scheme — memo-safe props
   const gs = gameSurface(useTheme().mode);
@@ -587,7 +588,14 @@ export function GameBoard({
   return (
     <View style={{ alignItems: 'center' }}>
       {/* THE STEPPER (web hopperCard) — ABOVE the board; hosts the GUESS in the finale */}
-      <StepperCard width={boardW + 24} traceWord={trace.word} verdict={verdict} sworb={sworbFace} gs={gs} />
+      <StepperCard
+        width={boardW + 24}
+        traceWord={trace.word}
+        verdict={verdict}
+        sworb={sworbFace}
+        countIn={countIn}
+        gs={gs}
+      />
 
       {/* THE BOARD CARD (web boardCardStyle): tiles live ON a card with sunken
           cell wells — not floating on the screen background. breathStyle:

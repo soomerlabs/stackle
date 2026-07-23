@@ -34,8 +34,12 @@ interface Props {
   traceWord: string; // live chain, lowercase ('' when idle)
   verdict: StepperVerdict | null;
   sworb?: SworbFace | null; // finale: the stepper hosts the guess (fossil sworb face)
+  countIn?: string | null; // '3'|'2'|'1' — the stepper SPEAKS the count-in
   gs?: GameSurface; // scheme surface (defaults dark)
 }
+
+// count-in beat colors: 3 violet · 2 gold · 1 green (green hands to GO)
+const BEAT_INK: Record<string, number> = { '3': 0, '2': 4, '1': 2 };
 
 // THE MISS TUMBLE (web chipFall + _bannerMiss): rejected chips lean drunk in
 // place, then gravity takes them off the stepper — 48px fall with a rotation,
@@ -181,7 +185,21 @@ function Chips({ word, red }: { word: string; red?: boolean }) {
   );
 }
 
-export function StepperCard({ width, traceWord, verdict, sworb, gs = GAME_DARK }: Props) {
+export function StepperCard({ width, traceWord, verdict, sworb, countIn, gs = GAME_DARK }: Props) {
+  if (countIn) {
+    const pal = PALETTE[BEAT_INK[countIn] ?? 0];
+    return (
+      <View style={[styles.card, { width, backgroundColor: gs.card, boxShadow: `0 4px 0 ${gs.cardEdge}` }]}>
+        <Animated.Text
+          key={countIn}
+          entering={ZoomIn.springify().mass(0.5).damping(13)}
+          exiting={FadeOut.duration(110)}
+          style={[styles.countDigit, { color: pal.bg, textShadowColor: pal.edge }]}>
+          {countIn}
+        </Animated.Text>
+      </View>
+    );
+  }
   const tracing = traceWord.length > 0;
   const mult = tracing ? engine.core.lenMult(traceWord.length) : 0;
   const pts = tracing && traceWord.length >= 3 ? scoreWord(traceWord) : 0;
@@ -329,6 +347,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 17,
     color: '#5FD6A8',
+  },
+  countDigit: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 44,
+    lineHeight: 50,
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 0,
+    includeFontPadding: false,
+    alignSelf: 'center',
+    marginTop: 15,
   },
   idle: {
     fontFamily: 'Fredoka_600SemiBold',
