@@ -24,8 +24,9 @@ const KNOB = 17;
 export function ScoreHeader({ score, target, marks, width, gs = GAME_DARK }: Props) {
   const ratio = Math.min(1, target > 0 ? score / target : 0);
   // NUMERIC widths — Reanimated tweens numbers, not '%' strings (the header
-  // silently broke on device with the string version)
-  const trackW = Math.max(0, width - 50 - 10 - 44 - 10); // score minWidth + gaps + target col
+  // silently broke on device with the string version). Track owns the FULL
+  // rail now (owner: score and bar fought for the same line at big values)
+  const trackW = Math.max(0, width - 4);
   const fillStyle = useAnimatedStyle(() => ({
     width: withTiming(ratio * trackW, { duration: EASE_MS }),
     opacity: withTiming(score > 0 ? 1 : 0, { duration: EASE_MS }),
@@ -40,8 +41,7 @@ export function ScoreHeader({ score, target, marks, width, gs = GAME_DARK }: Pro
   }));
 
   return (
-    <View style={[styles.row, { width }]}>
-      <Text style={[styles.score, { color: gs.ink }]}>{score.toLocaleString()}</Text>
+    <View style={[styles.wrap, { width }]}>
       <View style={styles.track}>
         <View style={[styles.dashLine, { borderColor: gs.line }]} />
         {/* podium cut marks: pass 3rd → you're ON the board; 2nd → chasing the crown */}
@@ -63,27 +63,32 @@ export function ScoreHeader({ score, target, marks, width, gs = GAME_DARK }: Pro
         <Animated.View style={[styles.fill, fillStyle]} />
         <Animated.View style={[styles.knob, { backgroundColor: gs.bg, borderColor: gs.line }, knobStyle]} />
       </View>
-      <View style={styles.targetWrap}>
-        <Crown width={15} style={styles.crown} />
-        <Text style={styles.target}>{target.toLocaleString()}</Text>
+      {/* the reading line: score grows leftward forever, target sits right */}
+      <View style={styles.reading}>
+        <Text style={[styles.score, { color: gs.ink }]}>{score.toLocaleString()}</Text>
+        <View style={styles.targetWrap}>
+          <Crown width={14} style={styles.crown} />
+          <Text style={styles.target}>{target.toLocaleString()}</Text>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  wrap: {
+    gap: 2,
+    marginBottom: 8,
+  },
+  reading: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 10,
+    justifyContent: 'space-between',
   },
   score: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 17,
-    color: '#EDEFF7',
     fontVariant: ['tabular-nums'],
-    minWidth: 40,
   },
   track: {
     flex: 1,
@@ -149,7 +154,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#8971FF',
   },
   targetWrap: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 5,
   },
   crown: {
     marginBottom: 2,
