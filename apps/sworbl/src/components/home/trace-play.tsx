@@ -109,7 +109,8 @@ export function TracePlay({ sLit, theme, tile, gap, armed = false }: {
           <PlayTile key={ch} ch={ch} i={i} sLit={sLit} theme={theme} tile={tile} armed={armed} />
         ))}
       </View>
-      <Text style={[styles.label, { color: theme.ink }]}>swipe to play</Text>
+      {/* no label — the tiles SAY play, and two swipe messages was one too
+          many (owner); the chevron's 'swipe up to start' is the only caption */}
     </View>
   );
 }
@@ -136,9 +137,5 @@ const styles = StyleSheet.create({
   letter: {
     fontFamily: 'Fredoka_600SemiBold',
     includeFontPadding: false,
-  },
-  label: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 13,
   },
 });
