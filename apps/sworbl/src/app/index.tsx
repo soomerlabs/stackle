@@ -177,6 +177,13 @@ export default function HomeScreen() {
   const sBoot = useSharedValue(0);
   useEffect(() => {
     sBoot.value = withDelay(20, withTiming(1, { duration: BOOT_MS, easing: Easing.linear }));
+    // HARD FINISHER (web): a background tab throttles animation frames and
+    // froze the sweep mid-flight — home half-lit, band at opacity 0 forever.
+    // A direct write can't be throttled away; on a healthy boot it's a no-op.
+    const t = setTimeout(() => {
+      sBoot.value = 1;
+    }, BOOT_MS + 400);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const sPoke = useSharedValue(-1); // out-of-sequence tap: counter*4 + tileIdx
@@ -640,17 +647,20 @@ export default function HomeScreen() {
             <Animated.View
               pointerEvents="none"
               style={[styles.peekFace, { height: peekH }, faceStyle]}>
-              <Animated.View
+              <View
                 style={[
                   styles.dockInner,
-                  { flex: 0, height: peekH, paddingBottom: Math.max(insets.bottom, 14) },
-                  bandInStyle,
+                  { paddingBottom: Math.max(insets.bottom, 14) },
                 ]}>
-                <CountdownDock
-                  played={played} sLit={sLit} sPoke={sPoke} armed={armed}
-                  tile={pm.tile} gap={pm.gap}
-                />
-              </Animated.View>
+                {/* boot fade on its OWN node — layout props never share an
+                    element with an animated style (web dropped the height) */}
+                <Animated.View style={bandInStyle}>
+                  <CountdownDock
+                    played={played} sLit={sLit} sPoke={sPoke} armed={armed}
+                    tile={pm.tile} gap={pm.gap}
+                  />
+                </Animated.View>
+              </View>
               {__DEV__ && devSnap.diag && (
                 <Text style={styles.devBand}>
                   {deal?.dayKey ?? 'no-deal'}·{day?.route ?? 'no-day'}·{played ? 'played' : 'open'}
@@ -683,8 +693,15 @@ const styles = StyleSheet.create({
     gap: 22,
     alignItems: 'center',
   },
+  // ABSOLUTE fill of the band, not flex-sized (web: RNW maps flex:0 to
+  // flex-basis:0, which BEATS height in a column flex parent — the dock
+  // collapsed to its padding and the tiles overflowed the clip)
   dockInner: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
   },
   // shadow lives on the OUTER (unclipped) layer — overflow:hidden on the

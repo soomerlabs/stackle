@@ -30,18 +30,25 @@ if (__DEV__) {
     engine.store.set('sworbl_rn_boots', (engine.store.getInt('sworbl_rn_boots', 0) || 0) + 1);
   } catch {}
 }
+// REAL CLIENTS ONLY (the phantom-user factory): expo-router's web server
+// renderer executes this module in Node on every bundle — these timers were
+// minting a fresh anonymous Supabase user per render (players table filled
+// with PLAYERxxxx ghosts) and failing the dictionary fetch with node URL
+// errors. Node has no window; browsers and Hermes do.
+const IS_REAL_CLIENT = typeof window !== 'undefined';
+
 // full 135k dictionary swaps in behind the starter — fire-and-forget, off the
 // boot path; validation generosity upgrades within seconds of launch.
 // AT 1200ms, NOT 50 (owner: "jenk in the loading"): the parse is a chunky
 // synchronous JS bite and it was landing mid-boot-choreography — nothing
 // needs the full dictionary before a human can possibly submit a word
-setTimeout(() => {
+if (IS_REAL_CLIENT) setTimeout(() => {
   loadFullDictionary();
 }, 1200);
 // backend (when configured): anonymous identity + any queued submissions —
 // entirely fire-and-forget; the app never waits on the network. After the
 // dictionary so the two JS bites can't stack.
-setTimeout(() => {
+if (IS_REAL_CLIENT) setTimeout(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ensurePlayer } = require('@/net/supabase');
   // eslint-disable-next-line @typescript-eslint/no-require-imports
