@@ -1,6 +1,8 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts, Fredoka_500Medium, Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
+import { useEffect } from 'react';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
@@ -8,11 +10,18 @@ import AppTabs from '@/components/app-tabs';
 SplashScreen.preventAutoHideAsync();
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  // sworbl is dark, always (the game's visual identity — not a scheme choice)
+  const [fontsLoaded] = useFonts({ Fredoka_500Medium, Fredoka_600SemiBold });
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+  if (!fontsLoaded) return null;
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={DarkTheme}>
+        <AnimatedSplashOverlay />
+        <AppTabs />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

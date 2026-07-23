@@ -1,105 +1,68 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+// The play screen — Phase 2 increment 1: engine-dealt daily board, tier-2
+// trace, clue fan, storm. (Timer, finale, hint aids: next increments.)
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import engine from '@sworbl/engine';
+import { StatusBar } from 'expo-status-bar';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { GameBoard } from '@/components/game/game-board';
+import Storm from '@/components/game/storm';
+import { BG_DARK } from '@/game/palette';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function PlayScreen() {
+  const { width, height } = useWindowDimensions();
+  const [score, setScore] = useState(0);
+
+  // 5 cells + 4 gaps inside width-32; gap = 16% of tile (the web board's ratio)
+  const tile = Math.min(64, Math.floor((Math.min(width, 480) - 32) / (5 + 4 * 0.16)));
+  const gap = Math.round(tile * 0.16);
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            sworbl
-          </ThemedText>
-          {/* engine heartbeat: the LIVING @sworbl/engine, imported by TS,
-              bundled by Metro — deterministic daily seed proves it's alive */}
-          <ThemedText type="small">
-            engine ♥ {engine.core.dayKey(new Date())} · seed{' '}
-            {engine.core.hashSeed('sworbl-' + engine.core.dayKey(new Date()))}
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <Storm width={width} height={Math.min(280, height * 0.32)} />
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.top}>
+          <Text style={styles.brand}>sworbl</Text>
+          <Text style={styles.score}>{score.toLocaleString()}</Text>
+        </View>
+        <View style={styles.center}>
+          <GameBoard size={tile} gap={gap} onScore={setScore} />
+        </View>
       </SafeAreaView>
-    </ThemedView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: BG_DARK,
+  },
+  safe: {
+    flex: 1,
+  },
+  top: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
-  safeArea: {
+  brand: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 24,
+    color: '#A78BFA',
+  },
+  score: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 24,
+    color: '#EDEFF7',
+    fontVariant: ['tabular-nums'],
+  },
+  center: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    alignItems: 'center',
   },
 });
