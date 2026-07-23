@@ -11,9 +11,12 @@ interface Props {
   found: string[];
   tokenReady?: boolean; // a hint token is spendable: ghost pills glow + tap pings
   onGhostTap?: (clue: string, slot: number) => void;
+  // FINALE mode: unfound clues show as letterless ghosts — the first-letter
+  // nudge is a HUNT aid; unearned intel must not leak into the guess phase
+  conceal?: boolean;
 }
 
-export function ClueFan({ clues, found, tokenReady, onGhostTap }: Props) {
+export function ClueFan({ clues, found, tokenReady, onGhostTap, conceal }: Props) {
   return (
     <View style={styles.fan}>
       {clues.map((clue, i) => {
@@ -32,7 +35,11 @@ export function ClueFan({ clues, found, tokenReady, onGhostTap }: Props) {
               !isFound && tokenReady && { borderColor: pal.bg, borderStyle: 'solid' },
             ]}>
             <Text style={[styles.pillText, isFound ? { color: INK } : styles.ghostText]}>
-              {isFound ? clue.toUpperCase() : clue[0] + ' ' + '· '.repeat(clue.length - 1).trim()}
+              {isFound
+                ? clue.toUpperCase()
+                : conceal
+                  ? '· '.repeat(clue.length).trim()
+                  : clue[0] + ' ' + '· '.repeat(clue.length - 1).trim()}
             </Text>
           </Pressable>
         );

@@ -243,7 +243,7 @@ export function Finale({ entry, clues, found, size, restore, onProgress, onDone,
       {/* bottom group: the fan docks ON TOP of the keyboard (owner) */}
       <View>
         <Animated.View entering={E(FadeIn.delay(D(600)))} style={styles.fanDock}>
-          <ClueFan clues={clues} found={found} />
+          <ClueFan clues={clues} found={found} conceal />
         </Animated.View>
 
         {/* THE KEYBOARD */}
