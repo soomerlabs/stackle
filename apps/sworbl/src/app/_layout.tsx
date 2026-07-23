@@ -24,12 +24,16 @@ if (__DEV__) {
   } catch {}
 }
 // full 135k dictionary swaps in behind the starter — fire-and-forget, off the
-// boot path; validation generosity upgrades within seconds of launch
+// boot path; validation generosity upgrades within seconds of launch.
+// AT 1200ms, NOT 50 (owner: "jenk in the loading"): the parse is a chunky
+// synchronous JS bite and it was landing mid-boot-choreography — nothing
+// needs the full dictionary before a human can possibly submit a word
 setTimeout(() => {
   loadFullDictionary();
-}, 50);
+}, 1200);
 // backend (when configured): anonymous identity + any queued submissions —
-// entirely fire-and-forget; the app never waits on the network
+// entirely fire-and-forget; the app never waits on the network. After the
+// dictionary so the two JS bites can't stack.
 setTimeout(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ensurePlayer } = require('@/net/supabase');
@@ -38,7 +42,7 @@ setTimeout(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { getPlayerName } = require('@/game/player');
   ensurePlayer(getPlayerName()).then(() => drainOutbox());
-}, 400);
+}, 2000);
 
 export default function RootLayout() {
   const scheme = useColorScheme(); // light mode is real now (owner call)

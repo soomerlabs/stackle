@@ -626,12 +626,23 @@ export default function HomeScreen() {
   // initial rasterization (tiles + 29 Skia paths) mid-gesture. For ~1s after
   // mount it renders at 1.2% opacity (imperceptible under the frost), so the
   // texture upload happens while the player is still reading home.
-  const sWarm = useSharedValue(1);
+  // prewarm WINDOW moved past the boot sweep (owner: "jenk in the loading"
+  // — the whole game subtree was rasterizing at 1.2% opacity from frame 1,
+  // fighting the choreography for the raster budget). A human needs well
+  // over a second to read home and trace P·L·A·Y, so warming at 950ms still
+  // beats the first possible pull.
+  const sWarm = useSharedValue(0);
   useEffect(() => {
-    const t = setTimeout(() => {
+    const t1 = setTimeout(() => {
+      sWarm.value = 1;
+    }, 950);
+    const t2 = setTimeout(() => {
       sWarm.value = 0;
-    }, 1100);
-    return () => clearTimeout(t);
+    }, 2100);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, []);
   const gameStyle = useAnimatedStyle(() => ({
     opacity: Math.max(
