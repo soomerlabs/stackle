@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   target: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 12.5,
+    fontSize: 17, // same weight as your score — equals chasing equals (owner)
     color: '#9DA2B3',
     fontVariant: ['tabular-nums'],
   },
