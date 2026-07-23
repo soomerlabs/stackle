@@ -1,17 +1,20 @@
-// THE SWORBL AURORA v3 — NATIVE (Skia). Owner brief: "taller, more
-// northern-light-ish, mixed with prism and our blocks."
-//   · CURTAINS: five vertical light veils rising from the horizon, each a
-//     hue fading upward to nothing, swaying glacially — the northern lights
-//   · PRISM: the six-hue spectrum band sweeping along the base
-//   · BLOCKS: three of our candy tiles drifting inside the light, sharp
-//     against the blur — the game living in its own weather
+// THE SWORBL AURORA v4 — NATIVE (Skia). Owner: "bring back our original
+// block-based storm but more like it is today — v3 was washed out."
+// The fossil's excitement was the GOO: blur the blob field, then SNAP the
+// alpha (×30 −14) — soft mist becomes chunky liquid candy with real edges.
+//   · GOO BLOBS: the six original tileblobs (fossil geometry ×1.4), orbiting
+//     on their 15-22s keyframes, goo'd copy over sharp source — the heroes
+//   · PRISM BED: today's six-hue sweep beneath them, dimmed to a bed
+//   · VEILS: two faint northern-light curtains for the tall head
+//   · BLOCKS: three sharp candy tiles adrift in the light
 // Feathered top AND bottom (home mounts the canvas taller than the band —
 // the bottom melt hangs off-screen at park). WEB SIBLING: storm.tsx carries
 // a simpler CSS-blur port — patch both or state why not (split-file trap).
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
-  Canvas, Group, Paint, Blur, Rect, RoundedRect, Circle, LinearGradient, RadialGradient, vec,
+  Canvas, Group, Paint, Blur, ColorMatrix, Rect, RoundedRect, Circle,
+  LinearGradient, RadialGradient, vec,
 } from '@shopify/react-native-skia';
 import {
   useSharedValue, useDerivedValue, withRepeat, withTiming, Easing,
@@ -19,14 +22,27 @@ import {
 
 const HUES = ['#A78BFA', '#5BC8F5', '#5FD6A8', '#F58FB8', '#F5B84A', '#F58A66'];
 
-// curtains: x anchor (pct), hue index, sway px, period ms
+// two faint veils only — v3's five washed the field out (owner)
 const CURTAINS = [
-  { x: 0.08, c: 0, sway: 14, dur: 19000 },
-  { x: 0.27, c: 1, sway: -18, dur: 23000 },
-  { x: 0.47, c: 2, sway: 12, dur: 17000 },
-  { x: 0.66, c: 3, sway: -14, dur: 21000 },
-  { x: 0.85, c: 4, sway: 16, dur: 25000 },
+  { x: 0.18, c: 1, sway: -16, dur: 23000 },
+  { x: 0.72, c: 3, sway: 14, dur: 21000 },
 ] as const;
+
+// THE GOO BLOBS — fossil .stormB1-B6 geometry ×1.4, y as canvas fraction
+// (the band's visible zone on the tall crest canvas); f/t = the 0%/50%
+// orbit keyframes (dx, dy, scale), periods 15-22s
+const BLOBS = [
+  { x: 0.04, y: 0.66, s: 62, c: '#A78BFA', dur: 17000, f: [-6, 7, 0.9], t: [14, -13, 1.02] },
+  { x: 0.21, y: 0.62, s: 76, c: '#5BC8F5', dur: 19000, f: [7, 6, 1.02], t: [-20, -27, 0.93] },
+  { x: 0.4, y: 0.57, s: 95, c: '#5FD6A8', dur: 15000, f: [-11, 8, 0.94], t: [14, -45, 1.12] },
+  { x: 0.57, y: 0.58, s: 90, c: '#F58FB8', dur: 21000, f: [11, 7, 1.05], t: [-14, -41, 0.9] },
+  { x: 0.75, y: 0.62, s: 76, c: '#F5B84A', dur: 18000, f: [-7, 6, 0.96], t: [21, -25, 1.06] },
+  { x: 0.9, y: 0.66, s: 62, c: '#F58A66', dur: 22000, f: [6, 7, 0.9], t: [-14, -13, 1.02] },
+] as const;
+
+// the fossil #stormGoo alpha snap: blur first, then alpha ×30 −14 — soft
+// mist becomes liquid candy with edges (the missing excitement, owner)
+const GOO = [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 30, -14];
 
 // our blocks, adrift in the light: x/y (pct of canvas), size, hue, period
 const DRIFT_BLOCKS = [
@@ -86,6 +102,34 @@ function DriftBlock({ b, width, height }: { b: (typeof DRIFT_BLOCKS)[number]; wi
   );
 }
 
+function GooBlob({ b, width, height }: { b: (typeof BLOBS)[number]; width: number; height: number }) {
+  const t = useDrift(b.dur);
+  const transform = useDerivedValue(() => {
+    const k = t.value;
+    const lerp = (a: number, z: number) => a + (z - a) * k;
+    return [
+      { translateX: width * b.x + lerp(b.f[0], b.t[0]) },
+      { translateY: height * b.y + lerp(b.f[1], b.t[1]) },
+      { scale: lerp(b.f[2], b.t[2]) },
+    ];
+  });
+  return (
+    <Group transform={transform} origin={vec(b.s / 2, b.s / 2)}>
+      <RoundedRect x={0} y={0} width={b.s} height={b.s} r={Math.round(b.s * 0.33)} color={b.c} />
+    </Group>
+  );
+}
+
+function BlobField({ width, height }: { width: number; height: number }) {
+  return (
+    <>
+      {BLOBS.map((b, i) => (
+        <GooBlob key={i} b={b} width={width} height={height} />
+      ))}
+    </>
+  );
+}
+
 export default function Storm({ width, height = 260 }: {
   width: number; height?: number; zoom?: number; // zoom kept for API parity
 }) {
@@ -100,8 +144,9 @@ export default function Storm({ width, height = 260 }: {
     <View pointerEvents="none" style={[styles.wrap, { width, height }]}>
       <Canvas style={{ width, height }}>
         <Group layer={<Paint />} opacity={glowOpacity}>
-          <Group layer={<Paint><Blur blur={24} /></Paint>}>
-            {/* PRISM: the spectrum band along the base */}
+          {/* the BED, dimmed — prism sweep + two faint veils + warm core;
+              at full strength it washed the blobs out (owner, v3) */}
+          <Group layer={<Paint><Blur blur={24} /></Paint>} opacity={0.62}>
             <Group transform={sweepX}>
               <Rect x={0} y={height * 0.55} width={W} height={height * 0.6}>
                 <LinearGradient
@@ -111,11 +156,9 @@ export default function Storm({ width, height = 260 }: {
                 />
               </Rect>
             </Group>
-            {/* NORTHERN LIGHTS: five hue veils rising from the horizon */}
             {CURTAINS.map((_, i) => (
               <Curtain key={i} i={i} width={width} height={height} />
             ))}
-            {/* a warm core so the veils share one bed of light */}
             <Circle cx={width / 2} cy={height * 0.9} r={width * 0.5}>
               <RadialGradient
                 c={vec(width / 2, height * 0.9)}
@@ -124,6 +167,15 @@ export default function Storm({ width, height = 260 }: {
                 positions={[0, 0.85]}
               />
             </Circle>
+          </Group>
+          {/* THE GOO BLOBS — the fossil recipe, the heroes: sharp source
+              UNDER the goo'd copy (blur 11 → alpha ×30 −14), the whole
+              composite inside a soft blur(10) so it sits IN the weather */}
+          <Group layer={<Paint><Blur blur={10} /></Paint>}>
+            <BlobField width={width} height={height} />
+            <Group layer={<Paint><Blur blur={11} /><ColorMatrix matrix={GOO} /></Paint>}>
+              <BlobField width={width} height={height} />
+            </Group>
           </Group>
           {/* OUR BLOCKS: sharp candy tiles adrift inside the blur */}
           {DRIFT_BLOCKS.map((b, i) => (
