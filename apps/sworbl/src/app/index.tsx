@@ -369,8 +369,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 18,
-    paddingTop: 14,
-    gap: 16,
+    paddingTop: 16,
+    gap: 22,
     alignItems: 'center',
   },
   dockZone: {
@@ -429,6 +429,7 @@ const styles = StyleSheet.create({
   },
   podiumTap: {
     alignSelf: 'stretch',
+    paddingTop: 4,
   },
   hintSlot: {
     height: 33,

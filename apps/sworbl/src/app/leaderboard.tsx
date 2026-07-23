@@ -181,9 +181,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   pageWrap: {
-    // the champion's crown + confetti reach ABOVE the podium row — without
-    // this air they crowd the title (owner: "crammed!")
-    paddingTop: 22,
+    // the podium row now carries its own crown headroom (26px) — this is
+    // just section rhythm on top of it
+    paddingTop: 8,
     gap: 22,
   },
   list: {

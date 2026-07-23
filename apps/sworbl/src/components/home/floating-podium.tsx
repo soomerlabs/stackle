@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   wrap: {
     alignSelf: 'stretch',
     alignItems: 'center',
-    gap: 6,
+    gap: 10,
   },
   title: {
     fontFamily: 'Fredoka_600SemiBold',
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   youWrap: {
     alignItems: 'center',
     gap: 3,
-    paddingTop: 10,
+    paddingTop: 16,
   },
   youBlock: {
     width: 54,
