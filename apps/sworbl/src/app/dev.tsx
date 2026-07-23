@@ -29,21 +29,37 @@ import { haptic } from '@/game/haptics';
 
 const LB_MODES: LbFieldMode[] = ['full', '2', '1', '0'];
 
+// module-state reads during render are INVISIBLE to the React Compiler —
+// it caches the JSX and the row never updates (owner: toggles stuck on
+// 'off' while working). Render from a STATE snapshot instead.
+function readFlags() {
+  return {
+    devDay: getDevDay(),
+    lbMode: getLbFieldMode(),
+    audit: getClueAudit(),
+    diag: getDiagnostics(),
+    short: getShortRounds(),
+    stall: getCountInStall(),
+  };
+}
+
 export default function DevScreen() {
   const theme = useTheme();
   const [stamp, setStamp] = useState(0); // bump → re-derive everything
   const [armWipe, setArmWipe] = useState(false);
   const [msg, setMsg] = useState('');
+  const [flags, setFlags] = useState(readFlags);
 
   const realDay = engine.core.dayKey(new Date());
-  const devDay = getDevDay();
+  const devDay = flags.devDay;
   const deal = useMemo(() => dealDaily(), [stamp]);
   const day = useMemo(() => (deal ? loadDay(deal.dayKey) : null), [deal, stamp]);
   const days = useMemo(() => authoredDays(), []);
-  const lbMode = getLbFieldMode();
+  const lbMode = flags.lbMode;
 
   const refresh = (note?: string) => {
     if (note) setMsg(note);
+    setFlags(readFlags()); // snapshot AFTER the write — the rows render this
     setStamp((s) => s + 1);
   };
 
@@ -225,8 +241,8 @@ export default function DevScreen() {
             <Text style={[styles.actionText, { color: theme.ink }]}>
               clue audit overlay
             </Text>
-            <Text style={[styles.actionText, { color: getClueAudit() ? CLUE_GREEN : theme.faint }]}>
-              {getClueAudit() ? 'ON' : 'off'}
+            <Text style={[styles.actionText, { color: flags.audit ? CLUE_GREEN : theme.faint }]}>
+              {flags.audit ? 'ON' : 'off'}
             </Text>
           </Pressable>
 
@@ -237,8 +253,8 @@ export default function DevScreen() {
             }}
             style={[styles.actionRow, { backgroundColor: theme.card }]}>
             <Text style={[styles.actionText, { color: theme.ink }]}>gold diagnostics</Text>
-            <Text style={[styles.actionText, { color: getDiagnostics() ? CLUE_GREEN : theme.faint }]}>
-              {getDiagnostics() ? 'ON' : 'off'}
+            <Text style={[styles.actionText, { color: flags.diag ? CLUE_GREEN : theme.faint }]}>
+              {flags.diag ? 'ON' : 'off'}
             </Text>
           </Pressable>
           <Pressable
@@ -248,8 +264,8 @@ export default function DevScreen() {
             }}
             style={[styles.actionRow, { backgroundColor: theme.card }]}>
             <Text style={[styles.actionText, { color: theme.ink }]}>short rounds (20s)</Text>
-            <Text style={[styles.actionText, { color: getShortRounds() ? CLUE_GREEN : theme.faint }]}>
-              {getShortRounds() ? 'ON' : 'off'}
+            <Text style={[styles.actionText, { color: flags.short ? CLUE_GREEN : theme.faint }]}>
+              {flags.short ? 'ON' : 'off'}
             </Text>
           </Pressable>
           <Text style={[styles.metaLine, { color: theme.faint }]}>
@@ -263,8 +279,8 @@ export default function DevScreen() {
             }}
             style={[styles.actionRow, { backgroundColor: theme.card }]}>
             <Text style={[styles.actionText, { color: theme.ink }]}>stress: count-in stall</Text>
-            <Text style={[styles.actionText, { color: getCountInStall() ? '#FF8A8E' : theme.faint }]}>
-              {getCountInStall() ? 'ON' : 'off'}
+            <Text style={[styles.actionText, { color: flags.stall ? '#FF8A8E' : theme.faint }]}>
+              {flags.stall ? 'ON' : 'off'}
             </Text>
           </Pressable>
 
