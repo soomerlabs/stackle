@@ -34,10 +34,9 @@ interface Props {
   nopeTotal: number; // rejected word length (drain sweeps head→back)
   concealed: boolean; // letters only exist while YOUR clock runs (anti-stare)
   gs: GameSurface; // scheme surface (STABLE module object — memo-safe)
-  arrive: number; // increments when the sheet docks — the board SETS ITSELF
 }
 
-function GameTileInner({ tile, size, gap, sPath, clearingSeq, nope, nopeSeq, nopeTotal, concealed, gs, arrive }: Props) {
+function GameTileInner({ tile, size, gap, sPath, clearingSeq, nope, nopeSeq, nopeTotal, concealed, gs }: Props) {
   const cell = size + gap;
   const x = tile.col * cell;
   const targetY = tile.row * cell;
@@ -105,28 +104,6 @@ function GameTileInner({ tile, size, gap, sPath, clearingSeq, nope, nopeSeq, nop
     );
   }, [nope]);
 
-  // THE ARRIVAL SETTLE (owner idea #5): when the sheet docks, each masked
-  // block drops ~4px into its well in a diagonal cascade with a landing
-  // squash — the board "sets itself" just before the count-in.
-  const settleY = useSharedValue(0);
-  useEffect(() => {
-    if (!arrive) return;
-    const delay = (tile.row + tile.col) * 24;
-    settleY.value = -4;
-    settleY.value = withDelay(
-      delay,
-      withTiming(0, { duration: 150, easing: FALL_EASE }, (fin) => {
-        'worklet';
-        if (fin) {
-          squashY.value = withSequence(
-            withTiming(0.93, { duration: 50 }),
-            withTiming(1, { duration: 100 })
-          );
-        }
-      })
-    );
-  }, [arrive]);
-
   // THE WAKE (owner count-in redesign): letters are masked until the clock
   // runs; when concealment lifts, each letter STAMPS IN with a pop, staggered
   // by distance from the board's center — the shockwave's footprint.
@@ -190,7 +167,7 @@ function GameTileInner({ tile, size, gap, sPath, clearingSeq, nope, nopeSeq, nop
   const inner = useAnimatedStyle(() => ({
     transform: [
       { translateX: x },
-      { translateY: y.value + liftY.value + settleY.value },
+      { translateY: y.value + liftY.value },
       { scale: scale.value * deflate.value * stackPop.value * wakePop.value },
       { scale: headScale.value },
       { scaleY: squashY.value },
@@ -287,7 +264,7 @@ export const GameTile = React.memo(
   (a, b) =>
     a.tile === b.tile && a.size === b.size && a.gap === b.gap &&
     a.clearingSeq === b.clearingSeq && a.nope === b.nope && a.concealed === b.concealed &&
-    a.gs === b.gs && a.arrive === b.arrive
+    a.gs === b.gs
 );
 
 const styles = StyleSheet.create({

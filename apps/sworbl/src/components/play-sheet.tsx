@@ -89,8 +89,6 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
     setCountInMounted(true);
     setPhase('countin');
   }, []);
-  // arrival cascade: the board sets itself the moment the sheet docks
-  const [arriveKey, setArriveKey] = useState(0);
   // the count-in beat the STEPPER renders (count-in itself is headless now)
   const [countStep, setCountStep] = useState<'3' | '2' | '1' | null>(null);
   // seeded from the INITIAL prop: mounting already-active (state restoration
@@ -104,7 +102,6 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
     prevActive.current = active;
     prevAwake.current = awake;
     if ((docked || returned) && awake && (phase === 'idle' || phase === 'paused')) {
-      setArriveKey((k) => k + 1); // the board sets itself as the sheet lands
       if (phase === 'idle') {
         // FRESH round: the ceremony. SETTLE BEAT first (owner): dock haptic
         // lands, sheet settles, THEN 3·2·1. Cleanup cancels if the sheet leaves.
@@ -465,7 +462,6 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
                   onWordSpelled={onWordSpelled}
                   gestureRef={boardPanRef}
                   concealed={phase !== 'live' && phase !== 'finale'}
-                  arrive={arriveKey}
                   countIn={phase === 'countin' ? countStep : null}
                   finale={
                     phase === 'finale'
