@@ -19,9 +19,10 @@ interface Props {
   size: number;
   gap: number;
   onScore?: (total: number) => void;
+  onClues?: (found: string[]) => void;
 }
 
-export function GameBoard({ size, gap, onScore }: Props) {
+export function GameBoard({ size, gap, onScore, onClues }: Props) {
   const cell = size + gap;
   const boardW = COLS * cell - gap;
   const boardH = ROWS * cell - gap;
@@ -34,6 +35,9 @@ export function GameBoard({ size, gap, onScore }: Props) {
   const [jsPath, setJsPath] = useState<TraceTile[]>([]); // web connector mirror
   const [found, setFound] = useState<string[]>([]);
   const scoreRef = useRef(0);
+  useEffect(() => {
+    onClues && onClues(found);
+  }, [found]);
 
   // ---- UI-thread state (tier-2) ----
   const sGrid = useSharedValue<(TraceTile | null)[][]>([]);
