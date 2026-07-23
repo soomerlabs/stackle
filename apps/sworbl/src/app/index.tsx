@@ -11,6 +11,7 @@ import {
   View, Text, StyleSheet, ScrollView, Share, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -495,6 +496,24 @@ export default function HomeScreen() {
   const bandInStyle = useAnimatedStyle(() => ({
     opacity: bootWindow(sBoot.value, 0.45, 0.55),
   }));
+  // THE PARKED FROST (owner: content scrolls behind the aurora and
+  // "naturally blurs"; PLAY stays crisp on top). This is the tab-bar idiom:
+  // a STATIC blur over scrolling content is what iOS is built for — the
+  // old rule only bans blur RIDING the moving sheet, so it dies inside the
+  // first 40px of travel and unmounts entirely past 80px.
+  const [parkBlurLive, setParkBlurLive] = useState(true);
+  useAnimatedReaction(
+    () => sheetY.value > closedY - 80,
+    (near, prev) => {
+      if (near !== prev) runOnJS(setParkBlurLive)(near);
+    },
+    [closedY]
+  );
+  const parkBlurStyle = useAnimatedStyle(() => ({
+    opacity:
+      bootWindow(sBoot.value, 0.45, 0.55) *
+      interpolate(sheetY.value, [closedY - 44, closedY - 6], [0, 1], Extrapolation.CLAMP),
+  }), [closedY]);
   // (the pending beacon strips were owner-removed — "weird spaced out
   // ovals" once the invisible park exposed them; the free-floating aurora
   // plus the arm ignition IS the pending signal)
@@ -647,6 +666,18 @@ export default function HomeScreen() {
             <Animated.View
               pointerEvents="none"
               style={[styles.peekFace, { height: peekH }, faceStyle]}>
+              {/* PARKED FROST: home content scrolls under and dissolves;
+                  the glow beneath softens with it, the tiles stay crisp
+                  above. Dies within the first 40px of travel. */}
+              {parkBlurLive && (
+                <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, parkBlurStyle]}>
+                  <BlurView
+                    intensity={32}
+                    tint={theme.mode === 'dark' ? 'dark' : 'light'}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </Animated.View>
+              )}
               <View
                 style={[
                   styles.dockInner,
