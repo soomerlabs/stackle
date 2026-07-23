@@ -1,7 +1,7 @@
-// sworble-seed.js — pure, deterministic clue-word board seeder. NO DOM, NO storage, NO `this`.
+// sworbl-seed.js — pure, deterministic clue-word board seeder. NO DOM, NO storage, NO `this`.
 // Stamps a word onto the grid as a self-avoiding 8-adjacent path (used for BOTH the opening
 // board and re-stamping a clue broken by play). All randomness is an injected mulberry32 rng
-// so the daily is identical for every player. Loaded via <script src> (sets window.SworbleSeed);
+// so the daily is identical for every player. Loaded via <script src> (sets window.SworblSeed);
 // module.exports mirrors it for tests.
 (function (root) {
   'use strict';
@@ -193,6 +193,6 @@
   }
 
   var API = { stampWord: stampWord, seedClueLetters: seedClueLetters, seedClueLettersBestEffort: seedClueLettersBestEffort, seedClueLettersTwoPass: seedClueLettersTwoPass, reseedBroken: reseedBroken, _shuffle: shuffle };
-  root.SworbleSeed = API;
+  root.SworblSeed = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -5,7 +5,7 @@
 // tests/api-surface is the drift canary; keep this file honest when the
 // engine's API grows.
 
-export interface SworbleCore {
+export interface SworblCore {
   /** Seeded PRNG — DETERMINISM CONTRACT: output is frozen, tests pin values. */
   mulberry32(seed: number): () => number;
   /** Stable string → 32-bit int hash (daily/leaderboard seed derivation). */
@@ -36,7 +36,7 @@ export interface DailyEntry {
   [k: string]: unknown;
 }
 
-export interface SworbleDaily {
+export interface SworblDaily {
   BACKSPACE: string; // '\b' — nextSlots' backspace sentinel
   parseEntry(dailies: unknown, dayKey: string): DailyEntry | null;
   clueFor(word: string, entry: DailyEntry): string | null;
@@ -93,7 +93,7 @@ export interface SworbleDaily {
   REWARD: Record<string, number>;
 }
 
-export interface SworbleRun {
+export interface SworblRun {
   RUN_VERSION: number;
   serializeRun(src: unknown): unknown | null;
   validateRun(raw: unknown, day: string): unknown | null;
@@ -120,7 +120,7 @@ export interface SworbleRun {
   }): number;
 }
 
-export interface SworbleFlow {
+export interface SworblFlow {
   liveHunt(ctx: unknown): boolean;
   startDailyRoute(ctx: {
     finale?: boolean;
@@ -139,7 +139,7 @@ export interface SworbleFlow {
   flipStepperAction(ctx: unknown): 'flip' | 'noop';
 }
 
-export interface SworbleSeed {
+export interface SworblSeed {
   seedClueLettersTwoPass(args: {
     clues: string[];
     cols: number;
@@ -160,7 +160,7 @@ export interface SworbleSeed {
   }): { r: number; c: number; letter: string }[];
 }
 
-export interface SworbleSolver {
+export interface SworblSolver {
   /** DFS for one word; returns the tile-id path or null. */
   findWord(
     tiles: { id: number; letter: string; row: number; col: number }[],
@@ -180,7 +180,7 @@ export interface StorageBacking {
   readonly length?: number;
 }
 
-export interface SworbleStore {
+export interface SworblStore {
   LS: Required<StorageBacking>;
   K: Record<string, string>;
   getInt(k: string, dflt: number): number;
@@ -194,14 +194,14 @@ export interface SworbleStore {
 }
 
 declare const engine: {
-  core: SworbleCore;
-  seed: SworbleSeed;
-  solver: SworbleSolver;
-  daily: SworbleDaily;
+  core: SworblCore;
+  seed: SworblSeed;
+  solver: SworblSolver;
+  daily: SworblDaily;
   status: any; // typed when the app consumes it (leaderboard era)
-  flow: SworbleFlow;
-  run: SworbleRun;
-  store: SworbleStore;
+  flow: SworblFlow;
+  run: SworblRun;
+  store: SworblStore;
   net: any; // typed when the app consumes it (Supabase era)
   words: { FALLBACK_WORDS: string };
 };

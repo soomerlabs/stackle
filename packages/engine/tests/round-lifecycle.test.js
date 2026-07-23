@@ -1,7 +1,7 @@
 'use strict';
 // tests/round-lifecycle.test.js — THE headless round test. Drives a full daily — deal →
 // spell → clock-expiry → finale guesses → solve → bank — end-to-end through the PURE layer
-// (sworble-core/seed/solver/daily/status/flow) with NO browser and NO jsdom.
+// (sworbl-core/seed/solver/daily/status/flow) with NO browser and NO jsdom.
 //
 // WHY reducer-level, not a DOM boot: a full boot of the dc-runtime + React render tree is
 // brittle (a headless render of a 6000-line component drags in AudioContext, rAF, layout
@@ -15,12 +15,12 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const Core = require('../sworble-core.js');
-const Seed = require('../sworble-seed.js');
-const Solver = require('../sworble-solver.js');
-const Daily = require('../sworble-daily.js');
-const Status = require('../sworble-status.js');
-const Flow = require('../sworble-flow.js');
+const Core = require('../sworbl-core.js');
+const Seed = require('../sworbl-seed.js');
+const Solver = require('../sworbl-solver.js');
+const Daily = require('../sworbl-daily.js');
+const Status = require('../sworbl-status.js');
+const Flow = require('../sworbl-flow.js');
 
 // engine-package copy: dailies.json is APP content and lives at the monorepo
 // root (it ships with the frozen web app) — reach up to it rather than duplicating

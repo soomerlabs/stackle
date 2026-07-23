@@ -1,12 +1,12 @@
 'use strict';
-// sworble-flow.test.js — pins the round-lifecycle DECISION layer (sworble-flow.js). Every
+// sworbl-flow.test.js — pins the round-lifecycle DECISION layer (sworbl-flow.js). Every
 // branch of the startDaily chain (incl. the zombie + finale-pending + resume + fresh cases),
 // endRound outcome routing per day-state, the finale-resolve exit table, and pause/resume/
 // count-in legality per state. These are the transitions the T3 "zombie run" and "finale
 // re-entry" Criticals lived in — the ordering is sacred, so it's enforced here, not just in
 // comments.
 const assert = require('assert');
-const F = require('../sworble-flow.js');
+const F = require('../sworbl-flow.js');
 
 // --- liveHunt ------------------------------------------------------------------------
 assert.strictEqual(F.liveHunt({ screen: 'game', over: false, finale: false }), true, 'game + not over + not finale = live hunt');
@@ -14,7 +14,7 @@ assert.strictEqual(F.liveHunt({ screen: 'home', over: false, finale: false }), f
 assert.strictEqual(F.liveHunt({ screen: 'game', over: true, finale: false }), false, 'over is not a live hunt');
 assert.strictEqual(F.liveHunt({ screen: 'game', over: false, finale: true }), false, 'finale is not a live hunt');
 assert.strictEqual(F.liveHunt(null), false, 'null ctx never throws');
-console.log('sworble-flow: liveHunt passed');
+console.log('sworbl-flow: liveHunt passed');
 
 // --- startDailyRoute: THE zombie-fixed branch chain, in order ------------------------
 {
@@ -58,7 +58,7 @@ console.log('sworble-flow: liveHunt passed');
     'fresh', 'nothing pending -> deal fresh');
   assert.strictEqual(F.startDailyRoute(null), 'fresh', 'null ctx -> fresh, never throws');
 }
-console.log('sworble-flow: startDailyRoute passed');
+console.log('sworbl-flow: startDailyRoute passed');
 
 // --- endRoundRoute: outcome routing per day-state ------------------------------------
 {
@@ -94,7 +94,7 @@ console.log('sworble-flow: startDailyRoute passed');
 
   assert.strictEqual(F.endRoundRoute(null).route, 'over', 'null ctx -> over, never throws');
 }
-console.log('sworble-flow: endRoundRoute passed');
+console.log('sworbl-flow: endRoundRoute passed');
 
 // --- finaleResolveRoute: the four-way (+continue) exit table --------------------------
 {
@@ -108,7 +108,7 @@ console.log('sworble-flow: endRoundRoute passed');
   assert.strictEqual(F.finaleResolveRoute({ finale: true, correct: true, spent: true }), 'finale-solve', 'correct beats spent');
   assert.strictEqual(F.finaleResolveRoute(null), 'miss-continue', 'null ctx -> miss-continue, never throws');
 }
-console.log('sworble-flow: finaleResolveRoute passed');
+console.log('sworbl-flow: finaleResolveRoute passed');
 
 // --- pause / resume / count-in legality ----------------------------------------------
 {
@@ -137,6 +137,6 @@ console.log('sworble-flow: finaleResolveRoute passed');
   assert.strictEqual(F.flipStepperAction({ practice: false, screen: 'game', over: true, finale: false }), 'flip', 'over (post-hunt) -> flip allowed');
   assert.strictEqual(F.flipStepperAction({ practice: true, screen: 'game', over: false, finale: false }), 'flip', 'practice is unaffected by the hunt guard');
 }
-console.log('sworble-flow: pause/resume/count-in legality passed');
+console.log('sworbl-flow: pause/resume/count-in legality passed');
 
-console.log('sworble-flow: all passed');
+console.log('sworbl-flow: all passed');

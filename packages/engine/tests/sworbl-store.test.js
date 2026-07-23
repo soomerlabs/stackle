@@ -1,4 +1,4 @@
-// tests/sworble-store.test.js — run with: node tests/sworble-store.test.js
+// tests/sworbl-store.test.js — run with: node tests/sworbl-store.test.js
 // Covers the key registry + the age-based GC for per-day-keyed entries. In Node the store
 // falls back to its in-memory shim, so every assertion runs against a clean fake localStorage.
 //
@@ -8,15 +8,15 @@
 // name that heal used to spare, is gone too — MUTED is plain sworble_muted now.)
 'use strict';
 const assert = require('assert');
-const S = require('../sworble-store.js');
+const S = require('../sworbl-store.js');
 const LS = S.LS;
 
-assert.strictEqual(S.K.MUTED, 'sworble_muted', 'MUTED is a plain sworble_ key now (no legacy holdout)');
-assert.strictEqual(S.K.HINT_TOKENS_PREFIX, 'sworble_hint_tokens_', 'HINT AIDS token-bank prefix must be registered in K');
+assert.strictEqual(S.K.MUTED, 'sworbl_muted', 'MUTED is a plain sworble_ key now (no legacy holdout)');
+assert.strictEqual(S.K.HINT_TOKENS_PREFIX, 'sworbl_hint_tokens_', 'HINT AIDS token-bank prefix must be registered in K');
 
 // --- age-GC: dayKeyAgeDays -----------------------------------------------------------
 // now pinned to a fixed local calendar day so the test is deterministic regardless of
-// when it runs (matches SworbleCore.dayKey()'s local-day construction).
+// when it runs (matches SworblCore.dayKey()'s local-day construction).
 const NOW = new Date(2026, 8, 19); // 2026-09-19 local
 assert.strictEqual(S.dayKeyAgeDays('2026-09-19', NOW), 0, 'today is age 0');
 assert.strictEqual(S.dayKeyAgeDays('2026-07-22', NOW), 59, 'exactly 59 days old');
@@ -38,7 +38,7 @@ assert.strictEqual(S.AGE_GC_MAX_DAYS, 60, 'default cutoff is 60 days');
     S.K.DONE_PREFIX + 'not-a-date',  // malformed date on a dated prefix — untouched
     S.K.BEST,                        // not a dated prefix at all — untouched
     S.K.MUTED,                       // not a dated prefix at all — untouched
-    'sworble_daily_' + 'undefined',  // the OTHER malformed-key heal already owns this one; still untouched here
+    'sworbl_daily_' + 'undefined',  // the OTHER malformed-key heal already owns this one; still untouched here
   ];
   const aged = S.agedDayKeys(keys, NOW);
   assert.deepStrictEqual(aged.sort(), [
@@ -53,4 +53,4 @@ assert.strictEqual(S.AGE_GC_MAX_DAYS, 60, 'default cutoff is 60 days');
   assert.strictEqual(LS.getItem(S.K.RUNS_PREFIX + '2026-07-20'), 'still here', 'agedDayKeys never writes to storage — pure decision only, caller removes');
 }
 
-console.log('sworble-store: all tests passed');
+console.log('sworbl-store: all tests passed');

@@ -1,5 +1,5 @@
-// sworble-daily.js — pure "sworb of the day" content + guess logic. NO DOM, NO storage, NO `this`.
-// Loaded via <script src> (sets window.SworbleDaily); module.exports mirrors it for tests.
+// sworbl-daily.js — pure "sworb of the day" content + guess logic. NO DOM, NO storage, NO `this`.
+// Loaded via <script src> (sets window.SworblDaily); module.exports mirrors it for tests.
 (function (root) {
   'use strict';
 
@@ -254,6 +254,6 @@
   var API = { parseEntry: parseEntry, isClue: isClue, clueFor: clueFor, checkGuess: checkGuess, guessReward: guessReward, scoreGuess: scoreGuess, bankClue: bankClue, applySworbGuess: applySworbGuess, nextSlots: nextSlots, BACKSPACE: BACKSPACE, resolveCatch: resolveCatch, REWARD: REWARD,
     hintTokenEvents: hintTokenEvents, firstUnfoundClue: firstUnfoundClue, mercyPulseShouldFire: mercyPulseShouldFire,
     HINT_TOKEN_WORD_THRESHOLD: HINT_TOKEN_WORD_THRESHOLD, MAX_HINT_GRANTS_PER_ROUND: MAX_HINT_GRANTS_PER_ROUND, MERCY_THRESHOLD_SECS: MERCY_THRESHOLD_SECS, MERCY_MAX_CLUES_FOUND: MERCY_MAX_CLUES_FOUND };
-  root.SworbleDaily = API;
+  root.SworblDaily = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

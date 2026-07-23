@@ -1,18 +1,18 @@
-// sworble-status.js — the daily-status selector: ONE pure answer to "what's the player's
+// sworbl-status.js — the daily-status selector: ONE pure answer to "what's the player's
 // status today." Every surface that shows daily state (home seven, standings graph,
 // header best, PLAY/RESUME label) reads THIS — never its own mix of storage + memory.
 // That rule is the whole point: when a new source of truth appears (a saved snapshot,
 // a live run), it's added here once and every surface picks it up together.
 //
 // Pure data-in/data-out — NO DOM, NO storage, NO `this`. The game gathers the inputs
-// (from SworbleStore + component memory) and passes them in; tests pin the priorities.
+// (from SworblStore + component memory) and passes them in; tests pin the priorities.
 (function (root) {
   'use strict';
 
   function num(v) { return (typeof v === 'number' && isFinite(v) && v > 0) ? v : 0; }
 
   // Distinct words at their best-scoring play, top 7 by points, with the run total.
-  // (The "Sworble Seven" shape used by home, the recap, and the leaderboard number.)
+  // (The "Sworbl Seven" shape used by home, the recap, and the leaderboard number.)
   function sevenFromWords(roundWords) {
     const map = {};
     for (const w of (Array.isArray(roundWords) ? roundWords : [])) {
@@ -169,6 +169,6 @@
   }
 
   const API = { sevenFromWords, cumulativeTotal, rankFor, dailyStatus, dayState, progressToTop, reconcileFinaleScore };
-  root.SworbleStatus = API;
+  root.SworblStatus = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -5,6 +5,6 @@
   "description": "sworbl game engine \u2014 pure, deterministic modules (no DOM, no storage, no this). The single source of truth for game logic across web and native.",
   "main": "index.js",
   "scripts": {
-    "test": "node tests/sworble-core.test.js && node tests/sworble-status.test.js && node tests/sworble-store.test.js && node tests/sworble-run.test.js && node tests/sworble-net.test.js && node tests/sworble-solver.test.js && node tests/sworble-seed.test.js && node tests/sworble-daily.test.js && node tests/sworble-flow.test.js && node tests/round-lifecycle.test.js && node tests/store-backing.test.js && node tests/time-fuel.test.js"
+    "test": "node tests/sworbl-core.test.js && node tests/sworbl-status.test.js && node tests/sworbl-store.test.js && node tests/sworbl-run.test.js && node tests/sworbl-net.test.js && node tests/sworbl-solver.test.js && node tests/sworbl-seed.test.js && node tests/sworbl-daily.test.js && node tests/sworbl-flow.test.js && node tests/round-lifecycle.test.js && node tests/store-backing.test.js && node tests/time-fuel.test.js"
   }
 }

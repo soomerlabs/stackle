@@ -1,4 +1,4 @@
-// tests/sworble-core.test.js — run with: node tests/sworble-core.test.js
+// tests/sworbl-core.test.js — run with: node tests/sworbl-core.test.js
 // ⚠ DETERMINISM CONTRACT, PINNED. mulberry32 + hashSeed + shuffledBag feed the daily
 // board seed: every player must deal the IDENTICAL board for a given calendar day.
 // These known values are frozen — if a change flips any of them, every daily board,
@@ -6,7 +6,7 @@
 // value here without deciding, on purpose, to break the daily contract.
 'use strict';
 const assert = require('assert');
-const C = require('../sworble-core.js');
+const C = require('../sworbl-core.js');
 
 // --- mulberry32: same seed → same stream, forever ---------------------------------
 {
@@ -113,4 +113,4 @@ assert.strictEqual(C.streakMult(30), 2, 'streak multiplier caps at 2x');
   assert.strictEqual(C.containsFoulTerm('CLEANNAME', FOUL), false);
 }
 
-console.log('sworble-core: all tests passed');
+console.log('sworbl-core: all tests passed');

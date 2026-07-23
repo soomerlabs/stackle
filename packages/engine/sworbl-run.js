@@ -1,14 +1,14 @@
-// sworble-run.js — live-run timing/snapshot layer. Two things live here, both pure
+// sworbl-run.js — live-run timing/snapshot layer. Two things live here, both pure
 // data-in/data-out — NO DOM, NO storage, NO `this`:
 //   1. The live-run SNAPSHOT: serialize/validate the mid-run state of a daily so a reload
 //      (or a mobile tab eviction) can restore the run exactly where it was (the game wires
-//      it to LS via SworbleStore.K.RUN_PREFIX + dayKey).
+//      it to LS via SworblStore.K.RUN_PREFIX + dayKey).
 //   2. The round-start COUNT-IN timing chain (COUNT_IN_MS/countInStepAt) — the 3·2·1·GO
 //      beat every round START and PAUSE RESUME plays; armCountIn (index.html) owns the
 //      actual scheduling/token-guard, this owns only the timing/value data.
 //
-// Loaded via <script src> in <helmet> (sets window.SworbleRun); mirrored to
-// module.exports for tests (tests/sworble-run.test.js).
+// Loaded via <script src> in <helmet> (sets window.SworblRun); mirrored to
+// module.exports for tests (tests/sworbl-run.test.js).
 //
 // Restore contract: the snapshot carries everything the seeded daily needs to continue
 // deterministically — the letter-queue position (queueIdx) plus CALL COUNTS for the three
@@ -164,6 +164,6 @@
 
   const API = { RUN_VERSION, serializeRun, validateRun, remainingSecs, COUNT_IN_MS, countInStepAt,
     TIME_FUEL, timeForWord };
-  root.SworbleRun = API;
+  root.SworblRun = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

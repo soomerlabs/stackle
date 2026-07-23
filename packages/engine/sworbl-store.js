@@ -1,8 +1,8 @@
-// sworble-store.js — persistence layer: the ONE place every storage key is named,
+// sworbl-store.js — persistence layer: the ONE place every storage key is named,
 // plus the safe localStorage shim and typed get/set helpers.
 //
-// Loaded via <script src> in <helmet> (sets window.SworbleStore); mirrored to
-// module.exports for tests. The game does `const LS = SworbleStore.LS, K = SworbleStore.K;`.
+// Loaded via <script src> in <helmet> (sets window.SworblStore); mirrored to
+// module.exports for tests. The game does `const LS = SworblStore.LS, K = SworblStore.K;`.
 //
 // ⚠ Key names are a COMPATIBILITY CONTRACT — renaming one orphans real player data.
 // (Pre-release exception, owner-sanctioned 2026-07-22: no real player data exists yet, so the
@@ -31,7 +31,7 @@
   })();
 
   // LS is a stable FACADE over a swappable backing (living-engine change, Phase 1 of the
-  // RN rebuild): callers keep their `const LS = SworbleStore.LS` reference forever while
+  // RN rebuild): callers keep their `const LS = SworblStore.LS` reference forever while
   // setBacking() redirects it — MMKV on native, localStorage on web, memory in tests.
   // A backing must provide getItem/setItem/removeItem, and key(i)+length for keys().
   const LS = {
@@ -50,45 +50,45 @@
 
   // Every key in one place. PREFIX entries are concatenated with a day-key or board id.
   const K = {
-    BEST: 'sworble_best',
-    OPTS: 'sworble_opts',
-    NAME: 'sworble_name',
-    SINCE: 'sworble_since', // first-seen timestamp -> "player since <Mon YYYY>" on the profile eyebrow
-    BESTWORD: 'sworble_bestword',
-    WORDS_TOTAL: 'sworble_words_total',
+    BEST: 'sworbl_best',
+    OPTS: 'sworbl_opts',
+    NAME: 'sworbl_name',
+    SINCE: 'sworbl_since', // first-seen timestamp -> "player since <Mon YYYY>" on the profile eyebrow
+    BESTWORD: 'sworbl_bestword',
+    WORDS_TOTAL: 'sworbl_words_total',
     // SEEN_HOWTO/SEEN_MINES retired: the auto-opening first-run how-to sheet they gated is
     // gone (see componentDidMount's Post-pivot comment) and neither key has any remaining
     // reader/writer. Any orphaned sworble_seen_howto/sworble_seen_mines in a returning
     // player's storage is simply inert.
-    SEEN_STACKHINT: 'sworble_seen_stackhint',
-    SEEN_BOMBHINT: 'sworble_seen_bombhint',
-    // TUT_DONE ('sworble_tut_done') retired in Task 5c — the warm-up (`tut`) flow is removed
+    SEEN_STACKHINT: 'sworbl_seen_stackhint',
+    SEEN_BOMBHINT: 'sworbl_seen_bombhint',
+    // TUT_DONE ('sworbl_tut_done') retired in Task 5c — the warm-up (`tut`) flow is removed
     // entirely (onboarding is the future tutorial, backlogged). Not reused: any orphaned
     // sworble_tut_done in a returning player's storage is simply inert.
-    AUDIO_CLAIM: 'sworble_audio_claim',
-    MUTED: 'sworble_muted', // was the legacy 'worddrop_muted' name, pre-release-wiped 2026-07-22
+    AUDIO_CLAIM: 'sworbl_audio_claim',
+    MUTED: 'sworbl_muted', // was the legacy 'worddrop_muted' name, pre-release-wiped 2026-07-22
     // per-day / per-board PREFIXES — `K.DAILY_PREFIX + dayKey`, `K.LB_ME_PREFIX + boardId`:
-    DAILY_PREFIX: 'sworble_daily_',
-    ATT_PREFIX: 'sworble_att_',
-    SEVEN_PREFIX: 'sworble_seven_',
-    RUNS_PREFIX: 'sworble_runs_',
-    PUZZLE_BEST_PREFIX: 'sworble_puzzle_best_',
+    DAILY_PREFIX: 'sworbl_daily_',
+    ATT_PREFIX: 'sworbl_att_',
+    SEVEN_PREFIX: 'sworbl_seven_',
+    RUNS_PREFIX: 'sworbl_runs_',
+    PUZZLE_BEST_PREFIX: 'sworbl_puzzle_best_',
     // STACKL_BEST_PREFIX retired in Task 4 (mode collapse) — the Stackl (2-min timed) arm no
     // longer exists, so its per-day best key is dead. Not reused: any orphaned
     // sworble_stackl_best_* entries in a returning player's storage are simply inert.
     // PUZZLE_PAR_PREFIX retired: nothing ever wrote a sworble_puzzle_par_* entry — it was only
     // ever named in resetDayTap's defensive wipe list. Any orphaned entries are simply inert.
-    TARGETS_PREFIX: 'sworble_targets_',
-    FOUND_PREFIX: 'sworble_found_',
-    LB_ME_PREFIX: 'sworble_lb_me_',
-    DONE_PREFIX: 'sworble_done_', // one run per day: set when a daily run ends, locks the daily
-    RUN_PREFIX: 'sworble_run_', // live-run snapshot (mid-run save/resume) — cleared when the run ends
-    SWORB_PREFIX: 'sworble_sworb_', // per-day sworb state: { guessesUsed, solved, correct, bonus, found:[] }
-    HINT_TOKENS_PREFIX: 'sworble_hint_tokens_', // per-day HINT AIDS token bank: { count, granted } — granted guards the one-per-round hintTokenEvents() grant (see sworble-daily.js)
-    THEME_PREFIX: 'sworble_theme_', // per-day realized theme set (words actually seeded on the board): string[]
-    PLAYER_ID: 'sworble_player_id', // stable per-device UUID sent with Soomer submits (claimable by an account later)
-    PENDING_SUBMITS: 'sworble_pending_submits', // SworbleApi's durable submit outbox — value must match QUEUE_KEY in sworble-net.js
-    TIME_PREFIX: 'sworble_time_', // per-day seconds actively on the board (freezes when you leave the board)
+    TARGETS_PREFIX: 'sworbl_targets_',
+    FOUND_PREFIX: 'sworbl_found_',
+    LB_ME_PREFIX: 'sworbl_lb_me_',
+    DONE_PREFIX: 'sworbl_done_', // one run per day: set when a daily run ends, locks the daily
+    RUN_PREFIX: 'sworbl_run_', // live-run snapshot (mid-run save/resume) — cleared when the run ends
+    SWORB_PREFIX: 'sworbl_sworb_', // per-day sworb state: { guessesUsed, solved, correct, bonus, found:[] }
+    HINT_TOKENS_PREFIX: 'sworbl_hint_tokens_', // per-day HINT AIDS token bank: { count, granted } — granted guards the one-per-round hintTokenEvents() grant (see sworbl-daily.js)
+    THEME_PREFIX: 'sworbl_theme_', // per-day realized theme set (words actually seeded on the board): string[]
+    PLAYER_ID: 'sworbl_player_id', // stable per-device UUID sent with Soomer submits (claimable by an account later)
+    PENDING_SUBMITS: 'sworbl_pending_submits', // SworblApi's durable submit outbox — value must match QUEUE_KEY in sworbl-net.js
+    TIME_PREFIX: 'sworbl_time_', // per-day seconds actively on the board (freezes when you leave the board)
   };
 
   // Typed, exception-safe accessors (optional sugar over LS + parse/stringify).
@@ -117,7 +117,7 @@
   const AGE_GC_MAX_DAYS = 60; // Road-to-9 Sprint 1 #3: prune per-day entries older than ~60 days
 
   // Age (in whole days) of a "YYYY-MM-DD" day key relative to `now` — the SAME local-calendar
-  // definition SworbleCore.dayKey() uses to mint these keys in the first place, so a key's
+  // definition SworblCore.dayKey() uses to mint these keys in the first place, so a key's
   // age here always matches the calendar day it names, no timezone drift between minting and
   // pruning. Malformed input (bad shape, or a shape-valid-but-impossible date like
   // "2026-02-30") returns null, NEVER a number — callers must treat null as "leave it alone",
@@ -155,6 +155,6 @@
 
   const API = { LS, K, getInt, getJSON, set, setJSON, remove, keys,
     setBacking, dayKeyAgeDays, agedDayKeys, AGE_GC_MAX_DAYS };
-  root.SworbleStore = API;
+  root.SworblStore = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

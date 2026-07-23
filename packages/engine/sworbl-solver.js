@@ -1,4 +1,4 @@
-// sworble-solver.js — pure board word-finding. NO DOM, NO storage, NO `this`.
+// sworbl-solver.js — pure board word-finding. NO DOM, NO storage, NO `this`.
 //
 // The board's word-scans used to be four near-identical DFS copies inside the game class:
 //   • findFirstWord   — the auto-reshuffle guard (is ANY word still on the board?)
@@ -7,7 +7,7 @@
 //   • topWordStarts   — bomb "beacon" anchors (top-N + each word's canonical start tile)
 // They now share ONE spatial walker here; the live class methods are thin delegates. A fifth,
 // findAllWords, powers the dev "all viable words" menu. Loaded like the rest of the kernel:
-// <script src> sets window.SworbleSolver; module.exports mirrors it for the tests.
+// <script src> sets window.SworblSolver; module.exports mirrors it for the tests.
 //
 // A "tile" is any object with { id, row, col, letter }. The caller supplies expand()
 // (letter -> spelled chars, e.g. 'q' -> 'qu') so a "Qu" tile spells TWO chars but counts as
@@ -238,6 +238,6 @@
   var API = { findFirstWord: findFirstWord, solveLongest: solveLongest, topWords: topWords,
     topWordStarts: topWordStarts, findAllWords: findAllWords, findWord: findWord,
     _internals: { makeGrid: makeGrid, available: available, candidates: candidates, prefixSet: prefixSet, scoreScan: scoreScan } };
-  root.SworbleSolver = API;
+  root.SworblSolver = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

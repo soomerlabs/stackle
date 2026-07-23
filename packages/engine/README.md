@@ -3,7 +3,7 @@
 The LIVING engine — consumed by `apps/sworbl` (React Native) and any future client.
 Seeded from the repo-root modules on 2026-07-22 (Phase 1 of docs/MOBILE-PLAN.md).
 
-⚠️ The repo-root copies (`/sworble-*.js`) belong to the FROZEN web validator that
+⚠️ The repo-root copies (`/sworbl-*.js`) belong to the FROZEN web validator that
 GitHub Pages serves — they do not evolve. Engine changes happen HERE. If a critical
 fix must reach the frozen site, mirror it manually and say so in the commit.
 

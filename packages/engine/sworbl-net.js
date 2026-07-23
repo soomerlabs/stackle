@@ -1,12 +1,12 @@
-// sworble-net.js — the Soomer web client, two layers in one file:
+// sworbl-net.js — the Soomer web client, two layers in one file:
 //
 //   • SoomerNet   — platform core, deliberately mirroring the KMP SDK (soomer-sdk shared/):
 //                   setup({appId, environment}) lifecycle, Environment base URLs,
 //                   X-Soomer-Application-ID / X-Soomer-Application-Version headers,
 //                   30s timeout, 3× exponential retry on 5xx/408/429/network,
 //                   typed errors { kind }. This is the seed of a real Soomer web SDK —
-//                   keep it free of anything sworble-specific.
-//   • SworbleApi  — the app layer: /sworble/v1/ endpoints, response validation into the
+//                   keep it free of anything sworbl-specific.
+//   • SworblApi  — the app layer: /sworble/v1/ endpoints, response validation into the
 //                   local stub's shape, and a DURABLE write-behind submit queue (web tabs
 //                   die mid-request; the mobile SDK has no outbox, web needs one).
 //
@@ -22,8 +22,8 @@
   // The dc runtime executes helmet scripts TWICE — once at document parse, once re-injected
   // into <head> on first render. This module holds MUTABLE config, so the second eval must
   // never replace a possibly-configured instance with a fresh blank one: first eval wins.
-  if (root.SoomerNet && root.SworbleApi) {
-    if (typeof module !== 'undefined' && module.exports) module.exports = { SoomerNet: root.SoomerNet, SworbleApi: root.SworbleApi };
+  if (root.SoomerNet && root.SworblApi) {
+    if (typeof module !== 'undefined' && module.exports) module.exports = { SoomerNet: root.SoomerNet, SworblApi: root.SworblApi };
     return;
   }
 
@@ -102,21 +102,21 @@
     },
   };
 
-  // ---- SworbleApi: app endpoints + validation + durable submit queue ---------------
-  // QUEUE_KEY reads SworbleStore.K.PENDING_SUBMITS directly — single source, no hand-copied
-  // literal to drift. Two ways to resolve SworbleStore depending on realm:
+  // ---- SworblApi: app endpoints + validation + durable submit queue ---------------
+  // QUEUE_KEY reads SworblStore.K.PENDING_SUBMITS directly — single source, no hand-copied
+  // literal to drift. Two ways to resolve SworblStore depending on realm:
   //   • Node (tests, or any CommonJS consumer): require() it — Node's module cache means
-  //     this returns the EXACT SAME object tests/sworble-net.test.js gets from its own
-  //     require('../sworble-store.js'), so the two are reference-identical, not just
+  //     this returns the EXACT SAME object tests/sworbl-net.test.js gets from its own
+  //     require('../sworbl-store.js'), so the two are reference-identical, not just
   //     string-equal.
-  //   • browser: read window.SworbleStore. index.html's <script src> load order puts
-  //     sworble-store.js BEFORE sworble-net.js in <helmet> — that order IS the contract this
+  //   • browser: read window.SworblStore. index.html's <script src> load order puts
+  //     sworbl-store.js BEFORE sworbl-net.js in <helmet> — that order IS the contract this
   //     line leans on (unlike the old hand-copied literal, which deliberately avoided leaning
   //     on load order; now that this reads the store directly, load order is unavoidable and
   //     enforced by that same script ordering).
   const QUEUE_KEY = ((typeof module !== 'undefined' && module.exports)
-    ? require('./sworble-store.js')
-    : root.SworbleStore).K.PENDING_SUBMITS;
+    ? require('./sworbl-store.js')
+    : root.SworblStore).K.PENDING_SUBMITS;
   let app = null; // { storage, playerId }
 
   function isNum(v) { return typeof v === 'number' && isFinite(v); }
@@ -153,10 +153,10 @@
     await SoomerNet.fetchJSON('/sworble/v1/leaderboard/submit/', { method: 'POST', body: payload });
   }
 
-  const SworbleApi = {
+  const SworblApi = {
     setup(options) {
       const o = options || {};
-      if (!o.storage) throw new Error('SworbleApi.setup: storage is required');
+      if (!o.storage) throw new Error('SworblApi.setup: storage is required');
       app = { storage: o.storage, playerId: o.playerId || null };
     },
     // GET the day's board. null = "no remote data" (unconfigured, offline, bad payload) —
@@ -197,12 +197,12 @@
     },
     pendingCount() { return app ? readQueue().length : 0; },
     isReady() { return !!app; }, // callers re-run setup() when false (see netApi in the game)
-    QUEUE_KEY, // exposed ONLY so tests/sworble-net.test.js can assert identity against
-    // SworbleStore.K.PENDING_SUBMITS directly — not meant as an app-facing API.
+    QUEUE_KEY, // exposed ONLY so tests/sworbl-net.test.js can assert identity against
+    // SworblStore.K.PENDING_SUBMITS directly — not meant as an app-facing API.
   };
 
-  const API = { SoomerNet, SworbleApi };
+  const API = { SoomerNet, SworblApi };
   root.SoomerNet = SoomerNet;
-  root.SworbleApi = SworbleApi;
+  root.SworblApi = SworblApi;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

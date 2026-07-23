@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('assert');
-const D = require('../sworble-daily.js');
+const D = require('../sworbl-daily.js');
 const dailies = { '2026-07-21': { sworb: 'ocean', clues: ['tide', 'coral', 'wave', 'reef', 'salt'] } };
 
 const e = D.parseEntry(dailies, '2026-07-21');
@@ -114,7 +114,7 @@ assert.deepStrictEqual(D.scoreGuess('erxx', 'reef'), ['yellow','yellow','gray','
   assert.deepStrictEqual(D.bankClue(['trim'], null), ['trim'], 'falsy clue -> no-op, list unchanged');
   assert.deepStrictEqual(D.bankClue(['trim'], ''), ['trim'], 'empty-string clue -> no-op');
 }
-console.log('sworble-daily: bankClue passed');
+console.log('sworbl-daily: bankClue passed');
 
 // --- applySworbGuess(args) -> {ok, correct, newGuessesUsed, nowSolved, lockedOut, bonus} --
 // The finale guess decision, extracted pure from guessSworb: 6-guess cap, no-op once
@@ -175,7 +175,7 @@ console.log('sworble-daily: bankClue passed');
   assert.strictEqual(D.applySworbGuess({}).ok, false);
   assert.strictEqual(D.applySworbGuess(null).ok, false);
 }
-console.log('sworble-daily: applySworbGuess passed');
+console.log('sworbl-daily: applySworbGuess passed');
 
 // --- nextSlots(args) -> {slots, colors}|null — sworbKey/sworbBackspace's shared slot-fill
 // state machine, extracted pure. Wordle-persistence means slots can have interior gaps
@@ -252,7 +252,7 @@ console.log('sworble-daily: applySworbGuess passed');
   assert.strictEqual(D.nextSlots({}), null, 'empty args, letter-fill path with len 0 -> no-op, never throws');
   assert.strictEqual(D.nextSlots(null), null, 'null args never throws');
 }
-console.log('sworble-daily: nextSlots passed');
+console.log('sworbl-daily: nextSlots passed');
 
 // --- resolveCatch(args) -> {clue, banked, isNew} — checkTargetCatch's catch decision,
 // extracted pure. On a sworb day (entry present), banking targets the matched CLUE itself
@@ -313,7 +313,7 @@ console.log('sworble-daily: nextSlots passed');
   assert.strictEqual(D.resolveCatch({}).clue, null);
   assert.strictEqual(D.resolveCatch(null).clue, null);
 }
-console.log('sworble-daily: resolveCatch passed');
+console.log('sworbl-daily: resolveCatch passed');
 
 // --- hintTokenEvents(args) -> {grant} — the HINT AIDS token seam: grant ONE token once the
 // player has spelled >=7 words this round WHILE clues remain unfound, and only once per
@@ -340,7 +340,7 @@ console.log('sworble-daily: resolveCatch passed');
   assert.strictEqual(D.hintTokenEvents(null).grant, false, 'null args -> no grant, never throws');
   assert.strictEqual(D.hintTokenEvents({ wordsSpelledThisRound: 7, cluesFound: 0, cluesTotal: 0, tokensEarnedAlready: 0 }).grant, false, 'no clues at all today -> nothing to hint at, no grant');
 }
-console.log('sworble-daily: hintTokenEvents passed');
+console.log('sworbl-daily: hintTokenEvents passed');
 
 // --- firstUnfoundClue(themeWords, found) -> word|null — MERCY PULSE's deterministic pick:
 // the first still-unfound clue in REALIZED (themeWords) order, lowercased. ---
@@ -359,7 +359,7 @@ console.log('sworble-daily: hintTokenEvents passed');
   assert.strictEqual(D.firstUnfoundClue(themeWords, null), 'tide', 'null found -> treated as empty');
   assert.strictEqual(D.firstUnfoundClue([], []), null, 'empty themeWords -> null');
 }
-console.log('sworble-daily: firstUnfoundClue passed');
+console.log('sworbl-daily: firstUnfoundClue passed');
 
 // --- mercyPulseShouldFire(args) -> boolean — the automatic, token-free mercy pulse: fires
 // exactly on the tick the round clock CROSSES the 2:00-remaining threshold (matches the
@@ -388,6 +388,6 @@ console.log('sworble-daily: firstUnfoundClue passed');
   assert.strictEqual(D.mercyPulseShouldFire({}), false, 'empty args -> no fire, never throws');
   assert.strictEqual(D.mercyPulseShouldFire(null), false, 'null args -> no fire, never throws');
 }
-console.log('sworble-daily: mercyPulseShouldFire passed');
+console.log('sworbl-daily: mercyPulseShouldFire passed');
 
-console.log('sworble-daily: all passed');
+console.log('sworbl-daily: all passed');

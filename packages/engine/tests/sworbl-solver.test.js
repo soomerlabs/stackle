@@ -1,6 +1,6 @@
 'use strict';
 const assert = require('assert');
-const S = require('../sworble-solver.js');
+const S = require('../sworbl-solver.js');
 const expand = (l) => (l === 'q' ? 'qu' : l);
 // 3x3 board:  c a t
 //             o d o
@@ -16,4 +16,4 @@ const cod = S.findWord(T, { word: 'cod', expand, diag: true });
 assert.deepStrictEqual(cod, [1, 4, 5], 'cod uses c(0,0)->o(1,0)->d(1,1) diagonally');
 assert.strictEqual(S.findWord(T, { word: 'zzz', expand, diag: true }), null, 'absent word -> null');
 assert.strictEqual(S.findWord(T, { word: 'coo', expand, diag: true }), null, 'only one o adjacent to c; no reuse -> null');
-console.log('sworble-solver: findWord passed');
+console.log('sworbl-solver: findWord passed');

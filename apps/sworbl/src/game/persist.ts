@@ -1,6 +1,6 @@
 // Day-state persistence — the engine's key registry (K) + typed helpers, the
 // same keys the web app writes (compatibility contract; shapes match the
-// SWORB_PREFIX/FOUND_PREFIX/DONE_PREFIX comments in sworble-store.js).
+// SWORB_PREFIX/FOUND_PREFIX/DONE_PREFIX comments in sworbl-store.js).
 // Boot routing goes through engine.flow.startDailyRoute — consumed is checked
 // FIRST, always (the zombie-run bug's 3-layer lesson, inherited as law).
 import engine from '@sworbl/engine';

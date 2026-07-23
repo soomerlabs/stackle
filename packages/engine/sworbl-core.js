@@ -1,12 +1,12 @@
-// sworble-core.js — pure, deterministic core logic. NO DOM, NO storage, NO `this`.
+// sworbl-core.js — pure, deterministic core logic. NO DOM, NO storage, NO `this`.
 //
 // Loaded two ways:
-//   • live game + standalone export: <script src="./sworble-core.js"> in <helmet>,
-//     which sets window.SworbleCore (synchronous, before first render).
+//   • live game + standalone export: <script src="./sworbl-core.js"> in <helmet>,
+//     which sets window.SworblCore (synchronous, before first render).
 //   • tests: require()/import in Node — module.exports mirrors the same API.
 //
 // ⚠ DETERMINISM CONTRACT: mulberry32 + hashSeed feed the daily board seed. Their
-// output is frozen — every player must deal the identical board. tests/sworble-core.test.js
+// output is frozen — every player must deal the identical board. tests/sworbl-core.test.js
 // pins known values; never "optimize" these without updating that contract on purpose.
 (function (root) {
   'use strict';
@@ -100,6 +100,6 @@
   const API = { mulberry32, hashSeed, dayKey, msToNextDay,
     VALUES, BAG, VOWELS, FRIENDLY, shuffledBag,
     expandLetter, dispLetter, letterVal, lenMult, streakMult, containsFoulTerm };
-  root.SworbleCore = API;
+  root.SworblCore = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

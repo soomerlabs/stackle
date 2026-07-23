@@ -1,4 +1,4 @@
-// sworble-flow.js — the round-lifecycle DECISION layer: given a snapshot of the day/round
+// sworbl-flow.js — the round-lifecycle DECISION layer: given a snapshot of the day/round
 // state, decide which transition happens. Pure data-in/data-out — NO DOM, NO storage, NO
 // `this`, NO setState/sfx/timers. The Component (index.html) gathers the inputs, calls one
 // of these to get the DECISION, then owns every side effect (setState, LS, sfx, this.later).
@@ -7,8 +7,8 @@
 // The whole point of pinning it here is that the branch ORDER — which the fixes made sacred —
 // is now enforced by tests instead of living only as inline comments in a 6000-line method.
 //
-// Loaded via <script src> in <helmet> (sets window.SworbleFlow); mirrored to module.exports
-// for tests (tests/sworble-flow.test.js).
+// Loaded via <script src> in <helmet> (sets window.SworblFlow); mirrored to module.exports
+// for tests (tests/sworbl-flow.test.js).
 (function (root) {
   'use strict';
 
@@ -130,6 +130,6 @@
     fairPauseAction: fairPauseAction,
     flipStepperAction: flipStepperAction,
   };
-  root.SworbleFlow = API;
+  root.SworblFlow = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

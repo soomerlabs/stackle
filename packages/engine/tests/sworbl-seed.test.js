@@ -1,9 +1,9 @@
-// tests/sworble-seed.test.js
+// tests/sworbl-seed.test.js
 'use strict';
 const assert = require('assert');
-const Seed = require('../sworble-seed.js');
-const Core = require('../sworble-core.js');
-const Solver = require('../sworble-solver.js');
+const Seed = require('../sworbl-seed.js');
+const Core = require('../sworbl-core.js');
+const Solver = require('../sworbl-solver.js');
 
 function allCells(cols, rows) { const a = []; for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++) a.push({ r, c }); return a; }
 function adjacent(a, b) { return Math.max(Math.abs(a.r - b.r), Math.abs(a.c - b.c)) === 1; }
@@ -60,7 +60,7 @@ function tilesFromLetters(letters, cols, rows) { const t = []; let id = 1; for (
   assert.ok(path, 'aaa still fits in the two free columns');
   assert.ok(path.every(p => letters[p.r + ',' + p.c] == null), 'never steps onto a mismatched z cell');
 }
-console.log('sworble-seed: stampWord passed');
+console.log('sworbl-seed: stampWord passed');
 
 // seedClueLetters places multiple clues, CROSSING where letters match (crossword-style)
 {
@@ -103,7 +103,7 @@ console.log('sworble-seed: stampWord passed');
   const tooMany = Seed.seedClueLetters({ clues: ['aaaaa','bbbbb','ccccc','ddddd','eeeee','fffff','ggggg'], cols: 5, rows: 6, rng: Core.mulberry32(1) });
   assert.strictEqual(tooMany, null, 'impossible pack (no cross letters, 35>30) -> null so caller reseeds/rejects');
 }
-console.log('sworble-seed: seedClueLetters passed');
+console.log('sworbl-seed: seedClueLetters passed');
 
 // best-effort: packs as many as FIT, skips the rest, never null; realized = what placed
 {
@@ -124,7 +124,7 @@ console.log('sworble-seed: seedClueLetters passed');
   // over-target: a pool of 12 packs FEWER than 12 (proves it skips, does not choke)
   assert.ok(realized.length < ocean.length, 'a 12-word pool packs fewer than 12 on 30 cells (skips the overflow)');
 }
-console.log('sworble-seed: seedClueLettersBestEffort passed');
+console.log('sworbl-seed: seedClueLettersBestEffort passed');
 
 // two-pass: locks the realized set to EXACTLY `target` (default 6) — "6 to find, 6 to crack it"
 {
@@ -186,7 +186,7 @@ console.log('sworble-seed: seedClueLettersBestEffort passed');
   assert.strictEqual(out.usedFallback, true, 'attempts:1 == old single-attempt behavior (this pool falls back)');
   assert.strictEqual(out.realized.length, 5, 'single attempt realized only 5 here');
 }
-console.log('sworble-seed: seedClueLettersTwoPass passed');
+console.log('sworbl-seed: seedClueLettersTwoPass passed');
 
 // reseedBroken: re-stamp unfindable clues
 {
@@ -205,4 +205,4 @@ console.log('sworble-seed: seedClueLettersTwoPass passed');
   // nothing broken -> no changes
   assert.deepStrictEqual(Seed.reseedBroken({ tiles, unfound: ['wave'], isFindable: () => true, rng: Core.mulberry32(3), reserve: new Set() }), []);
 }
-console.log('sworble-seed: reseedBroken passed');
+console.log('sworbl-seed: reseedBroken passed');

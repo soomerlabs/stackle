@@ -1,10 +1,10 @@
-// tests/sworble-status.test.js — run with: node tests/sworble-status.test.js
+// tests/sworbl-status.test.js — run with: node tests/sworbl-status.test.js
 // The daily-status selector is THE single answer to "what's the player's status today."
 // Every home/graph/header surface must read from it, so these tests pin the exact
 // source-priority rules that used to be hand-rolled (differently) in five places.
 'use strict';
 const assert = require('assert');
-const S = require('../sworble-status.js');
+const S = require('../sworbl-status.js');
 
 // --- sevenFromWords: best-per-word, top 7, descending, totaled --------------------
 {
@@ -29,7 +29,7 @@ const S = require('../sworble-status.js');
 
 // --- cumulativeTotal: sums best-pts per distinct word, uncapped, no double-count --
 {
-  const S = require('../sworble-status.js');
+  const S = require('../sworbl-status.js');
   assert.strictEqual(typeof S.cumulativeTotal, 'function', 'cumulativeTotal exported');
   // 8 distinct words -> ALL count (best-7 would drop the smallest); dup word -> best pts only
   const rw = [
@@ -170,9 +170,9 @@ function st(over) { return S.dailyStatus(Object.assign({}, BASE, over)); }
   assert.strictEqual(solved.rank.solved, true);
   assert.strictEqual(solved.rank.solveTier, 500, 'earliness/boldness tier banked at solve time flows through');
 }
-console.log('sworble-status: sworb theme-rank passed');
+console.log('sworbl-status: sworb theme-rank passed');
 
-console.log('sworble-status: sworb block passed');
+console.log('sworbl-status: sworb block passed');
 
 // --- dayState: the day's persisted finale lifecycle (fresh/finale/done), no live/runtime
 // board state involved — the T3 re-entry Critical (endRound/frame re-entering the finale
@@ -196,7 +196,7 @@ console.log('sworble-status: sworb block passed');
   assert.strictEqual(S.dayState({}), 'fresh', 'empty input -> fresh, never throws');
   assert.strictEqual(S.dayState(null), 'fresh', 'null input -> fresh, never throws');
 }
-console.log('sworble-status: dayState passed');
+console.log('sworbl-status: dayState passed');
 
 // --- progressToTop: the home slim-strip's fill%/knob-hit math (you vs. the field's top
 // score) — pinned: top=0 (nobody's posted yet), you>top (clamped, still a hit), rounding ---
@@ -210,7 +210,7 @@ console.log('sworble-status: dayState passed');
   assert.deepStrictEqual(S.progressToTop(333, 1000), { pct: 33, hit: false }, 'rounds to nearest whole percent (33.3 -> 33)');
   assert.deepStrictEqual(S.progressToTop(667, 1000), { pct: 67, hit: false }, 'rounds to nearest whole percent (66.7 -> 67)');
 }
-console.log('sworble-status: progressToTop passed');
+console.log('sworbl-status: progressToTop passed');
 
 // --- reconcileFinaleScore: bankFinaleBonus's score-banking math (extracted, pinning
 // TODAY's behavior). banked = max(live state.score, storedBest+bonus) — covers both the
@@ -258,6 +258,6 @@ console.log('sworble-status: progressToTop passed');
     'malformed fields sanitize to 0, never NaN/negative'
   );
 }
-console.log('sworble-status: reconcileFinaleScore passed');
+console.log('sworbl-status: reconcileFinaleScore passed');
 
-console.log('sworble-status: all tests passed');
+console.log('sworbl-status: all tests passed');

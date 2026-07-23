@@ -3,8 +3,8 @@
 // earned can NEVER exceed CAP_SECS. Living-engine addition (frozen web app
 // predates it and keeps its fixed clock).
 const assert = require('assert');
-const Run = require('../sworble-run.js');
-const Daily = require('../sworble-daily.js');
+const Run = require('../sworbl-run.js');
+const Daily = require('../sworbl-daily.js');
 
 const F = Run.TIME_FUEL;
 assert.strictEqual(F.BASE_SECS, 180, 'base is three minutes');
