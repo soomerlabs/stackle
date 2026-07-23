@@ -326,6 +326,12 @@ export default function HomeScreen() {
   const armIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disarm = useCallback(() => {
     if (armSoonTimer.current) clearTimeout(armSoonTimer.current); // no zombie arms
+    // SELF-HEAL: if a disarm lands while the sheet is off park (the slow-
+    // drag freeze: the idle timer fired mid-pull), park it — the sheet may
+    // never rest displaced
+    if (sMode.value !== 3 && Math.abs(sheetY.value - closedY) > 1) {
+      sheetY.value = withSpring(closedY, PARK_SPRING);
+    }
     sArmed.value = 0;
     sGlow.value = withTiming(0, { duration: 420 }); // the weather calms back down
     setArmed(false);
@@ -358,6 +364,16 @@ export default function HomeScreen() {
   }, [disarm, closedY]);
   const armNowRef = useRef(armNow);
   armNowRef.current = armNow;
+  // the idle melt pauses while the finger is DOWN on an armed pull (it was
+  // firing mid-slow-drag: disarm under a live finger = the frozen sheet)
+  const holdArmIdle = useCallback(() => {
+    if (armIdle.current) clearTimeout(armIdle.current);
+  }, []);
+  const restartArmIdle = useCallback(() => {
+    if (armIdle.current) clearTimeout(armIdle.current);
+    armIdle.current = setTimeout(disarm, 2500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disarm]);
   const pm = playMetrics(width);
   // TWO-STAGE DOOR (owner): trace P·L·A·Y to unlock, then the chevron —
   // swipe up launches. The trace teaches the verb; the swipe starts the day.
@@ -371,7 +387,10 @@ export default function HomeScreen() {
           // anchor the grab: the pull preserves THIS gap instead of snapping
           // the sheet's top edge to the finger
           sGrab.value = e.absoluteY - sheetY.value;
-          if (sArmed.value) return;
+          if (sArmed.value) {
+            runOnJS(holdArmIdle)(); // no idle melt under a live finger
+            return;
+          }
           const idx = Math.floor((e.absoluteX - pm.left) / (pm.tile + pm.gap));
           // a TAP only takes the NEXT tile (owner: 'you MUST hit them all
           // yourself' — tapping Y cannot light the word behind it). A drag
@@ -423,7 +442,15 @@ export default function HomeScreen() {
         .onEnd((e) => {
           'worklet';
           sDetent.value = 0;
-          if (!sArmed.value || sMode.value === 3) return;
+          if (sMode.value === 3) return;
+          if (!sArmed.value) {
+            // whatever state we're in (mid-drag disarm and friends): a
+            // released, uncommitted sheet ALWAYS goes home
+            if (Math.abs(sheetY.value - closedY) > 1) {
+              sheetY.value = withSpring(closedY, { ...PARK_SPRING, velocity: e.velocityY });
+            }
+            return;
+          }
           const risen = closedY - sheetY.value;
           if (risen > height * 0.22 || e.velocityY < -900) {
             sMode.value = 3;
@@ -441,11 +468,12 @@ export default function HomeScreen() {
             // finger lifting off the TRACE itself (a drag across P·L·A·Y
             // activates the pan, so its lift fires onEnd) — the arm must
             // survive that lift or the chevron lies over a dead gesture.
-            // The 4s idle timer still melts an unused arm.
+            // The idle timer restarts on release (it was held mid-pull).
             if (risen > 12) runOnJS(disarm)();
+            else runOnJS(restartArmIdle)();
           }
         }),
-    [width, height, closedY, sheetOpen, played, markOpen, traceBeat, nudgeBeat, commitBeat, armSoon, disarm]
+    [width, height, closedY, sheetOpen, played, markOpen, traceBeat, nudgeBeat, commitBeat, armSoon, disarm, holdArmIdle, restartArmIdle]
   );
 
   // close drag (home owns sheetY): the round pauses ONLY when the close
