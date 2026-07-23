@@ -6,7 +6,7 @@
 // tiles (dashed pre-play, candy after) → hint slots (blank pre-play; folded
 // into the superlatives pager after) → floating stepped podium + you-block →
 // swipe dock over the storm. Light + dark via the theme tokens.
-import React, { useMemo, useRef, useState, useCallback } from 'react';
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -70,6 +70,15 @@ export default function HomeScreen() {
   const sheetY = useSharedValue(height); // height = closed, 0 = open
   const [sheetOpen, setSheetOpen] = useState(false); // fully open → home drag off, round armed
   const sheetRef = useRef<PlaySheetHandle>(null);
+
+  // SELF-HEAL (hot-reload stranding): Reanimated PRESERVES shared values
+  // across Fast Refresh while React state resets — a refresh mid-open left
+  // sheetY at 0 with sheetOpen false, parking the sheet over the whole
+  // screen and eating every touch ("swipe up broken", "stuck on top").
+  // Whenever the sheet is logically closed, its position must agree.
+  useEffect(() => {
+    if (!sheetOpen) sheetY.value = height;
+  }, [sheetOpen, height]);
 
   const finishClose = useCallback(() => setSheetOpen(false), []);
   const closeSheet = useCallback(() => {
