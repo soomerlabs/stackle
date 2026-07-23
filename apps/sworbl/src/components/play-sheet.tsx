@@ -122,6 +122,40 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
     }
   }, [active, phase]);
 
+  // WATCHDOG (owner: restored board "dead in the water"): a phase that can
+  // never resolve on its own must ALWAYS recover to a tappable state. Two
+  // known-impossible states are caught here; anything similar dies with them:
+  //   · countin with no count-in mounted (nobody will ever release)
+  //   · live with a clock that thinks it's paused (nobody ticks)
+  useEffect(() => {
+    if (!active) return;
+    const t = setTimeout(() => {
+      if (phase === 'countin' && !countInMounted) {
+        if (__DEV__) console.warn('[sworbl] watchdog: stuck countin → paused cover');
+        setPhase('paused');
+      }
+      if (phase === 'live' && !clockRef.current.liveStartAt) {
+        if (__DEV__) console.warn('[sworbl] watchdog: live with a paused clock → paused cover');
+        setPhase('paused');
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [active, phase, countInMounted]);
+
+  // boot diagnostics (dev): when a restored board misbehaves, the log names it
+  useEffect(() => {
+    if (__DEV__) {
+      console.log('[sworbl] sheet boot', {
+        route,
+        phase,
+        active,
+        runPhase: boot?.run?.phase ?? null,
+        elapsedMs: boot?.run?.boardElapsedMs ?? 0,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // the logo CLICK: at the exact dock moment the sheet's brand snaps
   // magnetically into home's slot — a tiny overshoot-settle (pairs with the
   // dock haptic)

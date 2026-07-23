@@ -211,9 +211,11 @@ export default function DevScreen() {
           <Text style={sectionLabel}>BOARD AUDIT</Text>
           <Pressable
             onPress={() => {
-              const next = !getClueAudit();
-              setClueAudit(next);
-              refresh(next ? 'clue audit ON — chips under the board' : 'clue audit off');
+              setClueAudit(!getClueAudit());
+              // re-read AFTER the write — the toast reports what storage
+              // actually holds (owner: toggle said off despite ON toasts)
+              const now = getClueAudit();
+              refresh(now ? 'clue audit ON — chips under the board' : 'clue audit off');
             }}
             style={[styles.actionRow, { backgroundColor: theme.card }]}>
             <Text style={[styles.actionText, { color: theme.ink }]}>

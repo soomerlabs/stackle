@@ -21,7 +21,9 @@ import Animated, {
 import { PALETTE, INK, type GameSurface } from '@/game/palette';
 import { COLS, ROWS, type TileT, type TraceTile } from '@/game/types';
 
-const FALL_EASE = Easing.bezier(0.45, 0.02, 0.7, 0.5); // accelerate, hard stop
+// softer entry, still a hard-ish landing (owner: falls needed smoothing —
+// the old curve slammed off the line with a visible first-frame jump)
+const FALL_EASE = Easing.bezier(0.3, 0.02, 0.65, 0.6);
 
 interface Props {
   tile: TileT;
@@ -52,16 +54,16 @@ function GameTileInner({ tile, size, gap, sPath, clearingSeq, nope, nopeSeq, nop
   useEffect(() => {
     const dist = Math.abs(targetY - y.value);
     if (dist < 1) return;
-    const dur = Math.max(280, Math.min(550, (dist / 1200) * 1000));
-    const delay = tile.spawnDrop ? tile.spawnDrop * 40 : tile.col * 20;
+    const dur = Math.max(340, Math.min(620, (dist / 1100) * 1000));
+    const delay = tile.spawnDrop ? tile.spawnDrop * 55 : tile.col * 24;
     y.value = withDelay(
       delay,
       withTiming(targetY, { duration: dur, easing: FALL_EASE }, (fin) => {
         'worklet';
         if (fin) {
           squashY.value = withSequence(
-            withTiming(0.85, { duration: 60 }),
-            withTiming(1, { duration: 110 })
+            withTiming(0.88, { duration: 70 }),
+            withTiming(1, { duration: 130 })
           );
         }
       })
@@ -90,10 +92,12 @@ function GameTileInner({ tile, size, gap, sPath, clearingSeq, nope, nopeSeq, nop
   const deflate = useSharedValue(1);
   useEffect(() => {
     if (!nope) return;
-    const drainDelay = 260 + (nopeTotal - 1 - nopeSeq) * 22;
+    const drainDelay = 280 + (nopeTotal - 1 - nopeSeq) * 22;
     sRed.value = withSequence(
-      withTiming(1, { duration: 65 }), // rjArrive's 25% snap
-      withTiming(1, { duration: Math.max(0, drainDelay - 65) }),
+      // BLOOM, not blind (owner): the 65ms snap to full red flashed the whole
+      // word at once — eased arrival like the web's rjArrive transition
+      withTiming(1, { duration: 160, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: Math.max(0, drainDelay - 160) }),
       withTiming(0, { duration: 260 }) // rjDrainOut, hurried
     );
     deflate.value = withSequence(
