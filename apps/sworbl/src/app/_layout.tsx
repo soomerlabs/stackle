@@ -27,6 +27,17 @@ if (__DEV__) {
 setTimeout(() => {
   loadFullDictionary();
 }, 50);
+// backend (when configured): anonymous identity + any queued submissions —
+// entirely fire-and-forget; the app never waits on the network
+setTimeout(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ensurePlayer } = require('@/net/supabase');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { drainOutbox } = require('@/net/standings-remote');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { getPlayerName } = require('@/game/player');
+  ensurePlayer(getPlayerName()).then(() => drainOutbox());
+}, 400);
 
 export default function RootLayout() {
   const scheme = useColorScheme(); // light mode is real now (owner call)

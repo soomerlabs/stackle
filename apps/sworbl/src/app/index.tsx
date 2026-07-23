@@ -43,6 +43,7 @@ import { dealDaily, getDevDay } from '@/game/daily';
 import { getDiagnostics } from '@/game/dev-flags';
 import { loadDay, saveSheetOpen, wasSheetOpen, getResetNonce, loadDayWords, type DayState } from '@/game/persist';
 import { standingsStub, rankFor, type LbEntry } from '@/game/standings';
+import { fetchDaily, type RemoteField } from '@/net/standings-remote';
 import { loadStats, streakDays } from '@/game/stats';
 import { buildShareText } from '@/game/share';
 import { StandingsList, type StandingRow } from '@/components/home/standings-list';
@@ -142,8 +143,24 @@ export default function HomeScreen() {
   const solved = played && !!day?.sworb?.solved;
   const inProgress = day?.route === 'resume' || day?.route === 'finale';
 
-  // standings: deterministic day-seeded stub until Supabase lands
-  const entries = useMemo(() => (deal ? standingsStub(deal.dayKey) : []), [deal]);
+  // standings: stub renders NOW; the real field swaps in when the backend
+  // answers (the fossil's loadHomeLb pattern — never a spinner)
+  const [remote, setRemote] = useState<RemoteField | null>(null);
+  useEffect(() => {
+    let live = true;
+    if (deal) {
+      fetchDaily(deal.dayKey).then((r) => {
+        if (live && r && r.entries.length) setRemote(r);
+      });
+    }
+    return () => {
+      live = false;
+    };
+  }, [deal, day]);
+  const entries = useMemo(
+    () => remote?.entries ?? (deal ? standingsStub(deal.dayKey) : []),
+    [remote, deal]
+  );
   const myScore = played ? (day?.score ?? 0) : inProgress ? (day?.run?.score ?? 0) : 0;
   const you = played || (inProgress && myScore > 0)
     ? { score: myScore, rank: rankFor(entries, myScore) }

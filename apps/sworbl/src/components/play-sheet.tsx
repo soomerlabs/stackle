@@ -26,6 +26,7 @@ import { useTheme } from '@/game/theme';
 import { dealDaily, bumpNextId } from '@/game/daily';
 import { type TileT } from '@/game/types';
 import { loadDay, saveProgress, finishDay, saveRun, type RunSnap, type BestWord } from '@/game/persist';
+import { enqueueSubmission } from '@/net/standings-remote';
 import { loadLadder } from '@/game/hints';
 import { getDiagnostics, getShortRounds } from '@/game/dev-flags';
 import { TUNING } from '@/game/tuning';
@@ -364,6 +365,13 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
           deal.dayKey,
           finalScore,
           found,
+          { guessesUsed: r.guessesUsed, solved: r.solved, bonus: r.bonus },
+          wordsRef.current
+        );
+        // the day rides to the server when it can (offline → outbox retries)
+        enqueueSubmission(
+          deal.dayKey,
+          finalScore,
           { guessesUsed: r.guessesUsed, solved: r.solved, bonus: r.bonus },
           wordsRef.current
         );

@@ -2,7 +2,7 @@
 // all-time title, a crossfade pager (swipe or dots) over the floating
 // stepped podium, the ranked list with the player's row pinned INLINE
 // (indigo), and the NEXT SWORBL IN countdown. Stub fields until Supabase.
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -15,6 +15,7 @@ import { CountdownDock } from '@/components/home/countdown-dock';
 import { useTheme, ACCENT, ACCENT_EDGE } from '@/game/theme';
 import { PALETTE, tileColorFor } from '@/game/palette';
 import { standingsStub, standingsAllTime, rankFor, type LbEntry } from '@/game/standings';
+import { fetchDaily, fetchAllTime, type RemoteField } from '@/net/standings-remote';
 import { loadDay } from '@/game/persist';
 import { loadStats } from '@/game/stats';
 import { getPlayerName } from '@/game/player';
@@ -65,8 +66,21 @@ export default function LeaderboardScreen() {
   const dayKey = engine.core.dayKey(new Date());
   const name = getPlayerName();
 
-  const daily = useMemo(() => standingsStub(dayKey), [dayKey]);
-  const allTime = useMemo(() => standingsAllTime(), []);
+  const [remoteDaily, setRemoteDaily] = useState<RemoteField | null>(null);
+  const [remoteAll, setRemoteAll] = useState<RemoteField | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetchDaily(dayKey).then((r) => live && r?.entries.length && setRemoteDaily(r));
+    fetchAllTime().then((r) => live && r?.entries.length && setRemoteAll(r));
+    return () => {
+      live = false;
+    };
+  }, [dayKey]);
+  const daily = useMemo(
+    () => remoteDaily?.entries ?? standingsStub(dayKey),
+    [remoteDaily, dayKey]
+  );
+  const allTime = useMemo(() => remoteAll?.entries ?? standingsAllTime(), [remoteAll]);
   const myDaily = useMemo(() => loadDay(dayKey).score, [dayKey]);
   const myTotal = useMemo(() => loadStats().total, []);
 
