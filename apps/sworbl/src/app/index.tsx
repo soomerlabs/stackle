@@ -258,11 +258,14 @@ export default function HomeScreen() {
     if (armIdle.current) clearTimeout(armIdle.current); // launched — no disarm
     setSheetOpen(true);
     if (deal) saveSheetOpen(deal.dayKey); // reclaim-proof: the sheet remembers
-    haptic.soft(); // the dock beat — launching the game from the bottom
+    // (the dock beat moved to ARRIVAL — the spring's completion, owner:
+    // the beat lands on the physical thunk, not the release)
     // the color lets go AFTER the dock — the reveal is its own moment
     sReveal.value = withDelay(240, withTiming(1, { duration: 650, easing: Easing.out(Easing.quad) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deal]);
+  // the ARRIVAL beat: fires when the open spring actually lands
+  const arriveBeat = useCallback(() => haptic.soft(), []);
   // the DETENT: a tick the instant the pull crosses the commit threshold —
   // the hand learns "release now and it opens" without reading anything.
   // RATE-LIMITED (owner: slow-drag jank synced with haptics): a hover at the
@@ -402,7 +405,11 @@ export default function HomeScreen() {
           const risen = closedY - sheetY.value;
           if (risen > height * 0.22 || e.velocityY < -900) {
             sMode.value = 3;
-            sheetY.value = withSpring(0, { ...OPEN_SPRING, velocity: e.velocityY });
+            sheetY.value = withSpring(0, { ...OPEN_SPRING, velocity: e.velocityY }, (fin) => {
+              'worklet';
+              // the beat lands ON THE THUNK — beat and visual stop in sync
+              if (fin) runOnJS(arriveBeat)();
+            });
             runOnJS(markOpen)();
           } else if (risen > 12) {
             // a real pull that gave up → PLAY melts back NOW
@@ -415,7 +422,7 @@ export default function HomeScreen() {
           // to start" over a dead gesture, owner bug). The 4s idle timer
           // still melts an unused arm.
         }),
-    [width, height, closedY, sheetOpen, played, markOpen, traceBeat, nudgeBeat, armSoon, disarm]
+    [width, height, closedY, sheetOpen, played, markOpen, arriveBeat, traceBeat, nudgeBeat, armSoon, disarm]
   );
 
   // close drag (home owns sheetY): the round pauses ONLY when the close
