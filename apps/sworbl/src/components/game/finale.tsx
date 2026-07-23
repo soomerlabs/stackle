@@ -24,20 +24,29 @@ export interface FinaleResult {
   rows: { letters: string[]; colors: string[] }[];
 }
 
+export interface FinaleRestore {
+  rows: { letters: string[]; colors: string[] }[];
+  slots: string[];
+  colors: (string | null)[];
+  guessesUsed: number;
+}
+
 interface Props {
   entry: { sworb: string }; // engine checkGuess normalizes against entry.sworb
   foundCount: number;
   clueTotal: number;
   size: number; // board tile size — finale blocks match the board's scale
+  restore?: FinaleRestore; // a killed-mid-finale run picks up exactly here
+  onProgress?: (s: FinaleRestore) => void; // run-snapshot feed
   onDone: (r: FinaleResult) => void;
 }
 
-export function Finale({ entry, foundCount, clueTotal, size, onDone }: Props) {
+export function Finale({ entry, foundCount, clueTotal, size, restore, onProgress, onDone }: Props) {
   const len = entry.sworb.length;
-  const [rows, setRows] = useState<{ letters: string[]; colors: string[] }[]>([]);
-  const [slots, setSlots] = useState<string[]>(Array(len).fill(''));
-  const [colors, setColors] = useState<(string | null)[]>(Array(len).fill(null));
-  const [guessesUsed, setGuessesUsed] = useState(0);
+  const [rows, setRows] = useState<{ letters: string[]; colors: string[] }[]>(restore?.rows ?? []);
+  const [slots, setSlots] = useState<string[]>(restore?.slots ?? Array(len).fill(''));
+  const [colors, setColors] = useState<(string | null)[]>(restore?.colors ?? Array(len).fill(null));
+  const [guessesUsed, setGuessesUsed] = useState(restore?.guessesUsed ?? 0);
   const [locked, setLocked] = useState(false);
 
   const keyIn = useCallback(
@@ -89,8 +98,12 @@ export function Finale({ entry, foundCount, clueTotal, size, onDone }: Props) {
     }
     // miss: greens LOCK in place, yellows persist as dashed hints, grays clear
     // to empty NOW (mock case 6) — nextSlots expects exactly this shape
-    setSlots(slots.map((l, i) => (rowColors[i] === 'gray' ? '' : l)));
-    setColors(rowColors.map((c) => (c === 'gray' ? null : c)));
+    const nSlots = slots.map((l, i) => (rowColors[i] === 'gray' ? '' : l));
+    const nColors = rowColors.map((c) => (c === 'gray' ? null : c));
+    setSlots(nSlots);
+    setColors(nColors);
+    onProgress &&
+      onProgress({ rows: newRows, slots: nSlots, colors: nColors, guessesUsed: res.newGuessesUsed });
     haptic.bad();
   }, [slots, colors, rows, guessesUsed, locked, entry, foundCount, clueTotal, len, onDone]);
 

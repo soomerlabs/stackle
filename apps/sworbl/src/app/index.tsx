@@ -1,74 +1,170 @@
-// The play screen — the ONE game's full arc:
-//   count-in (3·2·1·GO) → live round (7:00 hunt) → finale (6 guesses) → reveal.
-// Phase 2 increment 2. Persistence/one-shot-per-day lands with the MMKV seam.
+// The play screen — the ONE game's full arc with persistence:
+//   count-in → live hunt (pause/auto-pause, snapshot on every change) →
+//   finale (snapshot per guess) → reveal (day locked, one shot).
+// Boot routes through the engine (consumed → resume → finale → fresh).
+// Clock model: accumulated boardElapsedMs (engine.run.remainingSecs derives the
+// display) — resume RE-ARMS the count-in, never jumps to a running clock.
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { StyleSheet, Text, View, Pressable, useWindowDimensions } from 'react-native';
+import { AppState, StyleSheet, Text, View, Pressable, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import engine from '@sworbl/engine';
 
 import { GameBoard } from '@/components/game/game-board';
 import { CountIn } from '@/components/game/count-in';
-import { Finale } from '@/components/game/finale';
+import { Finale, type FinaleRestore } from '@/components/game/finale';
 import { ResultView } from '@/components/game/result-view';
+import { PauseCover } from '@/components/game/pause-cover';
 import Storm from '@/components/game/storm';
 import { BG_DARK } from '@/game/palette';
 import { dealDaily } from '@/game/daily';
-import { CLUE_COUNT } from '@/game/types';
-import { loadDay, saveProgress, finishDay } from '@/game/persist';
+import { CLUE_COUNT, type TileT } from '@/game/types';
+import { loadDay, saveProgress, finishDay, saveRun, type RunSnap } from '@/game/persist';
 
 const ROUND_SECS = 420; // "the Seven" — dev knob arrives with the settings screen
 
-type Phase = 'countin' | 'live' | 'finale' | 'done';
+type Phase = 'countin' | 'live' | 'paused' | 'finale' | 'done';
 
 export default function PlayScreen() {
   const { width, height } = useWindowDimensions();
 
-  // deal info for the finale/result (the board deals identically off the same day)
   const deal = useMemo(() => dealDaily(), []);
-  // boot routing via the engine: consumed day → straight to the reveal, one shot per day
   const boot = useMemo(() => (deal ? loadDay(deal.dayKey) : null), [deal]);
-  const consumed = !!boot && boot.route === 'consumed';
+  const route = boot?.route ?? 'fresh';
 
-  const [phase, setPhase] = useState<Phase>(consumed ? 'done' : 'countin');
-  const [countInMounted, setCountInMounted] = useState(!consumed);
-  const [score, setScore] = useState(consumed ? boot!.score : 0);
-  const [found, setFound] = useState<string[]>(consumed ? boot!.found : []);
-  const [remaining, setRemaining] = useState(ROUND_SECS);
-  const [result, setResult] = useState<{ solved: boolean; guessesUsed: number; bonus: number } | null>(
-    // defensive: a consumed day with no sworb state (interrupted write) still lands
-    // on a coherent reveal rather than a blank screen
-    consumed ? (boot!.sworb ?? { solved: false, guessesUsed: 0, bonus: 0 }) : null
+  // a resumed run re-enters through the pause cover; a killed finale re-enters the finale
+  const [phase, setPhase] = useState<Phase>(
+    route === 'consumed' ? 'done' : route === 'resume' ? 'paused' : route === 'finale' ? 'finale' : 'countin'
   );
-  const endAtRef = useRef<number>(0);
+  const [countInMounted, setCountInMounted] = useState(route === 'fresh');
+  const bootedFromKill = useRef(route === 'resume');
+  const [score, setScore] = useState(boot?.run ? boot.run.score : route === 'consumed' ? boot!.score : 0);
+  const [found, setFound] = useState<string[]>(boot?.run ? boot.run.found : boot ? boot.found : []);
+  const [result, setResult] = useState<{ solved: boolean; guessesUsed: number; bonus: number } | null>(
+    route === 'consumed' ? (boot!.sworb ?? { solved: false, guessesUsed: 0, bonus: 0 }) : null
+  );
+  const finaleRestore = useRef<FinaleRestore | undefined>(
+    boot?.run && boot.run.phase === 'finale'
+      ? { rows: boot.run.rows, slots: boot.run.slots, colors: boot.run.colors, guessesUsed: boot.run.guessesUsed }
+      : undefined
+  );
 
-  // live progress persists on every change (sync writes; consumed days never re-save)
-  useEffect(() => {
-    if (deal && !consumed && phase !== 'done') saveProgress(deal.dayKey, score, found);
-  }, [deal, consumed, phase, score, found]);
+  // restored board state (resume route) — injected into GameBoard once
+  const initialTiles = useMemo<TileT[] | undefined>(() => {
+    if (!boot?.run || boot.run.phase !== 'live') return undefined;
+    if (deal) deal.setQueueIdx(boot.run.queueIdx); // the SAME letter stream continues
+    return boot.run.tiles.map((t) => ({ ...t, spawnDrop: 0, bornAt: Date.now() }));
+  }, [boot, deal]);
 
-  // clock: anchored at GO, ticks while live, 0:00 → finale
+  // ---- clock: accumulated elapsed ms; live time measured from liveStart ----
+  const elapsedBaseRef = useRef(boot?.run ? boot.run.boardElapsedMs : 0);
+  const liveStartRef = useRef(0);
+  const elapsedNow = () =>
+    elapsedBaseRef.current + (liveStartRef.current ? Date.now() - liveStartRef.current : 0);
+  const [remaining, setRemaining] = useState(() =>
+    engine.run.remainingSecs(ROUND_SECS, elapsedBaseRef.current)
+  );
+
   useEffect(() => {
     if (phase !== 'live') return;
     const h = setInterval(() => {
-      const left = Math.max(0, Math.ceil((endAtRef.current - Date.now()) / 1000));
+      const left = engine.run.remainingSecs(ROUND_SECS, elapsedNow());
       setRemaining(left);
-      if (left <= 0) setPhase('finale');
+      if (left <= 0) {
+        liveStartRef.current = 0;
+        setPhase('finale');
+      }
     }, 250);
     return () => clearInterval(h);
   }, [phase]);
 
+  // ---- run snapshots ----
+  const boardTilesRef = useRef<TileT[]>(initialTiles ?? deal?.tiles ?? []);
+  const queueIdxRef = useRef(boot?.run?.queueIdx ?? 0);
+  const snapLive = useCallback(() => {
+    if (!deal) return;
+    const snap: RunSnap = {
+      client: 'rn', v: 1, day: deal.dayKey, phase: 'live',
+      tiles: boardTilesRef.current.map(({ id, letter, col, row, ci }) => ({ id, letter, col, row, ci })),
+      queueIdx: queueIdxRef.current,
+      score, found, boardElapsedMs: elapsedNow(),
+      guessesUsed: 0, rows: [], slots: [], colors: [],
+    };
+    saveRun(snap);
+  }, [deal, score, found]);
+
+  const onTiles = useCallback((tiles: TileT[], queueIdx: number) => {
+    boardTilesRef.current = tiles;
+    queueIdxRef.current = queueIdx;
+  }, []);
+
+  // persist progress + live snapshot on every meaningful change
+  useEffect(() => {
+    if (!deal || phase === 'done') return;
+    saveProgress(deal.dayKey, score, found);
+    if (phase === 'live') snapLive();
+  }, [deal, phase, score, found]);
+
+  const onFinaleProgress = useCallback(
+    (s: FinaleRestore) => {
+      if (!deal) return;
+      finaleRestore.current = s;
+      const snap: RunSnap = {
+        client: 'rn', v: 1, day: deal.dayKey, phase: 'finale',
+        tiles: boardTilesRef.current.map(({ id, letter, col, row, ci }) => ({ id, letter, col, row, ci })),
+        queueIdx: queueIdxRef.current,
+        score, found, boardElapsedMs: ROUND_SECS * 1000,
+        guessesUsed: s.guessesUsed, rows: s.rows, slots: s.slots, colors: s.colors,
+      };
+      saveRun(snap);
+    },
+    [deal, score, found]
+  );
+
+  // entering the finale marks the snapshot phase (a kill during guessing re-enters here)
+  useEffect(() => {
+    if (phase === 'finale' && deal) {
+      onFinaleProgress(
+        finaleRestore.current ?? { rows: [], slots: [], colors: [], guessesUsed: 0 }
+      );
+    }
+  }, [phase]);
+
+  // ---- pause / resume (engine rule: resume re-arms the count-in) ----
+  const pause = useCallback(() => {
+    if (phase !== 'live') return;
+    elapsedBaseRef.current = elapsedNow();
+    liveStartRef.current = 0;
+    snapLive();
+    setPhase('paused');
+  }, [phase, snapLive]);
+
+  const resumeTap = useCallback(() => {
+    bootedFromKill.current = false;
+    setCountInMounted(true);
+    setPhase('countin');
+  }, []);
+
   const onRelease = useCallback(() => {
-    endAtRef.current = Date.now() + ROUND_SECS * 1000;
-    setRemaining(ROUND_SECS);
+    liveStartRef.current = Date.now();
+    setRemaining(engine.run.remainingSecs(ROUND_SECS, elapsedBaseRef.current));
     setPhase('live');
   }, []);
+
+  // auto-pause: backgrounding mid-hunt pauses and snapshots (fairness + safety)
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s !== 'active') pause();
+    });
+    return () => sub.remove();
+  }, [pause]);
 
   const onFinaleDone = useCallback(
     (r: { solved: boolean; guessesUsed: number; bonus: number }) => {
       setResult(r);
       const finalScore = score + (r.bonus > 0 ? r.bonus : 0);
       if (r.bonus > 0) setScore(finalScore);
-      // the day ends exactly once: result written, then the DONE lock
+      // the day ends exactly once: result written, then the DONE lock (clears the run)
       if (deal) {
         finishDay(deal.dayKey, finalScore, found, {
           guessesUsed: r.guessesUsed,
@@ -84,6 +180,7 @@ export default function PlayScreen() {
   const tile = Math.min(64, Math.floor((Math.min(width, 480) - 32) / (5 + 4 * 0.16)));
   const gap = Math.round(tile * 0.16);
   const clock = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
+  const onBoard = phase === 'countin' || phase === 'live' || phase === 'paused';
 
   return (
     <View style={styles.root}>
@@ -92,9 +189,9 @@ export default function PlayScreen() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.top}>
           <Text style={styles.brand}>sworbl</Text>
-          {(phase === 'live' || phase === 'countin') && (
-            // dev shortcut: long-press the clock → straight to the finale
-            <Pressable onLongPress={() => setPhase('finale')} delayLongPress={600}>
+          {onBoard && (
+            // tap = pause · dev shortcut: long-press → straight to the finale
+            <Pressable onPress={pause} onLongPress={() => setPhase('finale')} delayLongPress={600}>
               <Text style={[styles.clock, remaining <= 60 && styles.clockLow]}>{clock}</Text>
             </Pressable>
           )}
@@ -102,11 +199,24 @@ export default function PlayScreen() {
         </View>
 
         <View style={styles.center}>
-          {(phase === 'countin' || phase === 'live') && (
+          {onBoard && deal && (
             <View pointerEvents={phase === 'live' ? 'auto' : 'none'}>
-              <GameBoard size={tile} gap={gap} onScore={setScore} onClues={setFound} />
+              <GameBoard
+                deal={deal}
+                size={tile}
+                gap={gap}
+                initialTiles={initialTiles}
+                initialFound={boot?.run?.found}
+                initialScore={boot?.run?.score}
+                onScore={setScore}
+                onClues={setFound}
+                onTiles={onTiles}
+              />
               {countInMounted && phase === 'countin' && (
                 <CountIn onRelease={onRelease} onUnmount={() => setCountInMounted(false)} />
+              )}
+              {phase === 'paused' && (
+                <PauseCover clock={clock} fresh={bootedFromKill.current} onResume={resumeTap} />
               )}
             </View>
           )}
@@ -116,6 +226,8 @@ export default function PlayScreen() {
               foundCount={found.length}
               clueTotal={CLUE_COUNT}
               size={tile}
+              restore={finaleRestore.current}
+              onProgress={onFinaleProgress}
               onDone={onFinaleDone}
             />
           )}

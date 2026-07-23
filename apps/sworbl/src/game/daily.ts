@@ -16,6 +16,8 @@ export interface DailyDeal {
   clues: string[]; // the 6 realized clue words actually stamped on this board
   tiles: TileT[];
   nextLetter: () => string; // deterministic finite-bag refill dealer
+  getQueueIdx: () => number; // dealer position — persisted so a resumed run
+  setQueueIdx: (i: number) => void; // continues the SAME letter stream
 }
 
 let nextId = 1;
@@ -61,6 +63,10 @@ export function dealDaily(now = new Date()): DailyDeal | null {
     clues: cand.realized,
     tiles,
     nextLetter,
+    getQueueIdx: () => qi,
+    setQueueIdx: (i: number) => {
+      qi = i;
+    },
   };
 }
 

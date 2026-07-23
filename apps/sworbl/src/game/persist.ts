@@ -14,28 +14,31 @@ export interface SworbState {
 }
 
 export interface DayState {
-  route: 'consumed' | 'fresh';
+  route: 'consumed' | 'resume' | 'finale' | 'fresh';
   score: number;
   found: string[];
   sworb: SworbState | null;
+  run: RunSnap | null;
 }
 
 export function loadDay(dayKey: string): DayState {
   const done = !!engine.store.getInt(K.DONE_PREFIX + dayKey, 0);
+  const run = done ? null : loadRun(dayKey); // consumed-FIRST: a locked day never resumes
   const route = engine.flow.startDailyRoute({
     finale: false,
     onHome: false,
     consumed: done,
-    dailyLive: false, // run-snapshot resume lands with the next increment
+    dailyLive: !!run && run.phase === 'live',
     over: false,
-    hasTiles: false,
-    finalePending: false,
-  });
+    hasTiles: !!run && run.tiles.length > 0,
+    finalePending: !!run && run.phase === 'finale',
+  }) as DayState['route'];
   return {
-    route: route === 'consumed' ? 'consumed' : 'fresh',
+    route,
     score: engine.store.getInt(K.DAILY_PREFIX + dayKey, 0),
     found: engine.store.getJSON(K.FOUND_PREFIX + dayKey, []) as string[],
     sworb: engine.store.getJSON(K.SWORB_PREFIX + dayKey, null) as SworbState | null,
+    run,
   };
 }
 
@@ -52,4 +55,54 @@ export function finishDay(dayKey: string, score: number, found: string[], sworb:
   engine.store.setJSON(K.FOUND_PREFIX + dayKey, found);
   engine.store.setJSON(K.SWORB_PREFIX + dayKey, sworb);
   engine.store.set(K.DONE_PREFIX + dayKey, 1);
+  clearRun(dayKey);
+}
+
+// ---- mid-run snapshot (RUN_PREFIX). RN's own versioned shape — the web's
+// serializeRun carries web-only state (rng counters, streak/mine fields); the
+// RULES we inherit are the engine's: remainingSecs(roundSecs, boardElapsedMs)
+// derives the clock, and a resumed run RE-ARMS the count-in (flow.resumeAction).
+// Snapshots are device-local; web and RN never exchange them.
+
+const RN_RUN_V = 1;
+
+export interface RunTileSnap {
+  id: number;
+  letter: string;
+  col: number;
+  row: number;
+  ci: number;
+}
+
+export interface RunSnap {
+  client: 'rn';
+  v: number;
+  day: string;
+  phase: 'live' | 'finale';
+  tiles: RunTileSnap[];
+  queueIdx: number;
+  score: number;
+  found: string[];
+  boardElapsedMs: number;
+  // finale-phase carry (empty while live):
+  guessesUsed: number;
+  rows: { letters: string[]; colors: string[] }[];
+  slots: string[];
+  colors: (string | null)[];
+}
+
+export function saveRun(snap: RunSnap): void {
+  engine.store.setJSON(K.RUN_PREFIX + snap.day, snap);
+}
+
+export function loadRun(dayKey: string): RunSnap | null {
+  const s = engine.store.getJSON(K.RUN_PREFIX + dayKey, null) as RunSnap | null;
+  if (!s || s.client !== 'rn' || s.v !== RN_RUN_V || s.day !== dayKey) return null;
+  if (!Array.isArray(s.tiles) || !s.tiles.length) return null;
+  if (s.phase !== 'live' && s.phase !== 'finale') return null;
+  return s;
+}
+
+export function clearRun(dayKey: string): void {
+  engine.store.remove(K.RUN_PREFIX + dayKey);
 }

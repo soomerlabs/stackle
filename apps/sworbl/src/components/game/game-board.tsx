@@ -16,28 +16,37 @@ import { beginW, moveW, type TraceCtx } from '@/game/trace';
 import { haptic } from '@/game/haptics';
 
 interface Props {
+  deal: DailyDeal; // the screen owns the deal — resume injects restored state
   size: number;
   gap: number;
+  initialTiles?: TileT[];
+  initialFound?: string[];
+  initialScore?: number;
   onScore?: (total: number) => void;
   onClues?: (found: string[]) => void;
+  onTiles?: (tiles: TileT[], queueIdx: number) => void; // run-snapshot feed
 }
 
-export function GameBoard({ size, gap, onScore, onClues }: Props) {
+export function GameBoard({
+  deal, size, gap, initialTiles, initialFound, initialScore, onScore, onClues, onTiles,
+}: Props) {
   const cell = size + gap;
   const boardW = COLS * cell - gap;
   const boardH = ROWS * cell - gap;
 
-  const deal: DailyDeal | null = useMemo(() => dealDaily(), []);
-  const [tiles, setTiles] = useState<TileT[]>(() => (deal ? deal.tiles : []));
+  const [tiles, setTiles] = useState<TileT[]>(() => initialTiles ?? deal.tiles);
   const [clearingIds, setClearingIds] = useState<Set<number>>(new Set());
   const [verdict, setVerdict] = useState<{ word: string; pts?: number; ok: boolean; clue?: string } | null>(null);
   const [trace, setTrace] = useState({ word: '', ci: 0 });
   const [jsPath, setJsPath] = useState<TraceTile[]>([]); // web connector mirror
-  const [found, setFound] = useState<string[]>([]);
-  const scoreRef = useRef(0);
+  const [found, setFound] = useState<string[]>(initialFound ?? []);
+  const scoreRef = useRef(initialScore ?? 0);
   useEffect(() => {
     onClues && onClues(found);
   }, [found]);
+  useEffect(() => {
+    onTiles && onTiles(tiles, deal.getQueueIdx());
+  }, [tiles]);
 
   // ---- UI-thread state (tier-2) ----
   const sGrid = useSharedValue<(TraceTile | null)[][]>([]);
