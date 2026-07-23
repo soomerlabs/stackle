@@ -126,7 +126,6 @@ export default function HomeScreen() {
   const bs = deal ? Math.min(52, Math.floor(280 / deal.sworb.length)) : 48;
 
   return (
-    <GestureDetector gesture={openDrag}>
       <View style={styles.root}>
         <StatusBar style="light" />
         <Floaters width={width} height={height} />
@@ -205,7 +204,13 @@ export default function HomeScreen() {
             )}
           </View>
 
-          <CountdownDock played={played} />
+          {/* the swipe-to-play GRAB ZONE is the dock area only (owner call) —
+              a generous reach above the chevron, not the whole screen */}
+          <GestureDetector gesture={openDrag}>
+            <View style={styles.dockZone}>
+              <CountdownDock played={played} />
+            </View>
+          </GestureDetector>
         </SafeAreaView>
 
         {/* progressive blur under the rising sheet */}
@@ -222,7 +227,6 @@ export default function HomeScreen() {
           </Animated.View>
         )}
       </View>
-    </GestureDetector>
   );
 }
 
@@ -236,6 +240,10 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
+  },
+  dockZone: {
+    paddingTop: 90, // generous grab reach above the chevron
+    marginTop: -90,
   },
   sheet: {
     position: 'absolute',
