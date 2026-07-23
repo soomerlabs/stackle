@@ -29,23 +29,8 @@ interface Props {
   peekH: number;
 }
 
-export function SheetWeather({ sheetY, sGlow, sBoot, sReveal, closedY, width, peekH }: Props) {
-  // RIDE THE STORM UP: the crest is glued to the sheet's top edge, so the
-  // pull literally drags the weather up the screen. Travel BRIGHTENS it to
-  // full burn (a restrained swell — the big stretch smeared hues over the
-  // board); near full-open it dissolves and the board stands alone.
-  const stormRideStyle = useAnimatedStyle(() => {
-    const travel = interpolate(sheetY.value, [0, closedY], [1, 0], Extrapolation.CLAMP);
-    const calm = 0.45 + sGlow.value * 0.55; // parked: muted → armed: ignited
-    const burn = interpolate(travel, [0, 0.3], [calm, 1], Extrapolation.CLAMP);
-    // the crest holds while the color holds and lets go WITH the reveal —
-    // position-based settling turned a flick into a 150ms flash (owner)
-    return {
-      opacity: bootWindow(sBoot.value, 0.45, 0.55) * burn * (1 - sReveal.value),
-      transform: [{ scale: 1 + sGlow.value * 0.06 + travel * 0.35 }],
-    };
-  }, [closedY]);
-
+// INSIDE the sheet's clip: the color wash on the emerging board
+export function SheetWash({ sheetY, sGlow, sBoot, sReveal, closedY, width, peekH }: Props) {
   // the WASH, from the AURORA LINE down (owner): the strip above the glow
   // keeps the board's own clear surface; the hues begin where the blur
   // lives and run to the sheet's bottom. One static gradient, opacity-only
@@ -61,37 +46,53 @@ export function SheetWeather({ sheetY, sGlow, sBoot, sReveal, closedY, width, pe
   const gs = gameSurface(useTheme().mode);
 
   return (
-    <>
-      {/* wash spans from the sheet's TOP now — the surface-melt gradient
-          blends board-color into hue, so there's no bare near-black strip
-          reading as a separation between home and the color (owner) */}
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.washWrap, { top: 0 }, washStyle]}>
-        <LinearGradient
-          colors={[...WASH_HUES]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        {/* the SURFACE MELT: the board's own color dissolving down into the
-            hues. Sized to the GLOW's reach (1.15×band), not a % of the
-            sheet — at 45%-of-screen it out-ran the glow and left a black
-            gap between the band and the first visible color (owner) */}
-        <LinearGradient
-          colors={[gs.bg, gs.bg + '00']}
-          style={[styles.melt, { height: Math.round(peekH * 1.15) }]}
-        />
-      </Animated.View>
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.stormRide, { height: Math.round(peekH * 1.6) }, stormRideStyle]}>
-        {/* 1.6× the band: the canvas's bottom-melt zone hangs BELOW the
-            screen at park (lip stays full) and dissolves the glow into the
-            board mid-pull — no hard stop line (owner) */}
-        <Storm width={width} height={Math.round(peekH * 1.6)} zoom={2.2} />
-      </Animated.View>
-    </>
+    <Animated.View
+      pointerEvents="none"
+      style={[styles.washWrap, { top: 0 }, washStyle]}>
+      {/* wash spans from the sheet's TOP — the surface-melt gradient blends
+          board-color into hue, so there's no bare near-black strip (owner) */}
+      <LinearGradient
+        colors={[...WASH_HUES]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.9, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* the SURFACE MELT: sized to the glow's reach so the hues emerge
+          right where the crest hands off — never a black gap (owner) */}
+      <LinearGradient
+        colors={[gs.bg, gs.bg + '00']}
+        style={[styles.melt, { height: Math.round(peekH * 1.15) }]}
+      />
+    </Animated.View>
+  );
+}
+
+// OUTSIDE the clip (the sheet's outer, unclipped layer): the aurora crest.
+// Living out here lets it stand TALLER than the band (owner: "taller, more
+// northern-light-ish") — it rises above the sheet's top edge over home.
+export function StormCrest({ sheetY, sGlow, sBoot, sReveal, closedY, width, peekH }: Props) {
+  const stormH = Math.round(peekH * 2.4);
+  const stormRideStyle = useAnimatedStyle(() => {
+    const travel = interpolate(sheetY.value, [0, closedY], [1, 0], Extrapolation.CLAMP);
+    const calm = 0.45 + sGlow.value * 0.55; // parked: muted → armed: ignited
+    const burn = interpolate(travel, [0, 0.3], [calm, 1], Extrapolation.CLAMP);
+    return {
+      opacity: bootWindow(sBoot.value, 0.45, 0.55) * burn * (1 - sReveal.value),
+      transform: [{ scale: 1 + sGlow.value * 0.06 + travel * 0.35 }],
+    };
+  }, [closedY]);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.stormRide,
+        // the crest's head rises ~a band-height ABOVE the sheet's top edge;
+        // its tail (the bottom melt) hangs past the screen at park
+        { height: stormH, top: -Math.round(peekH * 0.9) },
+        stormRideStyle,
+      ]}>
+      <Storm width={width} height={stormH} zoom={2.2} />
+    </Animated.View>
   );
 }
 

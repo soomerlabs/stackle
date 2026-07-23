@@ -3,11 +3,18 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
 import { ToastHost } from '@/components/toast';
 import { useFonts, Fredoka_500Medium, Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { useEffect } from 'react';
 
 import { initStorage } from '@/game/storage';
+
+// Reanimated strict mode OFF (level stays warn): Skia components seed their
+// first frame by reading a shared value's .value DURING render — that's the
+// documented integration pattern, not a bug, but strict mode flags it every
+// boot. Our own house rule (no render reads) still holds; audited 2026-07-23.
+configureReanimatedLogger({ level: ReanimatedLogLevel.warn, strict: false });
 import { loadFullDictionary } from '@/game/dictionary';
 
 SplashScreen.preventAutoHideAsync();

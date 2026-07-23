@@ -33,7 +33,7 @@ import { Floaters } from '@/components/home/floaters';
 import { CountdownDock } from '@/components/home/countdown-dock';
 import { HeroWord, twistLabel } from '@/components/home/hero-word';
 import { StandingsSection } from '@/components/home/standings-section';
-import { SheetWeather } from '@/components/home/sheet-weather';
+import { SheetWash, StormCrest } from '@/components/home/sheet-weather';
 import {
   OPEN_SPRING, PARK_SPRING, DOCK_H, ASSIST_RISE, BOOT_MS, bootWindow,
 } from '@/components/home/home-motion';
@@ -213,12 +213,17 @@ export default function HomeScreen() {
     sMode.value = 0;
     sArmed.value = 0;
     sGlow.value = 0;
-    sReveal.value = 0; // the color rearms for the next launch
     setArmed(false); // the door re-locks: fresh swipe next time
     if (armIdle.current) clearTimeout(armIdle.current);
   }, []);
   const closeSettled = useCallback(() => {
     closingRef.current = false;
+    // the color rearms only AFTER the park lands (owner: "not the crazy
+    // color thing on dismiss") — sReveal stays 1 through the whole descent
+    // so the wash/crest can't relight mid-close; the band's calm glow then
+    // breathes back in at rest
+    sReveal.value = withTiming(0, { duration: 450 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const closeSheet = useCallback(() => {
     sheetRef.current?.pauseForClose();
@@ -606,6 +611,14 @@ export default function HomeScreen() {
       {deal && (
         <GestureDetector gesture={openDrag}>
           <Animated.View style={[styles.sheet, sheetStyle]}>
+            {/* the crest lives on the UNCLIPPED outer layer, UNDER the clip
+                content: it stands TALLER than the band (its head rises over
+                home — northern lights, owner), the transparent-at-park game
+                layer lets it through, and the PLAY tiles stay crisp on top */}
+            <StormCrest
+              sheetY={sheetY} sGlow={sGlow} sBoot={sBoot} sReveal={sReveal}
+              closedY={closedY} width={width} peekH={peekH}
+            />
             <View style={styles.sheetClip}>
             {/* the GAME layer (opaque) — transparent at peek so the frost
                 below can sample home */}
@@ -619,7 +632,7 @@ export default function HomeScreen() {
                 closeGesture={closeDrag}
               />
             </Animated.View>
-            <SheetWeather
+            <SheetWash
               sheetY={sheetY} sGlow={sGlow} sBoot={sBoot} sReveal={sReveal}
               closedY={closedY} width={width} peekH={peekH}
             />

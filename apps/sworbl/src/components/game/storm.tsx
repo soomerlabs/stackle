@@ -1,73 +1,100 @@
-// Aurora-of-blocks storm — WEB fallback: soft SVG radial-gradient blobs on the
-// web spec's bell geometry (no Skia/WASM in the web bundle — PHASE2 #7). The
-// FULL goo recipe on web belongs to the frozen site's CSS today and to a
-// css-filter port of this component when RNW web replaces it at launch.
+// THE SWORBL GLOW — WEB (RNW): the same Apple-idiom edge weather as the
+// native Skia variant (storm.native.tsx), built from CSS instead: one wide
+// six-hue gradient band sweeping glacially under a heavy CSS blur filter,
+// two soft radial blooms for depth. A blurred rect's edges feather
+// themselves — no mask needed for the melt. KEEP THE TWO VARIANTS IN SYNC
+// (the split-file trap has bitten twice: patch BOTH or state why not).
 import React, { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing,
 } from 'react-native-reanimated';
-import Svg, { Defs, RadialGradient, Stop, Circle } from 'react-native-svg';
 
-const BLOBS = [
-  { xPct: 1,  bot: -2,  s: 44, c: '#A78BFA', dur: 17000 },
-  { xPct: 19, bot: -12, s: 54, c: '#5BC8F5', dur: 19000 },
-  { xPct: 38, bot: -22, s: 68, c: '#5FD6A8', dur: 15000 },
-  { xPct: 55, bot: -20, s: 64, c: '#F58FB8', dur: 21000 },
-  { xPct: 74, bot: -12, s: 54, c: '#F5B84A', dur: 18000 },
-  { xPct: 91, bot: -2,  s: 44, c: '#F58A66', dur: 22000 },
-];
+const HUES = ['#A78BFA', '#5BC8F5', '#5FD6A8', '#F58FB8', '#F5B84A', '#F58A66'];
 
-function Blob({ b, width, height }: { b: (typeof BLOBS)[number]; width: number; height: number }) {
+function useDrift(dur: number) {
   const t = useSharedValue(0);
   useEffect(() => {
     t.value = withRepeat(
-      withTiming(1, { duration: b.dur / 2, easing: Easing.inOut(Easing.sin) }),
+      withTiming(1, { duration: dur / 2, easing: Easing.inOut(Easing.sin) }),
       -1,
       true
     );
-  }, [b.dur]);
-  const anim = useAnimatedStyle(() => ({
-    transform: [{ translateY: t.value * -14 }, { scale: 1 + t.value * 0.08 }],
-  }));
-  const d = b.s * 3; // soft halo needs room around the block
-  const left = (b.xPct / 100) * width - d / 2 + b.s / 2;
-  // centered in the box, gently varied (was bottom-anchored floor glow —
-  // as the band's backdrop the color belongs mid-band, owner)
-  const top = height / 2 - d / 2 + (b.bot % 3) * 8 - 8;
-  return (
-    <Animated.View pointerEvents="none" style={[anim, { position: 'absolute', left, top, width: d, height: d }]}>
-      <Svg width={d} height={d}>
-        <Defs>
-          <RadialGradient id={`sg${b.xPct}`} cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={b.c} stopOpacity="0.5" />
-            <Stop offset="55%" stopColor={b.c} stopOpacity="0.22" />
-            <Stop offset="100%" stopColor={b.c} stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Circle cx={d / 2} cy={d / 2} r={d / 2} fill={`url(#sg${b.xPct})`} />
-      </Svg>
-    </Animated.View>
-  );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dur]);
+  return t;
 }
 
-export default function Storm({ width, height = 260, zoom = 1 }: { width: number; height?: number; zoom?: number }) {
+export default function Storm({ width, height = 260 }: {
+  width: number; height?: number; zoom?: number; // zoom kept for API parity
+}) {
+  const sweep = useDrift(26000);
+  const breath = useDrift(9000);
+  const W = width * 1.7; // wider than the screen — the slide never shows an end
+
+  const slide = useAnimatedStyle(() => ({
+    transform: [{ translateX: -(W - width) * sweep.value }],
+  }));
+  const glow = useAnimatedStyle(() => ({
+    opacity: 0.8 + breath.value * 0.2,
+  }));
+
   return (
-    <Animated.View
-      pointerEvents="none"
-      style={[styles.wrap, { width, height, transform: [{ scale: zoom }] }]}>
-      {BLOBS.map((b, i) => (
-        <Blob key={i} b={b} width={width} height={height} />
-      ))}
-    </Animated.View>
+    <View pointerEvents="none" style={[styles.wrap, { width, height }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, glow]}>
+        {/* the hue field — blur(30) feathers every edge on its own */}
+        <Animated.View
+          style={[
+            slide,
+            styles.blurred,
+            { top: height * 0.42, width: W, height: height * 0.85, borderRadius: height * 0.3 },
+          ]}>
+          <LinearGradient
+            colors={[HUES[0], HUES[1], HUES[2], HUES[3], HUES[4], HUES[5], HUES[0], HUES[1]] as const}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+        {/* two soft blooms for depth */}
+        <View
+          style={[
+            styles.blurred,
+            styles.bloom,
+            {
+              left: width * 0.22, top: height * 0.5,
+              width: height * 0.9, height: height * 0.9, borderRadius: height * 0.45,
+              backgroundColor: 'rgba(167,139,250,0.55)',
+            },
+          ]}
+        />
+        <View
+          style={[
+            styles.blurred,
+            styles.bloom,
+            {
+              left: width * 0.64, top: height * 0.44,
+              width: height * 0.8, height: height * 0.8, borderRadius: height * 0.4,
+              backgroundColor: 'rgba(245,143,184,0.45)',
+            },
+          ]}
+        />
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
     overflow: 'hidden',
+  },
+  blurred: {
+    position: 'absolute',
+    // RNW passes this through as CSS; native never loads this file
+    filter: 'blur(30px)',
+  },
+  bloom: {
+    filter: 'blur(40px)',
   },
 });
