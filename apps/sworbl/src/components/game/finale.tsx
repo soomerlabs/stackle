@@ -46,16 +46,11 @@ interface Props {
   onDone: (r: FinaleResult) => void;
 }
 
-// a keyboard KEY: the board tile's little sibling — candy construction, not
-// corporate: round shoulders, deep ledge, action keys in brand color
-const KEY_ACCENTS: Record<string, { bg: string; edge: string; ink: string }> = {
-  '⏎': { bg: '#8971FF', edge: '#5A43C9', ink: '#FFFFFF' }, // submit = THE brand key
-  '⌫': { bg: MONO_DARK.bg, edge: MONO_DARK.edge, ink: '#F58A66' }, // coral nib
-};
+// a keyboard KEY: the board tile's little sibling — candy construction
+// (round shoulders, deep ledge), ALL mono: accent keys read weird (owner)
 function Key({
   ch, w, h, onPress,
 }: { ch: string; w: number; h: number; onPress: () => void }) {
-  const acc = KEY_ACCENTS[ch];
   const rad = Math.round(h * 0.26);
   return (
     <Pressable onPress={onPress} style={{ width: w, height: h + 4 }}>
@@ -64,22 +59,22 @@ function Key({
           <View
             style={[
               styles.keyLedge,
-              { width: w, height: h, borderRadius: rad, backgroundColor: acc?.edge ?? MONO_DARK.edge },
+              { width: w, height: h, borderRadius: rad, backgroundColor: MONO_DARK.edge },
             ]}
           />
           <View
             style={[
               styles.keyFace,
-              { width: w, height: h, borderRadius: rad, backgroundColor: acc?.bg ?? MONO_DARK.bg },
+              { width: w, height: h, borderRadius: rad, backgroundColor: MONO_DARK.bg },
               pressed && {
                 transform: [{ translateY: 3 }, { scale: 0.96 }],
-                backgroundColor: acc ? acc.bg : MONO_DARK.hi,
+                backgroundColor: MONO_DARK.hi,
               },
             ]}>
             <Text
               style={[
                 styles.keyText,
-                { fontSize: Math.min(23, h * 0.44), color: acc?.ink ?? MONO_INK },
+                { fontSize: Math.min(23, h * 0.44), color: MONO_INK },
               ]}>
               {ch}
             </Text>

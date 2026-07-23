@@ -27,6 +27,7 @@ import { Floaters } from '@/components/home/floaters';
 import { CountdownDock } from '@/components/home/countdown-dock';
 import { Superlatives } from '@/components/home/superlatives';
 import { PlaySheet, type PlaySheetHandle } from '@/components/play-sheet';
+import { Brand } from '@/components/brand';
 import { BG_DARK, PALETTE, INK, tileColorFor } from '@/game/palette';
 import { dealDaily } from '@/game/daily';
 import { loadDay, type DayState } from '@/game/persist';
@@ -159,6 +160,7 @@ export default function HomeScreen() {
                 <Text style={styles.gearText}>⚙</Text>
               </Pressable>
             )}
+            <Brand />
             <Text style={styles.date}>{dateLine}</Text>
             <View style={styles.scoreCard}>
               <Text style={styles.scoreLabel}>{played ? 'TODAY' : 'SWORBL OF THE DAY'}</Text>

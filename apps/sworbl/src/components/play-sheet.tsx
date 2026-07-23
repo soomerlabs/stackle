@@ -271,7 +271,6 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
       {phase !== 'idle' && <Storm width={width} height={Math.min(280, height * 0.32)} />}
       <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.top}>
-          <Brand size={22} />
           {onBoard && (
             // tap = pause · DEV-ONLY shortcut: long-press → straight to the finale
             // (__DEV__ fence — audit weakness #4: a skip in a one-shot daily is
@@ -386,6 +385,12 @@ const styles = StyleSheet.create({
   scoreHdrWrap: {
     alignItems: 'center',
     paddingTop: 8,
+  },
+  brandCenter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   top: {
     flexDirection: 'row',
