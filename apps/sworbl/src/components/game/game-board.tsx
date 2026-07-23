@@ -357,12 +357,21 @@ export function GameBoard({
               paddingBottom: 12 + Math.max(3, Math.round(size * 0.08)),
             },
           ]}>
-        {/* clip window: masks refills falling from above, but extends 10px
-            OVER the board so pressed tiles' lift never gets decapitated
-            (owner bug: top-row blocks clipped at the board edge) */}
-        <View style={{ width: boardW, height: boardH + 10, overflow: 'hidden', marginTop: -10 }}>
+        {/* clip window: masks refills falling from above, PADDED 12px on ALL
+            sides so nothing legitimate ever gets sliced — top: press-lift,
+            bottom: the ledges (they extend below the grid), sides: the
+            nope-shake and head-scale on edge columns (owner audit) */}
+        <View
+          style={{
+            width: boardW + 24,
+            height: boardH + 24,
+            overflow: 'hidden',
+            marginTop: -12,
+            marginLeft: -12,
+            marginRight: -12,
+          }}>
         <GestureDetector gesture={pan}>
-        <View style={{ width: boardW, height: boardH, marginTop: 10 }}>
+        <View style={{ width: boardW, height: boardH, marginTop: 12, marginLeft: 12 }}>
           {Array.from({ length: COLS * ROWS }, (_, i) => (
             <View
               key={`bgc${i}`}
