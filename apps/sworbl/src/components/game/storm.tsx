@@ -32,7 +32,9 @@ function Blob({ b, width, height }: { b: (typeof BLOBS)[number]; width: number; 
   }));
   const d = b.s * 3; // soft halo needs room around the block
   const left = (b.xPct / 100) * width - d / 2 + b.s / 2;
-  const top = height - b.s - b.bot - d / 2 + b.s / 2;
+  // centered in the box, gently varied (was bottom-anchored floor glow —
+  // as the band's backdrop the color belongs mid-band, owner)
+  const top = height / 2 - d / 2 + (b.bot % 3) * 8 - 8;
   return (
     <Animated.View pointerEvents="none" style={[anim, { position: 'absolute', left, top, width: d, height: d }]}>
       <Svg width={d} height={d}>

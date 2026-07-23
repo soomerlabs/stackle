@@ -420,7 +420,10 @@ export default function HomeScreen() {
           'worklet';
           if (!sArmed.value) {
             const idx = Math.floor((e.absoluteX - pm.left) / (pm.tile + pm.gap));
-            if (idx >= 0 && idx < 4 && idx + 1 > sLit.value) {
+            // STRICT sequence in the drag path too (owner: starting on Y and
+            // wiggling armed the row) — only the NEXT tile ever lights; real
+            // sweeps emit events in every tile, so P→L→A→Y still flows
+            if (idx >= 0 && idx < 4 && idx === sLit.value) {
               sLit.value = idx + 1;
               runOnJS(traceBeat)(idx);
               if (idx === 3) {
@@ -797,7 +800,7 @@ export default function HomeScreen() {
                   background of the bottom sheet') — the frost above turns the
                   blobs into pure color weather */}
               <View pointerEvents="none" style={styles.bandStorm}>
-                <Storm width={width} height={peekH + 30} zoom={1.5} />
+                <Storm width={width} height={peekH} zoom={2.2} />
               </View>
               {frostLive && <DockFrost tint={theme.mode === 'dark' ? 'dark' : 'light'} />}
               <View
@@ -836,6 +839,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     top: 0,
     overflow: 'hidden',
+    // blobs anchor to the storm's bottom edge — centering the storm box in
+    // the band floats them through the MIDDLE of the space (owner)
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   safe: {
     flex: 1,
