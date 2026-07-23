@@ -253,8 +253,10 @@ export default function HomeScreen() {
     // so the wash/crest can't relight mid-close; the band's calm glow then
     // breathes back in at rest
     sReveal.value = withTiming(0, { duration: 450 });
+    // refreshDay in deps: it re-binds when the deal changes — an empty
+    // array here would re-read YESTERDAY after a day flip (stale closure)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshDay]);
   const closeSheet = useCallback(() => {
     sheetRef.current?.pauseForClose();
     // AUDIT BLOCKER #1: sheetOpen flips false SYNCHRONOUSLY at close-start;
