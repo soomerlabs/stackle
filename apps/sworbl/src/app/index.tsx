@@ -359,8 +359,23 @@ export default function HomeScreen() {
   // fade window is deliberately SHORT: while it runs, the whole game subtree
   // pays for an offscreen alpha group (the pull-fluidity tax the owner felt).
   // 52px of travel, then the layer is solid and compositing is free.
+  // PREWARM (owner: first pull hesitated, later pulls fine): at boot the
+  // game layer has never painted — the first drag paid the entire subtree's
+  // initial rasterization (tiles + 29 Skia paths) mid-gesture. For ~1s after
+  // mount it renders at 1.2% opacity (imperceptible under the frost), so the
+  // texture upload happens while the player is still reading home.
+  const sWarm = useSharedValue(1);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      sWarm.value = 0;
+    }, 1100);
+    return () => clearTimeout(t);
+  }, []);
   const gameStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(sheetY.value, [closedY - 60, closedY - 8], [1, 0], Extrapolation.CLAMP),
+    opacity: Math.max(
+      sWarm.value * 0.012,
+      interpolate(sheetY.value, [closedY - 60, closedY - 8], [1, 0], Extrapolation.CLAMP)
+    ),
   }));
   // LIVE BLUR GATE: a BlurView riding a moving sheet re-samples its backdrop
   // every frame — long after the face has faded out. Past 180px of travel
