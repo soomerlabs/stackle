@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
   pip: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2a2446' },
   pipUsed: { backgroundColor: '#ff6b5a' },
   fanDock: {
-    marginBottom: 4,
+    marginBottom: 18, // breathing room between the intel and the keys (owner)
   },
   kb: {
     gap: 10,
