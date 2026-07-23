@@ -284,7 +284,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'center',
     gap: 16,
-    paddingTop: 6,
+    // the crown (-16) and confetti (-10) live ABOVE the champion's block —
+    // this padding is THEIR room (owner twice: "crammed")
+    paddingTop: 26,
     paddingBottom: 2,
   },
   col: {
