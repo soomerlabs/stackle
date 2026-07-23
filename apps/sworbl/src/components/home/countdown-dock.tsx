@@ -38,7 +38,7 @@ export function CountdownDock({ played }: { played: boolean }) {
     <View pointerEvents="none" style={styles.wrap}>
       {played ? (
         <Animated.View key="count" entering={FadeIn.duration(240)} style={styles.face}>
-          <Text style={[styles.nextLabel, { color: theme.sub }]}>next sworbl in</Text>
+          {/* just the clock (owner) — the countdown IS the message */}
           <Text style={[styles.nextClock, { color: theme.ink }]}>{clock}</Text>
         </Animated.View>
       ) : (
@@ -71,13 +71,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 14,
     color: '#9DA2B3',
-  },
-  nextLabel: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 12,
-    letterSpacing: 0.6,
-    color: '#9DA2B3',
-    textTransform: 'uppercase',
   },
   nextClock: {
     fontFamily: 'Fredoka_600SemiBold',
