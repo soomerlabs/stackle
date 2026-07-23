@@ -28,6 +28,7 @@ function useDrift(dur: number) {
 
 export default function Storm({ width, height = 260 }: {
   width: number; height?: number; zoom?: number; // zoom kept for API parity
+  focusW?: number; focusH?: number; // eclipse row-wrap (native uses; web TBD)
 }) {
   const sweep = useDrift(26000);
   const breath = useDrift(9000);
