@@ -253,16 +253,9 @@ export default function HomeScreen() {
           sDetent.value = 0;
           const risen = closedY - sheetY.value;
           if (risen > height * 0.22 || e.velocityY < -900) {
-            sheetY.value = withSpring(0, { ...OPEN_SPRING, velocity: e.velocityY }, (fin) => {
-              'worklet';
-              if (fin) {
-                // the DOCK SQUASH: candy physicality — the sheet lands like a tile
-                sSquash.value = withSequence(
-                  withTiming(0.994, { duration: 70 }),
-                  withTiming(1, { duration: 170 })
-                );
-              }
-            });
+            // OPEN lands CLEAN (owner: the hit belongs to the CLOSE) — no
+            // squash, no overshoot (clamped in sheetStyle); just arrival
+            sheetY.value = withSpring(0, { ...OPEN_SPRING, velocity: e.velocityY });
             runOnJS(markOpen)();
           } else {
             sheetY.value = withSpring(closedY, { ...PARK_SPRING, velocity: e.velocityY }, (fin) => {
