@@ -568,6 +568,15 @@ export default function HomeScreen() {
     opacity: interpolate(sheetY.value, [closedY - 90, closedY - 20], [0, 1], Extrapolation.CLAMP),
   }));
   // the band pair (aurora + PLAY tiles) fades in as ONE at boot
+  // THE TAIL BRIDGE (owner: "black line at the bottom when I swipe up") —
+  // below the crest's glow the emerging sheet face was bare near-black, a
+  // dead zone between the color and the lip. A whisper of aurora tint
+  // (luminance bridge, no readable hues) fills it during travel only.
+  const tailStyle = useAnimatedStyle(() => {
+    const travel = interpolate(sheetY.value, [0, closedY], [1, 0], Extrapolation.CLAMP);
+    const build = interpolate(travel, [0.08, 0.4], [0, 1], Extrapolation.CLAMP);
+    return { opacity: build * (1 - sReveal.value) };
+  }, [closedY]);
   const bandInStyle = useAnimatedStyle(() => ({
     opacity: bootWindow(sBoot.value, 0.45, 0.55),
   }));

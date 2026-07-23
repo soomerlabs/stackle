@@ -26,7 +26,6 @@ export function playMetrics(width: number) {
 }
 
 const FLY_EASE = Easing.bezier(0.5, 0, 0.8, 0.5); // the word-flight curve
-const FALL_EASE = Easing.bezier(0.45, 0.02, 0.7, 0.5); // the board's gravity
 
 function PlayTile({ ch, i, sLit, sPoke, theme, tile, armed }: {
   ch: string; i: number; sLit: SharedValue<number>; sPoke?: SharedValue<number>;
@@ -57,21 +56,20 @@ function PlayTile({ ch, i, sLit, sPoke, theme, tile, armed }: {
       flyS.value = withDelay(d, withTiming(0.45, { duration: 260, easing: FLY_EASE }));
       flyO.value = withDelay(d + 170, withTiming(0, { duration: 90 }));
     } else {
-      const d = 120 + i * 55;
-      flyY.value = -1.6 * tile;
-      flyS.value = 1;
-      flyO.value = withDelay(d, withTiming(1, { duration: 40 }));
-      flyY.value = withDelay(
+      // RETURN: the tiles GROW back in from the row's center outward
+      // (owner: no more falling from above) — L·A bloom first, then P·Y,
+      // each with a soft overshoot pop
+      const centerDist = Math.abs(i - 1.5); // 0.5 inner pair · 1.5 outer pair
+      const d = 120 + Math.round(centerDist * 150) + (i > 1 ? 40 : 0);
+      flyY.value = 0;
+      flyS.value = 0;
+      flyO.value = withDelay(d, withTiming(1, { duration: 60 }));
+      flyS.value = withDelay(
         d,
-        withTiming(0, { duration: 300, easing: FALL_EASE }, (fin) => {
-          'worklet';
-          if (fin) {
-            flyS.value = withSequence(
-              withTiming(0.94, { duration: 60 }),
-              withTiming(1, { duration: 110 })
-            );
-          }
-        })
+        withSequence(
+          withTiming(1.08, { duration: 170, easing: Easing.out(Easing.quad) }),
+          withTiming(1, { duration: 110 })
+        )
       );
     }
   }, [armed]);
