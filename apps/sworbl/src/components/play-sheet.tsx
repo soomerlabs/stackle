@@ -147,15 +147,22 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
 
   useEffect(() => {
     if (phase !== 'live') return;
+    let morph: ReturnType<typeof setTimeout> | null = null;
     const h = setInterval(() => {
       const left = clockRemaining(clockRef.current, Date.now(), CT);
       setRemaining(left);
       if (left <= 0) {
+        clearInterval(h);
         clockRef.current = clockPause(clockRef.current, Date.now());
-        setPhase('finale');
+        // let 0:00 LAND for a beat before the board morphs (owner: the jump
+        // straight to the guess state read as a glitch)
+        morph = setTimeout(() => setPhase('finale'), 1000);
       }
     }, 250);
-    return () => clearInterval(h);
+    return () => {
+      clearInterval(h);
+      if (morph) clearTimeout(morph);
+    };
   }, [phase]);
 
   // ---- run snapshots ----
@@ -326,7 +333,7 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
       {phase !== 'idle' && <Storm width={width} height={Math.min(280, height * 0.32)} />}
       <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.top}>
-          {onBoard && remaining > 0 && (
+          {onBoard && phase !== 'finale' && (
             // tap = pause · DEV-ONLY shortcut: long-press → straight to the finale
             // (__DEV__ fence — audit weakness #4: a skip in a one-shot daily is
             // a player-facing integrity hole in release builds)
@@ -353,11 +360,13 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
           </Animated.View>
           {/* score lives in the ScoreHeader rail only (it showed twice) —
               the corner is the PAUSE button, the visible face of swipe-down */}
-          {onBoard ? (
+          {onBoard && phase !== 'finale' ? (
             <Pressable onPress={pauseInPlace} hitSlop={12} style={styles.pauseBtn}>
               <View style={styles.pauseBar} />
               <View style={styles.pauseBar} />
             </Pressable>
+          ) : onBoard ? (
+            <View style={styles.pauseGhost} />
           ) : (
             <Text style={styles.score}>{score.toLocaleString()}</Text>
           )}
@@ -389,7 +398,10 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
             <Animated.View exiting={FadeOut.duration(250)}>
               {/* only the BOARD is input-gated — the covers above it must stay
                   tappable (the old parent-level gate ate the resume tap) */}
-              <View pointerEvents={phase === 'live' || phase === 'finale' ? 'auto' : 'none'}>
+              <View
+                pointerEvents={
+                  (phase === 'live' && remaining > 0) || phase === 'finale' ? 'auto' : 'none'
+                }>
                 <GameBoard
                   deal={deal}
                   size={tile}
@@ -521,6 +533,10 @@ const styles = StyleSheet.create({
     height: 13,
     borderRadius: 2,
     backgroundColor: '#9DA2B3',
+  },
+  pauseGhost: {
+    width: 34,
+    height: 34,
   },
   pausedCover: {
     position: 'absolute',

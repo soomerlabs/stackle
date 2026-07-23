@@ -6,7 +6,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
-  ZoomIn, FadeIn, useSharedValue, useAnimatedStyle, withSequence, withTiming,
+  ZoomIn, FadeIn, FadeOut, useSharedValue, useAnimatedStyle, withSequence, withTiming,
 } from 'react-native-reanimated';
 import engine from '@sworbl/engine';
 import { PALETTE, CARD, tileColorFor } from '@/game/palette';
@@ -138,10 +138,13 @@ export function StepperCard({ width, traceWord, verdict, sworb }: Props) {
   }, [sworb?.shakeKey]);
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shakeX.value }] }));
 
+  // ONE persistent card, FIXED height — the two faces dissolve inside it
+  // (owner: the card grew at the finale swap and jerked the board down)
   if (sworb) {
     const bs = Math.min(34, Math.floor((width - 60) / Math.max(1, sworb.slots.length)) - 5);
     return (
       <View style={[styles.card, { width }]}>
+        <Animated.View key="sworb" entering={FadeIn.duration(300)} style={styles.face}>
         <Animated.View style={[styles.sworbRow, shakeStyle]}>
           {sworb.slots.map((l, i) => {
             const color = sworb.colors[i];
@@ -178,12 +181,14 @@ export function StepperCard({ width, traceWord, verdict, sworb }: Props) {
           ))}
         </View>
         <Burst burstKey={sworb.burstKey} />
+        </Animated.View>
       </View>
     );
   }
 
   return (
     <View style={[styles.card, { width }]}>
+      <Animated.View key="spell" exiting={FadeOut.duration(200)} style={styles.face}>
       {/* the banner: live chain chips, a landed verdict, or the idle line */}
       {verdict ? (
         <View style={styles.bannerRow}>
@@ -213,6 +218,7 @@ export function StepperCard({ width, traceWord, verdict, sworb }: Props) {
           {pts > 0 && <Text style={styles.payPts}>{pts}</Text>}
         </Animated.View>
       )}
+      </Animated.View>
     </View>
   );
 }
@@ -221,13 +227,22 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: CARD.bg,
     borderRadius: 16,
-    padding: 10,
-    minHeight: 64,
+    // FIXED height — tall enough for the guess face, so the finale swap
+    // never reflows the column (the board must not move)
+    height: 80,
     marginBottom: 12,
     marginTop: 2,
+    boxShadow: `0 4px 0 ${CARD.edge}`,
+  },
+  face: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: `0 4px 0 ${CARD.edge}`,
+    gap: 7,
   },
   bannerRow: {
     flexDirection: 'row',
