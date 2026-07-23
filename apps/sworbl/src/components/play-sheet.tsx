@@ -19,6 +19,8 @@ import { CountIn } from '@/components/game/count-in';
 import { Finale, type FinaleRestore } from '@/components/game/finale';
 import { ResultView } from '@/components/game/result-view';
 import { PauseCover } from '@/components/game/pause-cover';
+import { ScoreHeader } from '@/components/game/score-header';
+import { Brand } from '@/components/brand';
 import Storm from '@/components/game/storm';
 import { BG_DARK } from '@/game/palette';
 import { dealDaily, bumpNextId } from '@/game/daily';
@@ -269,7 +271,7 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
       {phase !== 'idle' && <Storm width={width} height={Math.min(280, height * 0.32)} />}
       <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.top}>
-          <Text style={styles.brand}>sworbl</Text>
+          <Brand size={22} />
           {onBoard && (
             // tap = pause · DEV-ONLY shortcut: long-press → straight to the finale
             // (__DEV__ fence — audit weakness #4: a skip in a one-shot daily is
@@ -294,6 +296,12 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
           )}
           <Text style={styles.score}>{score.toLocaleString()}</Text>
         </View>
+
+        {onBoard && (
+          <View style={styles.scoreHdrWrap}>
+            <ScoreHeader score={score} target={TUNING.PAR_TARGET} width={tile * 5 + gap * 4 + 24} />
+          </View>
+        )}
 
         <View style={styles.center}>
           {!deal && (
@@ -374,6 +382,10 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
+  },
+  scoreHdrWrap: {
+    alignItems: 'center',
+    paddingTop: 8,
   },
   top: {
     flexDirection: 'row',

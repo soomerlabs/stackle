@@ -42,7 +42,8 @@ export function GameBoard({
   const boardH = ROWS * cell - gap;
 
   const [tiles, setTiles] = useState<TileT[]>(() => initialTiles ?? deal.tiles);
-  const [clearingIds, setClearingIds] = useState<Set<number>>(new Set());
+  // id → position-in-swipe (pop stagger rides the seq; web clearSeq)
+  const [clearingIds, setClearingIds] = useState<Map<number, number>>(new Map());
   const [verdict, setVerdict] = useState<{ word: string; pts?: number; ok: boolean; clue?: string } | null>(null);
   const [trace, setTrace] = useState({ word: '', ci: 0 });
   const [jsPath, setJsPath] = useState<TraceTile[]>([]); // web connector mirror
@@ -64,7 +65,9 @@ export function GameBoard({
   const [tokens, setTokens] = useState<TokenState>(() => loadTokens(deal.dayKey));
   const [ping, setPing] = useState<{ key: number; x: number; y: number; color: string } | null>(null);
   // NOPE (web nopeTiles): the rejected word's tiles shake it off red in place
-  const [nope, setNope] = useState<{ key: number; ids: Set<number> }>({ key: 0, ids: new Set() });
+  const [nope, setNope] = useState<{ key: number; seqs: Map<number, number>; total: number }>({
+    key: 0, seqs: new Map(), total: 0,
+  });
   const pingKeyRef = useRef(0);
   const tilesMirror = useRef(tiles);
   tilesMirror.current = tiles;
@@ -222,7 +225,12 @@ export function GameBoard({
       if (!deal || ids.length < 3) return;
       if (!dict().has(word)) {
         setVerdict({ word: word.toUpperCase(), ok: false });
-        setNope((n) => ({ key: n.key + 1, ids: new Set(ids) })); // board shakes it off red
+        // the WAVE-NO: seq = position in the swipe (drain sweeps head→back)
+        setNope((n) => ({
+          key: n.key + 1,
+          seqs: new Map(ids.map((id, i) => [id, i])),
+          total: ids.length,
+        }));
         setTimeout(() => setVerdict(null), 900);
         haptic.bad();
         return;
@@ -255,14 +263,15 @@ export function GameBoard({
       onWordSpelled && onWordSpelled(word, pts, res.isNew);
       onScore && onScore(scoreRef.current);
       playedRef.current.add(word);
-      const gone = new Set(ids);
-      // additive/subtractive set ops (audit weakness #4b): two commits inside
-      // the 240ms clearing window must not wipe each other's clearing state
-      setClearingIds((cur) => new Set([...cur, ...gone]));
+      const gone = new Map(ids.map((id, i) => [id, i]));
+      // additive/subtractive ops (audit weakness #4b): overlapping commits must
+      // not wipe each other's clearing state
+      setClearingIds((cur) => new Map([...cur, ...gone]));
+      // settle AFTER the last tile's staggered pop (45ms/tile, web clearSeq)
       setTimeout(() => {
         setClearingIds((cur) => {
-          const next = new Set(cur);
-          gone.forEach((id) => next.delete(id));
+          const next = new Map(cur);
+          gone.forEach((_v, id) => next.delete(id));
           return next;
         });
         setTiles((cur) => {
@@ -273,7 +282,7 @@ export function GameBoard({
           );
           return restampBroken({ deal, tiles: settled, added, unfound });
         });
-      }, 240);
+      }, 240 + ids.length * 45);
     },
     [deal, onScore]
   );
@@ -326,6 +335,9 @@ export function GameBoard({
 
   return (
     <View style={{ alignItems: 'center' }}>
+      {/* THE STEPPER (web hopperCard) — ABOVE the board, like the web */}
+      <StepperCard width={boardW + 24} traceWord={trace.word} verdict={verdict} />
+
       {/* THE BOARD CARD (web boardCardStyle): tiles live ON a card with sunken
           cell wells — not floating on the screen background */}
       <GestureDetector gesture={pan}>
@@ -362,8 +374,10 @@ export function GameBoard({
               size={size}
               gap={gap}
               sPath={sPath}
-              clearing={clearingIds.has(t.id)}
-              nope={nope.ids.has(t.id) ? nope.key : 0}
+              clearingSeq={clearingIds.get(t.id)}
+              nope={nope.seqs.has(t.id) ? nope.key : 0}
+              nopeSeq={nope.seqs.get(t.id) ?? 0}
+              nopeTotal={nope.total}
             />
           ))}
           <TraceConnector
@@ -387,11 +401,6 @@ export function GameBoard({
         </View>
         </View>
       </GestureDetector>
-
-      {/* THE STEPPER — below the blocks (owner call): the traced word builds here */}
-      <View style={{ marginTop: 11 }}>
-        <StepperCard width={boardW + 24} traceWord={trace.word} verdict={verdict} />
-      </View>
 
       {tokens.count > 0 && (
         <Text style={styles.tokenLine}>✦ hint ready — tap a dashed clue</Text>

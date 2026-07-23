@@ -1,13 +1,16 @@
-// The FINALE — 0:00 morphs the round into this: 6 Wordle-colored guesses at the
-// sworb. The ENGINE decides everything: scoreGuess (dup-safe coloring),
-// applySworbGuess (locking, bonus via guessReward), nextSlots (typing state
-// machine: greens LOCK in place, yellows become dashed amber hints, type-over
-// clears). This component renders slots and forwards keys.
-import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
-import Animated, { ZoomIn, FadeIn, SlideInDown } from 'react-native-reanimated';
+// The FINALE — full-screen guess phase (owner redesign 2026-07-23):
+//   • guesses live at the TOP, attempts stack downward with room to breathe
+//   • the KEYBOARD is real: branded mono candy blocks (face + ledge, the
+//     board tiles' little siblings), big, pinned to the bottom
+//   • every state lands with a subtle animation: new rows drop in from the
+//     top, committed rows reveal their colors block-by-block, keys rise
+//     bottom-up on the morph
+// The ENGINE still decides everything (applyGuess/nextSlots/scoreGuess).
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import Animated, { ZoomIn, FadeIn, SlideInUp, SlideInDown } from 'react-native-reanimated';
 import engine from '@sworbl/engine';
-import { INK } from '@/game/palette';
+import { INK, MONO_DARK, MONO_INK } from '@/game/palette';
 import { haptic } from '@/game/haptics';
 import { applyGuess } from '@/game/finale-logic';
 import { ClueFan } from './clue-fan';
@@ -34,22 +37,44 @@ export interface FinaleRestore {
 }
 
 interface Props {
-  entry: { sworb: string }; // engine checkGuess normalizes against entry.sworb
-  clues: string[]; // the 6 realized clues — the fan is your intel in here
+  entry: { sworb: string };
+  clues: string[];
   found: string[];
-  size: number; // board tile size — finale blocks match the board's scale
-  restore?: FinaleRestore; // a killed-mid-finale run picks up exactly here
-  onProgress?: (s: FinaleRestore) => void; // run-snapshot feed
+  size: number;
+  restore?: FinaleRestore;
+  onProgress?: (s: FinaleRestore) => void;
   onDone: (r: FinaleResult) => void;
 }
 
+// a keyboard KEY: the board tile's little sibling — mono face on a ledge
+function Key({
+  ch, w, h, onPress,
+}: { ch: string; w: number; h: number; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} style={{ width: w, height: h + 3 }}>
+      {({ pressed }) => (
+        <>
+          <View style={[styles.keyLedge, { width: w, height: h, borderRadius: Math.round(h * 0.2) }]} />
+          <View
+            style={[
+              styles.keyFace,
+              { width: w, height: h, borderRadius: Math.round(h * 0.2) },
+              pressed && { transform: [{ translateY: 2 }], backgroundColor: MONO_DARK.hi },
+            ]}>
+            <Text style={[styles.keyText, { fontSize: Math.min(20, h * 0.42) }]}>{ch}</Text>
+          </View>
+        </>
+      )}
+    </Pressable>
+  );
+}
+
 export function Finale({ entry, clues, found, size, restore, onProgress, onDone }: Props) {
+  const { width } = useWindowDimensions();
   const foundCount = found.length;
   const clueTotal = clues.length;
   const len = entry.sworb.length;
   const [rows, setRows] = useState<{ letters: string[]; colors: string[] }[]>(restore?.rows ?? []);
-  // a restore's slot arrays are only trusted at the right length — the phase-entry
-  // snapshot legitimately carries empty ones (blank-slot bug caught in browser)
   const [slots, setSlots] = useState<string[]>(
     restore?.slots?.length === len ? restore.slots : Array(len).fill('')
   );
@@ -63,7 +88,7 @@ export function Finale({ entry, clues, found, size, restore, onProgress, onDone 
     (ch: string) => {
       if (locked) return;
       const next = engine.daily.nextSlots({ slots, colors, ch, len });
-      if (!next) return; // full row / nothing to delete
+      if (!next) return;
       setSlots(next.slots);
       setColors(next.colors || Array(len).fill(null));
       haptic.soft();
@@ -71,13 +96,9 @@ export function Finale({ entry, clues, found, size, restore, onProgress, onDone 
     [slots, colors, len, locked]
   );
 
-  // the transition itself is PURE (finale-logic.applyGuess, contract-pinned by
-  // tests) — this callback only performs the theater: state, haptics, timing
   const submit = useCallback(() => {
     if (locked) return;
-    const out = applyGuess({
-      slots, rows, guessesUsed, sworb: entry.sworb, foundCount, clueTotal,
-    });
+    const out = applyGuess({ slots, rows, guessesUsed, sworb: entry.sworb, foundCount, clueTotal });
     if (out.kind === 'reject') {
       haptic.bad();
       return;
@@ -89,18 +110,11 @@ export function Finale({ entry, clues, found, size, restore, onProgress, onDone 
       setLocked(true);
       haptic[solved ? 'good' : 'bad']();
       setTimeout(
-        () =>
-          onDone({
-            solved,
-            guessesUsed: out.usedNow,
-            bonus: solved ? out.bonus : 0,
-            rows: out.rows,
-          }),
-        solved ? 900 : 1600 // losers get the gray beat before the reveal
+        () => onDone({ solved, guessesUsed: out.usedNow, bonus: solved ? out.bonus : 0, rows: out.rows }),
+        solved ? 1100 : 1700 // let the color reveal finish before the beat
       );
       return;
     }
-    // miss: greens locked, yellows hinting, grays cleared (decided in applyGuess)
     setSlots(out.slots);
     setColors(out.colors);
     onProgress &&
@@ -108,16 +122,21 @@ export function Finale({ entry, clues, found, size, restore, onProgress, onDone 
     haptic.bad();
   }, [slots, rows, guessesUsed, locked, entry, foundCount, clueTotal, onDone, onProgress]);
 
-  const bs = Math.min(size, Math.floor(300 / len)); // block size fits the row
-  const block = (letter: string, color: string | null, i: number, active: boolean) => {
+  // web-guard: springified/slide entering animations strand invisible on RNW
+  const theater = !restore;
+  const D = (ms: number) => (theater ? ms : 0);
+  const E = <T,>(a: T): T | undefined => (Platform.OS === 'web' ? undefined : a);
+
+  // guess blocks: sized so 6 rows breathe at the top
+  const bs = Math.min(44, Math.floor((width - 60 - (len - 1) * 6) / len));
+  const block = (letter: string, color: string | null, i: number, active: boolean, reveal: boolean) => {
     const pal = color ? C[color as keyof typeof C] : letter ? C.typed : null;
     const isHint = active && color === 'yellow';
-    return (
+    const inner = (
       <View
-        key={i}
         style={[
           styles.block,
-          { width: bs, height: bs * 1.14, borderRadius: Math.round(bs * 0.25) },
+          { width: bs, height: bs * 1.14, borderRadius: Math.round(bs * 0.22) },
           pal && !isHint
             ? { backgroundColor: pal.bg, boxShadow: `0 3px 0 ${pal.edge}` }
             : isHint
@@ -135,66 +154,73 @@ export function Finale({ entry, clues, found, size, restore, onProgress, onDone 
         </Text>
       </View>
     );
+    // committed rows REVEAL block-by-block (the Wordle beat, 70ms stagger)
+    return reveal ? (
+      <Animated.View key={i} entering={E(ZoomIn.delay(i * 70))}>
+        {inner}
+      </Animated.View>
+    ) : (
+      <View key={i}>{inner}</View>
+    );
   };
 
-  const KEYS = ['QWERTYUIOP', 'ASDFGHJKL', '⌫ZXCVBNM⏎'];
-
-  // THE MORPH (entrance half): the board collapsed in a center-out wave
-  // (game-tile exiting); slots drop in as its echo, then the keys rise
-  // row-by-row with a per-key stagger. `restore` (a killed-finale re-entry)
-  // skips the theater — you're resuming a moment, not re-living the morph.
-  const theater = !restore;
-  const D = (ms: number) => (theater ? ms : 0);
-  // Reanimated's springified/slide entering animations are incomplete on WEB —
-  // elements strand invisible at their initial state. Native keeps the theater.
-  const E = <T,>(a: T): T | undefined => (Platform.OS === 'web' ? undefined : a);
+  // the KEYBOARD: three rows, keys sized to fill the width like a real one
+  const KEY_ROWS = useMemo(() => ['QWERTYUIOP', 'ASDFGHJKL', '⌫ZXCVBNM⏎'], []);
+  const kbPad = 8;
+  const keyGap = 5;
+  const keyW = Math.floor((width - kbPad * 2 - 9 * keyGap) / 10);
+  const keyH = Math.round(keyW * 1.42);
+  const wideW = Math.floor(keyW * 1.45);
 
   return (
-    <Animated.View entering={E(FadeIn.duration(250).delay(D(150)))} style={styles.wrap}>
-      {/* committed rows */}
-      {rows.map((r, ri) => (
-        <View key={ri} style={styles.row}>
-          {r.letters.map((l, i) => block(l, r.colors[i], i, false))}
-        </View>
-      ))}
-      {/* active row (hidden once locked) */}
-      {!locked && (
-        <Animated.View
-          entering={E(ZoomIn.springify().mass(0.6).delay(D(380)))}
-          style={[styles.row, styles.activeRow]}>
-          {slots.map((l, i) => block(l, colors[i], i, true))}
-        </Animated.View>
-      )}
-      {/* guess pips */}
-      <Animated.View entering={E(FadeIn.delay(D(600)))} style={styles.pips}>
-        {Array.from({ length: 6 }, (_, i) => (
-          <View key={i} style={[styles.pip, i < guessesUsed && styles.pipUsed]} />
+    <Animated.View entering={E(FadeIn.duration(220).delay(D(120)))} style={styles.wrap}>
+      {/* GUESSES — the top of the screen, attempts stacking downward */}
+      <View style={styles.rowsArea}>
+        {rows.map((r, ri) => (
+          <View key={ri} style={styles.row}>
+            {r.letters.map((l, i) => block(l, r.colors[i], i, false, ri === rows.length - 1))}
+          </View>
         ))}
-      </Animated.View>
-      {/* your intel: the clue fan rides into the finale (candy = found,
-          ghosts = the first-letter nudges you didn't catch) */}
-      <Animated.View entering={E(FadeIn.delay(D(700)))}>
+        {!locked && (
+          // each new round's row DROPS IN from the top — one beat per attempt
+          <Animated.View
+            key={`active-${rows.length}`}
+            entering={E(SlideInDown.springify().mass(0.55).damping(16))}
+            style={styles.row}>
+            {slots.map((l, i) => block(l, colors[i], i, true, false))}
+          </Animated.View>
+        )}
+        <Animated.View entering={E(FadeIn.delay(D(500)))} style={styles.pips}>
+          {Array.from({ length: 6 }, (_, i) => (
+            <View key={i} style={[styles.pip, i < guessesUsed && styles.pipUsed]} />
+          ))}
+        </Animated.View>
+      </View>
+
+      {/* your intel, mid-screen */}
+      <Animated.View entering={E(FadeIn.delay(D(600)))}>
         <ClueFan clues={clues} found={found} />
       </Animated.View>
-      {/* keyboard — rises row-by-row, keys staggered inside each row */}
-      <View style={styles.kb}>
-        {KEYS.map((krow, ki) => (
+
+      {/* THE KEYBOARD — branded mono blocks, big, bottom, rising on the morph */}
+      <View style={[styles.kb, { paddingHorizontal: kbPad }]}>
+        {KEY_ROWS.map((krow, ki) => (
           <Animated.View
             key={ki}
-            entering={E(SlideInDown.springify().mass(0.55).damping(14).delay(D(430 + ki * 90)))}
-            style={styles.kbRow}>
-            {[...krow].map((k, kj) => {
+            entering={E(SlideInUp.springify().mass(0.55).damping(15).delay(D(320 + ki * 80)))}
+            style={[styles.kbRow, { gap: keyGap }]}>
+            {[...krow].map((k) => {
               const wide = k === '⌫' || k === '⏎';
               return (
-                <Animated.View key={k} entering={E(ZoomIn.delay(D(460 + ki * 90 + kj * 16)))}>
-                  <Pressable
-                    onPress={() =>
-                      k === '⏎' ? submit() : keyIn(k === '⌫' ? engine.daily.BACKSPACE : k.toLowerCase())
-                    }
-                    style={({ pressed }) => [styles.key, wide && styles.keyWide, pressed && styles.keyDown]}>
-                    <Text style={styles.keyText}>{k}</Text>
-                  </Pressable>
-                </Animated.View>
+                <Key
+                  key={k}
+                  ch={k}
+                  w={wide ? wideW : keyW}
+                  h={keyH}
+                  onPress={() =>
+                    k === '⏎' ? submit() : keyIn(k === '⌫' ? engine.daily.BACKSPACE : k.toLowerCase())
+                  }
+                />
               );
             })}
           </Animated.View>
@@ -205,28 +231,58 @@ export function Finale({ entry, clues, found, size, restore, onProgress, onDone 
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', gap: 7 },
-  row: { flexDirection: 'row', gap: 6 },
-  activeRow: { marginTop: 2 },
-  block: { alignItems: 'center', justifyContent: 'center' },
+  wrap: {
+    flex: 1,
+    alignSelf: 'stretch',
+    justifyContent: 'space-between',
+    paddingTop: 6,
+    paddingBottom: 10,
+  },
+  rowsArea: {
+    alignItems: 'center',
+    gap: 7,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  block: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   blockEmpty: { borderWidth: 2.5, borderStyle: 'dashed', borderColor: '#3A3A44' },
   blockHint: { borderWidth: 2.5, borderStyle: 'dashed', borderColor: '#CE9022' },
   blockText: { fontFamily: 'Fredoka_600SemiBold', includeFontPadding: false },
-  pips: { flexDirection: 'row', gap: 5, marginVertical: 6 },
+  pips: { flexDirection: 'row', gap: 5, marginTop: 4 },
   pip: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2a2446' },
   pipUsed: { backgroundColor: '#ff6b5a' },
-  kb: { gap: 6, marginTop: 8 },
-  kbRow: { flexDirection: 'row', gap: 5, justifyContent: 'center' },
-  key: {
-    minWidth: 30,
-    height: 44,
-    borderRadius: 7,
-    backgroundColor: '#33333E',
+  kb: {
+    gap: 7,
+    alignItems: 'center',
+  },
+  kbRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  keyLedge: {
+    position: 'absolute',
+    top: 3,
+    left: 0,
+    backgroundColor: MONO_DARK.edge,
+  },
+  keyFace: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    backgroundColor: MONO_DARK.bg,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.12)',
   },
-  keyWide: { minWidth: 44 },
-  keyDown: { backgroundColor: '#42424F', transform: [{ scale: 0.94 }] },
-  keyText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15, color: '#EDEFF7' },
+  keyText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    color: MONO_INK,
+    includeFontPadding: false,
+  },
 });

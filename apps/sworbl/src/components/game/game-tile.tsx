@@ -15,7 +15,7 @@ import Animated, {
   withDelay,
   withSequence,
   Easing,
-  ZoomOut,
+  FadeOutDown,
   type SharedValue,
 } from 'react-native-reanimated';
 import { PALETTE, INK, MONO_DARK, MONO_INK } from '@/game/palette';
@@ -28,11 +28,13 @@ interface Props {
   size: number;
   gap: number;
   sPath: SharedValue<TraceTile[]>;
-  clearing: boolean;
+  clearingSeq: number | undefined; // position in the swiped word (pop stagger), undefined = alive
   nope: number; // increments per rejected word this tile was part of
+  nopeSeq: number; // this tile's position in the rejected word
+  nopeTotal: number; // rejected word length (drain sweeps head→back)
 }
 
-function GameTileInner({ tile, size, gap, sPath, clearing, nope }: Props) {
+function GameTileInner({ tile, size, gap, sPath, clearingSeq, nope, nopeSeq, nopeTotal }: Props) {
   const cell = size + gap;
   const x = tile.col * cell;
   const targetY = tile.row * cell;
@@ -64,32 +66,37 @@ function GameTileInner({ tile, size, gap, sPath, clearing, nope }: Props) {
     );
   }, [targetY]);
 
+  // valid word: tiles POP IN SWIPE ORDER (web clearSeq · 45ms/tile) — the
+  // full-board-submit cascade the owner loved on web
   useEffect(() => {
-    if (clearing) {
-      scale.value = withSequence(
-        withTiming(1.25, { duration: 90 }),
-        withTiming(0, { duration: 140 })
+    if (clearingSeq !== undefined) {
+      const d = clearingSeq * 45;
+      scale.value = withDelay(
+        d,
+        withSequence(withTiming(1.25, { duration: 90 }), withTiming(0, { duration: 140 }))
       );
-      opacity.value = withDelay(90, withTiming(0, { duration: 140 }));
+      opacity.value = withDelay(d + 90, withTiming(0, { duration: 140 }));
     }
-  }, [clearing]);
+  }, [clearingSeq]);
 
-  // NOPE (web nopeTiles): shake it off red — face floods red, quick recoil
-  const shakeX = useSharedValue(0);
-  const sNope = useSharedValue(0);
+  // THE WAVE-NO (web rjArrive + tileDeflate + rjDrainOut): the whole word
+  // turns red TOGETHER (0.26s blend), DEFLATES in unison (womp: 1.07→0.94→1),
+  // then the red DRAINS OUT FROM THE HEAD backwards (35ms/tile, from 0.5s)
+  const sRed = useSharedValue(0);
+  const deflate = useSharedValue(1);
   useEffect(() => {
     if (!nope) return;
-    const dx = Math.max(3, Math.round(size * 0.07));
-    shakeX.value = withSequence(
-      withTiming(-dx, { duration: 45 }),
-      withTiming(dx, { duration: 70 }),
-      withTiming(-dx * 0.6, { duration: 60 }),
-      withTiming(0, { duration: 80 })
+    const drainDelay = 500 + (nopeTotal - 1 - nopeSeq) * 35;
+    sRed.value = withSequence(
+      withTiming(1, { duration: 65 }), // rjArrive's 25% snap
+      withTiming(1, { duration: Math.max(0, drainDelay - 65) }),
+      withTiming(0, { duration: 420 }) // rjDrainOut
     );
-    sNope.value = withSequence(
-      withTiming(1, { duration: 40 }),
-      withTiming(1, { duration: 240 }),
-      withTiming(0, { duration: 260 })
+    deflate.value = withSequence(
+      withTiming(1.07, { duration: 92 }),
+      withTiming(0.94, { duration: 129 }),
+      withTiming(1.005, { duration: 110 }),
+      withTiming(1, { duration: 129 })
     );
   }, [nope]);
 
@@ -124,9 +131,9 @@ function GameTileInner({ tile, size, gap, sPath, clearing, nope }: Props) {
 
   const inner = useAnimatedStyle(() => ({
     transform: [
-      { translateX: x + shakeX.value },
+      { translateX: x },
       { translateY: y.value + liftY.value },
-      { scale: scale.value },
+      { scale: scale.value * deflate.value },
       { scale: headScale.value },
       { scaleY: squashY.value },
     ],
@@ -134,20 +141,21 @@ function GameTileInner({ tile, size, gap, sPath, clearing, nope }: Props) {
   }));
 
   const ledgeStyle = useAnimatedStyle(() => ({
-    backgroundColor: sNope.value > 0.5 ? '#8C2328' : sLit.value ? pal.edge : MONO_DARK.edge,
+    backgroundColor: sRed.value > 0.5 ? '#8C2328' : sLit.value ? pal.edge : MONO_DARK.edge,
     top: lift + (sLit.value === 2 ? 2 : sLit.value === 1 ? 1 : 0),
   }));
   const faceStyle = useAnimatedStyle(() => ({
-    backgroundColor: sNope.value > 0.5 ? '#E5484D' : sLit.value ? pal.bg : MONO_DARK.bg,
+    backgroundColor: sRed.value > 0.5 ? '#E5484D' : sLit.value ? pal.bg : MONO_DARK.bg,
   }));
   const letterStyle = useAnimatedStyle(() => ({
-    color: sNope.value > 0.5 ? '#FFFFFF' : sLit.value ? INK : MONO_INK,
+    color: sRed.value > 0.5 ? '#FFFFFF' : sLit.value ? INK : MONO_INK,
   }));
 
-  // OUTER: layout exiting only (the morph's center-out collapse) — INNER: transforms
+  // OUTER: layout exiting only — THE MORPH: tiles FALL INTO the rising
+  // keyboard (downward fade, bottom rows first, slight column ripple)
   return (
     <Animated.View
-      exiting={ZoomOut.duration(230).delay(Math.round(Math.hypot(tile.col - 2, tile.row - 2.5) * 55))}
+      exiting={FadeOutDown.duration(240).delay((5 - tile.row) * 40 + tile.col * 15)}
       style={styles.outer}>
       <Animated.View style={[inner, { width: size, height: size + lift + 2 }]}>
         <Animated.View
@@ -173,7 +181,8 @@ function GameTileInner({ tile, size, gap, sPath, clearing, nope }: Props) {
 export const GameTile = React.memo(
   GameTileInner,
   (a, b) =>
-    a.tile === b.tile && a.size === b.size && a.gap === b.gap && a.clearing === b.clearing && a.nope === b.nope
+    a.tile === b.tile && a.size === b.size && a.gap === b.gap &&
+    a.clearingSeq === b.clearingSeq && a.nope === b.nope
 );
 
 const styles = StyleSheet.create({
