@@ -750,7 +750,9 @@ export default function HomeScreen() {
               theme={theme}
               rows={standings.list}
               youOutside={standings.youOutside}
-              ghost={!you}
+              // the dashed seat only when you're truly ABSENT from the field —
+              // a podium #1 doesn't need a placeholder chair (owner)
+              ghost={!you && !entries.some((e) => e.isMe)}
             />
           </View>
         </ScrollView>
