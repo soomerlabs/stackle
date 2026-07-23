@@ -29,7 +29,9 @@ function Ghost({ g }: { g: FlightGhostT }) {
   useEffect(() => {
     const d = g.seq * 40;
     t.value = withDelay(d, withTiming(1, FLY));
-    o.value = withDelay(d + 220, withTiming(0, { duration: 100 }));
+    // fade STARTS at arrival and overlaps the chip's pop — the ghost
+    // dissolves INTO the chip it becomes (the web landing read)
+    o.value = withDelay(d + 250, withTiming(0, { duration: 90 }));
   }, []);
   const chipScale = Math.max(0.35, Math.min(0.6, 28 / g.size));
   const st = useAnimatedStyle(() => ({

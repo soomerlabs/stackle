@@ -71,7 +71,7 @@ export function GameBoard({
   const [flights, setFlights] = useState<Map<number, { dx: number; dy: number }>>(new Map());
   const [ghosts, setGhosts] = useState<FlightGhostT[]>([]);
   const ghostKeyRef = useRef(0);
-  const [verdict, setVerdict] = useState<{ word: string; pts?: number; ok: boolean; clue?: string; mult?: number } | null>(null);
+  const [verdict, setVerdict] = useState<{ word: string; pts?: number; ok: boolean; clue?: string; mult?: number; fly?: boolean } | null>(null);
   const [trace, setTrace] = useState({ word: '', ci: 0 });
   const [jsPath, setJsPath] = useState<TraceTile[]>([]); // web connector mirror
   const [found, setFound] = useState<string[]>(initialFound ?? []);
@@ -545,8 +545,8 @@ export function GameBoard({
       const res = engine.daily.resolveCatch({ found: foundRef.current, word, targets: actRef.current });
       setVerdict(
         res.isNew
-          ? { word: word.toUpperCase(), pts, ok: true, clue: res.clue ?? undefined }
-          : { word: word.toUpperCase(), pts, ok: true }
+          ? { word: word.toUpperCase(), pts, ok: true, clue: res.clue ?? undefined, fly: true }
+          : { word: word.toUpperCase(), pts, ok: true, fly: true }
       );
       if (res.isNew) setFound(res.banked);
       // HINT LADDER steps (validated at give-time):

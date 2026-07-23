@@ -19,6 +19,7 @@ export interface StepperVerdict {
   ok: boolean;
   clue?: string;
   mult?: number; // Threes-stack merge: the ×N banner instead of points
+  fly?: boolean; // 5f flight commit: chips POP as each ghost LANDS (the hit)
 }
 
 export interface SworbFace {
@@ -147,7 +148,7 @@ function ConfettiBit({ c }: { c: (typeof CONFETTI)[number] }) {
   );
 }
 
-function Chips({ word, red }: { word: string; red?: boolean }) {
+function Chips({ word, red, fly }: { word: string; red?: boolean; fly?: boolean }) {
   const hs = Math.min(30, Math.floor(220 / Math.max(1, word.length)));
   return (
     <View style={styles.chipRow}>
@@ -156,7 +157,13 @@ function Chips({ word, red }: { word: string; red?: boolean }) {
         return (
           <Animated.View
             key={i + ch}
-            entering={ZoomIn.springify().mass(0.5)}
+            entering={
+              fly
+                ? // THE HIT (web): each chip pops the instant ITS ghost lands
+                  // (flight 300ms + 40ms/letter stagger, minus the fade tail)
+                  ZoomIn.springify().mass(0.5).delay(i * 40 + 240)
+                : ZoomIn.springify().mass(0.5)
+            }
             exiting={red ? chipFallAt(i) : undefined}
             style={[
               styles.chip,
@@ -273,14 +280,20 @@ export function StepperCard({ width, traceWord, verdict, sworb, countIn, gs = GA
         <Animated.View
           entering={verdict.ok ? undefined : missShakeIn}
           style={styles.bannerRow}>
-          <Chips word={verdict.word.toLowerCase()} red={!verdict.ok} />
+          <Chips word={verdict.word.toLowerCase()} red={!verdict.ok} fly={verdict.fly} />
           {verdict.ok && verdict.mult != null && (
             <Animated.Text entering={FadeIn.duration(150)} style={styles.pts}>
               ×{verdict.mult}
             </Animated.Text>
           )}
           {verdict.ok && verdict.pts != null && (
-            <Animated.Text entering={FadeIn.duration(150)} style={styles.pts}>
+            <Animated.Text
+              entering={
+                verdict.fly
+                  ? FadeIn.duration(150).delay(verdict.word.length * 40 + 280)
+                  : FadeIn.duration(150)
+              }
+              style={styles.pts}>
               +{verdict.pts}
               {verdict.clue ? '  ✦' : ''}
             </Animated.Text>
