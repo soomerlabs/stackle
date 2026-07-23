@@ -8,10 +8,8 @@
 // swipe dock over the storm. Light + dark via the theme tokens.
 import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, Pressable, StyleSheet, ScrollView, Share, Platform, useWindowDimensions,
+  View, Text, StyleSheet, ScrollView, Share, useWindowDimensions,
 } from 'react-native';
-import { SymbolView } from 'expo-symbols';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect } from 'expo-router';
@@ -31,18 +29,20 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-import Storm from '@/components/game/storm';
 import { Floaters } from '@/components/home/floaters';
-import { Arrive } from '@/components/arrive';
 import { CountdownDock } from '@/components/home/countdown-dock';
+import { HeroWord, twistLabel } from '@/components/home/hero-word';
+import { StandingsSection } from '@/components/home/standings-section';
+import { SheetWeather } from '@/components/home/sheet-weather';
+import {
+  OPEN_SPRING, PARK_SPRING, DOCK_H, ASSIST_RISE, BOOT_MS, bootWindow,
+} from '@/components/home/home-motion';
 import { playMetrics } from '@/components/home/trace-play';
 import { AppBar } from '@/components/home/app-bar';
 import { DateHeader } from '@/components/home/date-header';
-import { FloatingPodium } from '@/components/home/floating-podium';
 import { SuperlativesPager } from '@/components/home/superlatives-pager';
 import { PlaySheet, type PlaySheetHandle } from '@/components/play-sheet';
-import { ARCHETYPE_LABEL } from '@/components/game/result-view';
-import { PALETTE, INK, tileColorFor, gameSurface } from '@/game/palette';
+import { gameSurface } from '@/game/palette';
 import { useTheme } from '@/game/theme';
 import { dealDaily, getDevDay } from '@/game/daily';
 import { getDiagnostics } from '@/game/dev-flags';
@@ -51,107 +51,10 @@ import { standingsStub, rankFor, type LbEntry } from '@/game/standings';
 import { fetchDaily, readCachedField, type RemoteField } from '@/net/standings-remote';
 import { loadStats, streakDays } from '@/game/stats';
 import { buildShareText } from '@/game/share';
-import { StandingsList, type StandingRow } from '@/components/home/standings-list';
+import { type StandingRow } from '@/components/home/standings-list';
 import { getPlayerName } from '@/game/player';
 import { useDayKey } from '@/game/use-day-key';
 import { haptic } from '@/game/haptics';
-
-// MOTION (owner: "as smooth as humanly possible"):
-// · OPEN spring: lively, finishes crisp — the game arriving
-// · PARK spring: overdamped — the sheet settles onto the peek with zero
-//   bounce (a bounce there fights the face crossfade and reads as jitter)
-// · every release INHERITS the finger's velocity — the spring continues the
-//   throw instead of restarting from rest (the dead-hand-off fix)
-const OPEN_SPRING = { mass: 0.7, damping: 29, stiffness: 270 }; // overdamped —
-// the open lands DEAD FLAT (owner: no bounce), snap comes from stiffness
-// park lands FLAT and ENDS CRISP (owner: the overdamped tail crawled its
-// last pixels for ~a second) — rest thresholds cut the asymptote
-const PARK_SPRING = {
-  mass: 0.85,
-  damping: 30,
-  stiffness: 250,
-  restDisplacementThreshold: 0.4,
-  restSpeedThreshold: 4,
-};
-
-const twistLabel = (a: string) => ARCHETYPE_LABEL[a] ?? null;
-
-// THE REVEAL FLIP (owner: 'the wordle character reversal') — each answer
-// tile flips over on arrival, staggered down the word: mono back → candy
-// face at the halfway point, exactly the Wordle reveal grammar in sworbl
-// candy. Shared values only.
-function FlipTile({ ch, i, w, h, r, palBg, palEdge, monoBg, monoEdge }: {
-  ch: string; i: number; w: number; h: number; r: number;
-  palBg: string; palEdge: string; monoBg: string; monoEdge: string;
-}) {
-  const p = useSharedValue(0);
-  useEffect(() => {
-    p.value = withDelay(200 + i * 160, withTiming(1, { duration: 420, easing: Easing.inOut(Easing.quad) }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const pose = useAnimatedStyle(() => {
-    const deg = interpolate(p.value, [0, 1], [0, 180]);
-    const flipped = p.value > 0.5;
-    return {
-      transform: [{ perspective: 600 }, { rotateX: `${deg}deg` }],
-      backgroundColor: flipped ? palBg : monoBg,
-      boxShadow: `inset 0 -5px 0 ${flipped ? palEdge : monoEdge}, 0 2px 3px rgba(0,0,0,0.3)`,
-    };
-  });
-  const inkPose = useAnimatedStyle(() => ({
-    opacity: p.value > 0.5 ? 1 : 0,
-    // the face is mid-flip mirrored — counter-rotate the letter upright
-    transform: [{ rotateX: p.value > 0.5 ? '180deg' : '0deg' }],
-  }));
-  return (
-    <Animated.View
-      style={[
-        { width: w, height: h, borderRadius: r, alignItems: 'center', justifyContent: 'center' },
-        pose,
-      ]}>
-      <Animated.Text
-        style={[
-          { fontFamily: 'Fredoka_600SemiBold', color: INK, includeFontPadding: false, fontSize: Math.round(w * 0.57) },
-          inkPose,
-        ]}>
-        {ch.toUpperCase()}
-      </Animated.Text>
-    </Animated.View>
-  );
-}
-
-
-
-// BOOT v4 — the PRO idiom (owner: "how do pro apps usually load in"):
-// they DON'T stagger sections. The screen arrives COMPLETE and settles as
-// ONE unit right out of the splash; only the living band blooms a beat
-// behind it. One layer moving once — cheaper to composite, and nothing is
-// ever mid-motion long enough to betray a dropped frame.
-const BOOT_MS = 480;
-
-// cubic ease-out inside a window of the master clock (module-level worklet)
-function bootWindow(m: number, start: number, span: number): number {
-  'worklet';
-  const t = Math.min(1, Math.max(0, (m - start) / span));
-  return 1 - (1 - t) * (1 - t) * (1 - t);
-}
-
-// the six blank hint slots: staggered widths, NO letter-count leak. SMALLER
-// than the hero word blocks in both axes (owner: the placeholders were
-// out-measuring the word of the day — the hierarchy was upside down)
-const HINT_SLOT_W = [40, 36, 44, 38, 36, 42];
-
-// the frosted dock band: taller grab zone; home content scrolls UNDER it to
-// the screen's bottom edge and blurs out; "swipe to play" always rides on top
-const DOCK_H = 106; // sized for the (slightly under board scale) PLAY tiles
-const ASSIST_RISE = 0; // assist rise retired (owner) — constant kept for the fade window math
-
-// (the frost/glass era is over — owner: the pull RIDES THE STORM UP now;
-// no blur ever rides the moving sheet, which is also the cheaper path)
-
-// the COLOR WASH (owner): during the pull the whole emerging sheet IS the
-// six hues — the board's real surface only takes over at the settle
-const WASH_HUES = ['#A78BFA', '#5BC8F5', '#5FD6A8', '#F58FB8', '#F5B84A', '#F58A66'] as const;
 
 export default function HomeScreen() {
   const { width, height } = useWindowDimensions();
@@ -566,41 +469,6 @@ export default function HomeScreen() {
   const faceStyle = useAnimatedStyle(() => ({
     opacity: interpolate(sheetY.value, [closedY - 170, closedY - 50], [0, 1], Extrapolation.CLAMP),
   }));
-  // aurora weather: CALM at rest (dimmed under the frost), IGNITED when the
-  // RIDE THE STORM UP (owner pick): the aurora is glued to the sheet's top
-  // edge, so the pull literally drags the weather up the screen. Travel
-  // SWELLS it (scale from the top edge, blobs spreading over the emerging
-  // surface) and BRIGHTENS it to full burn; near full-open it dissolves and
-  // the board stands alone. All interpolation off sheetY — butter by
-  // construction, and no blur ever rides the moving sheet.
-  const stormRideStyle = useAnimatedStyle(() => {
-    const travel = interpolate(sheetY.value, [0, closedY], [1, 0], Extrapolation.CLAMP);
-    const calm = 0.45 + sGlow.value * 0.55; // parked: muted → armed: ignited
-    const burn = interpolate(travel, [0, 0.3], [calm, 1], Extrapolation.CLAMP);
-    // dissolve EARLIER — the crest hands the screen to the board while the
-    // pull still has momentum (owner: the late overlap smeared)
-    const settle = interpolate(travel, [0.55, 0.8], [1, 0], Extrapolation.CLAMP);
-    return {
-      opacity: bootWindow(sBoot.value, 0.45, 0.55) * burn * settle,
-      transform: [
-        // a crest of light riding the leading edge — brightness carries the
-        // drama; the big stretch smeared hues over the board (owner)
-        { scale: 1 + sGlow.value * 0.06 + travel * 0.35 },
-      ],
-    };
-  }, [closedY]);
-  // the WASH: mid-pull the sheet's whole face is color; it lets go right at
-  // the settle so the real surface arrives as the sheet docks (owner). One
-  // static gradient, opacity-only — compositing-cheap, and the game subtree
-  // underneath stays opaque (no alpha-group tax during the drag).
-  const washStyle = useAnimatedStyle(() => {
-    const travel = interpolate(sheetY.value, [0, closedY], [1, 0], Extrapolation.CLAMP);
-    const build = interpolate(travel, [0.06, 0.32], [0, 1], Extrapolation.CLAMP);
-    // hand the surface back BEFORE the animation ends (owner) — the board's
-    // real colors are already standing when the sheet docks
-    const reveal = interpolate(travel, [0.68, 0.9], [1, 0], Extrapolation.CLAMP);
-    return { opacity: build * reveal };
-  }, [closedY]);
   // the band pair (aurora + PLAY tiles) fades in as ONE at boot
   const bandInStyle = useAnimatedStyle(() => ({
     opacity: bootWindow(sBoot.value, 0.45, 0.55),
@@ -647,13 +515,6 @@ export default function HomeScreen() {
   // (the matched-geometry grabber pill was owner-removed — the ✕ button and
   // the paused-cover tap are the explicit affordances now)
 
-  const wordLen = deal?.sworb.length ?? 5;
-  // 46 was the 300px design-mock cap — real phones earn bigger blocks; the
-  // word of the day is the hero and must dominate everything under it
-  const tileW = Math.min(56, Math.floor((Math.min(width, 480) - 36 - (wordLen - 1) * 8) / wordLen));
-  const tileH = Math.round(tileW * (50 / 46));
-  const tileR = Math.round(tileW * (13 / 46));
-
   return (
     <View style={[styles.root, { backgroundColor: theme.bg }]}>
       <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
@@ -697,63 +558,7 @@ export default function HomeScreen() {
             />
           )}
 
-          {/* word of the day: candy bloom when the day is done, dashed
-              blanks before (the answer is hidden — no spoilers) */}
-          <View style={styles.heroRow}>
-            {played && deal
-              ? [...deal.sworb].map((ch, i) => {
-                  const pal = PALETTE[tileColorFor(ch, i)];
-                  return (
-                    <FlipTile
-                      key={`${deal.dayKey}-${i}`}
-                      ch={ch}
-                      i={i}
-                      w={tileW}
-                      h={tileH}
-                      r={tileR}
-                      palBg={pal.bg}
-                      palEdge={pal.edge}
-                      monoBg={gameSurface(theme.mode).mono.bg}
-                      monoEdge={gameSurface(theme.mode).mono.edge}
-                    />
-                  );
-                })
-              : Array.from({ length: wordLen }, (_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.heroBlock,
-                      {
-                        width: tileW, height: tileH, borderRadius: tileR,
-                        borderWidth: 2, borderStyle: 'dashed', borderColor: theme.dashed,
-                      },
-                    ]}
-                  />
-                ))}
-          </View>
-          {played && !solved && (
-            <Text style={[styles.missLine, { color: theme.sub }]}>
-              not cracked — tomorrow's another sworbl
-            </Text>
-          )}
-          {played && deal?.archetype && twistLabel(deal.archetype) && (
-            <View style={styles.twistPill}>
-              <Text style={styles.twistText}>today's twist: {twistLabel(deal.archetype)}</Text>
-            </View>
-          )}
-
-          {/* pre-play: six BLANK hint slots (no letter counts, no spoilers).
-              post-play the clue intel lives inside the superlatives pager. */}
-          {!played && (
-            <View style={styles.hintRow}>
-              {HINT_SLOT_W.map((w, i) => (
-                <View
-                  key={i}
-                  style={[styles.hintSlot, { width: w, backgroundColor: theme.card }]}
-                />
-              ))}
-            </View>
-          )}
+          <HeroWord theme={theme} deal={deal} played={played} solved={solved} width={width} />
 
           {played && deal && (
             <View style={styles.pagerWrap}>
@@ -767,53 +572,13 @@ export default function HomeScreen() {
             </View>
           )}
 
-          {/* standings section — ONLY the chart button opens the leaderboard
-              (owner: not the whole section, "just that button haha") */}
-          <View style={styles.standingsWrap}>
-            <View style={styles.standingsHead}>
-              <Text style={[styles.standingsTitle, { color: theme.sub }]}>
-                standings
-                {__DEV__ && devSnap.diag ? `  ·  ${entries.length} in field` : ''}
-              </Text>
-              <Pressable
-                onPress={() => router.push('/leaderboard')}
-                hitSlop={10}
-                style={[styles.chartBtn, { backgroundColor: theme.card }]}>
-                {Platform.OS === 'ios' ? (
-                  <SymbolView name={'chart.line.uptrend.xyaxis' as never} size={16} tintColor="#8971FF" />
-                ) : (
-                  <Text style={styles.chartGlyph}>↗</Text>
-                )}
-              </Pressable>
-            </View>
-            <Arrive ready={entries.length > 0} style={styles.arriveWrap}>
-              <FloatingPodium
-                theme={theme}
-                entries={standings.podium}
-                you={null}
-                showTitle={false}
-                showFoot={false}
-              />
-              {standings.podium.length === 0 ? (
-                // TRULY EMPTY field (audit): the ghost podium already says
-                // it — piling dashed rows + a ghost-you underneath tripled
-                // the message and walled the screen in wireframe
-                <Text style={[styles.fieldAwait, { color: theme.faint }]}>
-                  first scores land here today
-                </Text>
-              ) : (
-                <StandingsList
-                  theme={theme}
-                  rows={standings.list}
-                  youOutside={standings.youOutside}
-                  // the dashed seat only when you're truly ABSENT from the field —
-                  // a podium #1 doesn't need a placeholder chair (owner)
-                  ghost={!you && !entries.some((e) => e.isMe)}
-                  emptyRows={entries.length <= 3 && entries.length > 0 ? 3 : 0}
-                />
-              )}
-            </Arrive>
-          </View>
+          <StandingsSection
+            theme={theme}
+            entries={entries}
+            standings={standings}
+            hasYou={!!you || entries.some((e) => e.isMe)}
+            devCount={__DEV__ && devSnap.diag}
+          />
         </ScrollView>
 
       </SafeAreaView>
@@ -844,31 +609,10 @@ export default function HomeScreen() {
                 closeGesture={closeDrag}
               />
             </Animated.View>
-            {/* the COLOR WASH, from the AURORA LINE down (owner): the strip
-                above the glow stays the board's own clear surface; the hues
-                begin where the blur lives and run to the sheet's bottom.
-                The crest is drawn on top of this seam — its blurred body is
-                what melts surface into color. */}
-            <Animated.View
-              pointerEvents="none"
-              style={[styles.washWrap, { top: Math.round(peekH * 0.7) }, washStyle]}>
-              <LinearGradient
-                colors={[...WASH_HUES]}
-                start={{ x: 0.1, y: 0 }}
-                end={{ x: 0.9, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-            </Animated.View>
-            {/* THE STORM, glued to the sheet's top edge — it rides the pull,
-                swelling and burning over the emerging board, then settles */}
-            <Animated.View
-              pointerEvents="none"
-              style={[styles.stormRide, { height: Math.round(peekH * 1.6) }, stormRideStyle]}>
-              {/* 1.6× the band: the canvas's bottom-melt zone hangs BELOW the
-                  screen at park (lip stays full) and dissolves the glow into
-                  the board mid-pull — no hard stop line (owner) */}
-              <Storm width={width} height={Math.round(peekH * 1.6)} zoom={2.2} />
-            </Animated.View>
+            <SheetWeather
+              sheetY={sheetY} sGlow={sGlow} sBoot={sBoot}
+              closedY={closedY} width={width} peekH={peekH}
+            />
             {/* the COLLAPSED FACE: swipe-to-play/countdown */}
             <Animated.View
               pointerEvents="none"
@@ -905,25 +649,6 @@ const styles = StyleSheet.create({
   },
   scrim: {
     backgroundColor: '#000000',
-  },
-  // the wash owns the sheet BELOW the aurora line only — the top strip
-  // stays the board's own surface (owner); anchored to the sheet's bottom
-  washWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  // the storm rides the sheet's TOP edge; scaling from that edge lets the
-  // swell spread DOWN over the emerging board during the pull
-  stormRide: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    transformOrigin: '50% 0%',
   },
   safe: {
     flex: 1,
@@ -980,25 +705,6 @@ const styles = StyleSheet.create({
     color: '#F5B84A',
     opacity: 0.7,
   },
-  heroRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  heroBlock: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroText: {
-    fontFamily: 'Fredoka_600SemiBold',
-    color: INK,
-    includeFontPadding: false,
-  },
-  missLine: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 12.5,
-    marginTop: -6,
-  },
   pagerWrap: {
     alignSelf: 'stretch',
   },
@@ -1027,65 +733,5 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  twistPill: {
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(137,113,255,0.14)',
-    marginTop: -4,
-  },
-  twistText: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 11.5,
-    letterSpacing: 0.6,
-    color: '#8971FF',
-  },
-  hintRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  standingsWrap: {
-    alignSelf: 'stretch',
-    gap: 12,
-  },
-  arriveWrap: {
-    alignSelf: 'stretch',
-    gap: 12, // same rhythm as standingsWrap — the wrapper is invisible
-  },
-  standingsHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  standingsTitle: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 16,
-  },
-  chartBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chartGlyph: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 15,
-    color: '#8971FF',
-  },
-  // solid low-contrast cards (owner audit): the HERO owns the dash idiom —
-  // a second row of dashes read as wireframe, not mystery
-  hintSlot: {
-    height: 33,
-    borderRadius: 11,
-  },
-  fieldAwait: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 12,
-    textAlign: 'center',
-    paddingVertical: 6,
   },
 });
