@@ -76,6 +76,22 @@ export default function LobbyScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // THE VELVET ROPE (owner: "gate joining unless you have credits omg")
+  // — the door price is known BEFORE the swipe: storms cost the tier's
+  // entry, showdowns cost the ante. Short = no swipe, and the sheet
+  // points at the wallet. balance null (offline) never gates — the
+  // server 402 stays the backstop.
+  const doorPrice = joining ? joinStake : creating ? stake : intensity.entry;
+  const broke = balance != null && balance < doorPrice;
+  // a poster who can't cover the default snaps to their biggest
+  // affordable stake — the gate should redirect, not just refuse
+  useEffect(() => {
+    if (!creating || balance == null || balance >= stake) return;
+    const affordable = [...STAKES].reverse().find((s) => s <= balance);
+    if (affordable) setStake(affordable);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [balance]);
+
   const [entering, setEntering] = useState<'idle' | 'busy' | 'poor'>('idle');
   const play = async () => {
     // PAID TIERS charge at the door (owner: "enter some points to get
@@ -273,22 +289,37 @@ export default function LobbyScreen() {
           )}
 
           {/* THE TRACE IS THE BUTTON (owner: on brand) — spell it to go */}
-          {entering === 'poor' && (
+          {broke && (
+            <View style={styles.brokeBlock}>
+              <Text style={[styles.claimNote, { color: '#F58A66' }]}>
+                this door is {doorPrice.toLocaleString()} ✦ — you have {balance!.toLocaleString()}
+                {!joining && !creating ? '. the drizzle is always free' : ''}
+              </Text>
+              <Pressable
+                onPress={() => router.push('/points')}
+                style={[styles.pointsBtn, { backgroundColor: theme.card }]}>
+                <Text style={[styles.pointsBtnText, { color: ACCENT }]}>get points ›</Text>
+              </Pressable>
+            </View>
+          )}
+          {entering === 'poor' && !broke && (
             <Text style={[styles.claimNote, { color: '#F58A66' }]}>
               not enough points for the entry — the drizzle is always free
             </Text>
           )}
           <TraceLaunch
             onCommit={joining ? accept : play}
-            disabled={claiming === 'busy' || claiming === 'taken' || claiming === 'poor' || entering === 'busy' || entering === 'poor'}
+            disabled={broke || claiming === 'busy' || claiming === 'taken' || claiming === 'poor' || entering === 'busy' || entering === 'poor'}
             caption={
-              joining
-                ? claiming === 'busy'
-                  ? 'claiming…'
-                  : 'swipe to accept'
-                : creating
-                  ? 'swipe to play & post'
-                  : 'swipe to play'
+              broke
+                ? 'not enough points'
+                : joining
+                  ? claiming === 'busy'
+                    ? 'claiming…'
+                    : 'swipe to accept'
+                  : creating
+                    ? 'swipe to play & post'
+                    : 'swipe to play'
             }
           />
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.notNow}>
@@ -429,6 +460,20 @@ const styles = StyleSheet.create({
   claimNote: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 12.5,
+    textAlign: 'center',
+  },
+  brokeBlock: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  pointsBtn: {
+    borderRadius: 11, borderCurve: 'continuous',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  pointsBtnText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 13,
   },
   lbBlock: {
     gap: 9,
