@@ -13,10 +13,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArchetypeBadge } from '@/components/home/archetype-badge';
-import { PlayFab } from '@/components/home/play-fab';
+import { HeroCard } from '@/components/home/hero-card';
 import { ShowdownsRail } from '@/components/home/showdowns-rail';
-import { StandingsStrip } from '@/components/home/standings-strip';
 import { StormShelf } from '@/components/home/storm-shelf';
 import { router, useFocusEffect } from 'expo-router';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -37,7 +35,7 @@ import Animated, {
 
 import { Floaters } from '@/components/home/floaters';
 import { CountdownDock } from '@/components/home/countdown-dock';
-import { HeroWord, twistLabel } from '@/components/home/hero-word';
+import { twistLabel } from '@/components/home/hero-word';
 import {
   OPEN_SPRING, PARK_SPRING, DOCK_H, ASSIST_RISE, BOOT_MS, bootWindow,
 } from '@/components/home/home-motion';
@@ -782,38 +780,25 @@ export default function HomeScreen() {
             />
           )}
 
-          {/* THE PLAY DOOR (owner): the entire top section taps into the
-              game; the hero's own guess door nests inside and wins its
-              taps. Status reads CENTERED under the word. */}
-          <Pressable
-            onPress={!played ? openToPlay : undefined}
-            disabled={played}
-            style={styles.playDoor}>
-            <HeroWord
-              theme={theme}
-              deal={deal}
-              played={played || solved}
-              solved={solved}
-              width={width}
-              onGuess={!played && sworbPending && deal ? () => router.push('/guess') : undefined}
-            />
-
-          </Pressable>
-
-
-          {/* the day's contract, between the hints and the board (owner) */}
-          {deal && <ArchetypeBadge theme={theme} archetype={deal.archetype} />}
-
-          {/* CONSOLIDATED (owner): the strip is home's glance; the full
-              floating podium lives on the leaderboard page */}
-          <StandingsStrip
+          {/* THE HERO CARD (owner: "do the A and B compose") — the daily
+              is home's one dominant object; masthead, hero word, badge,
+              standings glance, and the PLAY/GUESS buttons all live ON it */}
+          <HeroCard
             theme={theme}
+            deal={deal}
+            played={played}
+            solved={solved}
+            sworbPending={sworbPending}
+            width={width - 32}
             podium={standings.podium}
             you={
               standings.youRow && standings.youRow.rank > 3
                 ? { rank: standings.youRow.rank, score: standings.youRow.score }
                 : null
             }
+            fieldSize={entries.length}
+            onPlay={openToPlay}
+            onGuess={sworbPending && deal ? () => router.push('/guess') : undefined}
           />
 
           <StormShelf theme={theme} refreshNonce={duelsNonce} />
@@ -888,7 +873,8 @@ export default function HomeScreen() {
           tappable; it fades itself once the sheet rises */}
       {/* the FAB is the DAILY's door (owner): storms + showdowns launch
           from their own lobbies' PLAY — that's the natural flow */}
-      <PlayFab sheetY={sheetY} closedY={closedY} onCommit={openToPlay} enabled={!played && !!deal} />
+      {/* corner FAB RETIRED (owner: hero-card home) — PLAY lives ON the
+          daily card now; the sheet still rises from openToPlay */}
     </View>
   );
 }
@@ -906,10 +892,9 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingTop: 14, // IDENTICAL header position on every screen
-    // the showdowns row must scroll FULLY CLEAR of the corner FAB
-    // (owner, round 2) — the stick's top edge sits ~232 off the bottom
-    paddingBottom: 264,
-    gap: 22,
+    // bottom padding is DYNAMIC (dock height + insets) at the call site;
+    // the FAB-clearance era's 264 retired with the corner stick
+    gap: 14, // card rhythm (hero → storms → showdowns)
     alignItems: 'center',
   },
   // ABSOLUTE fill of the band, not flex-sized (web: RNW maps flex:0 to

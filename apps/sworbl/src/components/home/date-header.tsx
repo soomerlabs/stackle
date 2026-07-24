@@ -1,7 +1,6 @@
 // DATE HEADER — home's instance of the shared ScreenHeader grammar. When
 // the day is complete, the score docks at the title's right edge and IS the
 // share button (owner: "right edge, put the score... we need a way to share").
-import { router } from 'expo-router';
 import React from 'react';
 import { Text, Pressable, StyleSheet, View } from 'react-native';
 import { Icon } from '@/components/icon';
@@ -47,20 +46,8 @@ export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo }: Pr
         ) : undefined
       }
     />
-      {/* THE MASTHEAD (owner: "under the divider under thursday") —
-          brand-font "sworb" + italic "of the day" hangs off the hairline.
-          One row, everything on a shared center line (owner: "all
-          centered vertically" — the header score is the ONLY tally). */}
-      <View style={styles.masthead}>
-        <Text style={[styles.mastheadBrand, { color: theme.ink }]}>sworb</Text>
-        <Text style={[styles.mastheadItalic, { color: theme.sub }]}>of the day</Text>
-        <Pressable
-          onPress={() => router.push('/about-mode?mode=daily')}
-          hitSlop={10}
-          style={[styles.infoDot, { backgroundColor: theme.pill }]}>
-          <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
-        </Pressable>
-      </View>
+      {/* masthead moved ONTO the hero card (owner: hero-card home) —
+          the card is the daily; the header is just the date + score */}
     </View>
   );
 }
@@ -69,35 +56,6 @@ const styles = StyleSheet.create({
   headWrap: {
     alignSelf: 'stretch',
     gap: 10,
-  },
-  masthead: {
-    flexDirection: 'row',
-    alignItems: 'center', // one shared center line (owner) — LEFT aligned
-    gap: 6,
-  },
-  infoDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 6, borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoDotText: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 10,
-  },
-  mastheadBrand: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 16,
-    letterSpacing: 0.3,
-    includeFontPadding: false, // shared center line with the italic + dot
-  },
-  mastheadItalic: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 14,
-    fontStyle: 'italic',
-    letterSpacing: 0.2,
-    includeFontPadding: false,
   },
   scoreRow: {
     flexDirection: 'row',
