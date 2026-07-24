@@ -87,6 +87,15 @@ export default function HomeScreen() {
 
   // ---- day state (re-read on focus AND on sheet close) ----
   const [day, setDay] = useState<DayState | null>(null);
+  // THE ROUND KEY, LAGGED (owner: close was "jank central") — rounds.played
+  // rides the PlaySheet key so the next open deals the fresh round, but the
+  // key-driven remount is the heaviest thing this screen can do (full board
+  // teardown + rebuild, native views + Skia). Syncing it with refreshDay at
+  // +40ms landed the remount INSIDE the park frost fade and the P·L·A·Y
+  // return bloom. The key now syncs ~1.1s after the park lands, when home
+  // is at rest; reopening inside that window just cancels the sync (the
+  // round-end cover shows again — harmless).
+  const [sheetRound, setSheetRound] = useState(() => (deal ? loadDay(deal.dayKey).rounds.played : 0));
   const refreshDay = useCallback(() => {
     if (deal) setDay(loadDay(deal.dayKey));
     if (__DEV__) setDevSnap({ devDay: getDevDay(), nonce: getResetNonce(), diag: getDiagnostics() });
@@ -232,6 +241,13 @@ export default function HomeScreen() {
   const sSquash = useSharedValue(1); // candy squash when the sheet docks at full
   const sDetent = useSharedValue(0); // 1 once the pull crosses the commit line
   const [sheetOpen, setSheetOpen] = useState(bootOpen); // fully open → home drag off, round armed
+  // lagged round-key sync (see sheetRound above) — runs only at rest
+  useEffect(() => {
+    const played = day?.rounds.played ?? 0;
+    if (sheetOpen || played === sheetRound) return;
+    const t = setTimeout(() => setSheetRound(played), 1100);
+    return () => clearTimeout(t);
+  }, [day, sheetOpen, sheetRound]);
   // REVEAL WATCHDOG (owner: "gameboard is super dimmed"): sReveal normally
   // ramps in markOpen, but a sheet that's open by ANY other path — hot
   // reload with the board up, dev restarts — would leave the stretched
@@ -798,7 +814,7 @@ export default function HomeScreen() {
             <Animated.View
               style={[styles.gameLayer, { backgroundColor: gameSurface(theme.mode).bg }, gameStyle]}>
               <PlaySheet
-                key={`${deal.dayKey}:${devSnap.nonce}:${day?.rounds.played ?? 0}`}
+                key={`${deal.dayKey}:${devSnap.nonce}:${sheetRound}`}
                 ref={sheetRef}
                 onClose={closeSheet}
                 active={sheetOpen}

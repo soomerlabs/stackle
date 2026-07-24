@@ -51,9 +51,13 @@ export function BoardAura({ w, h, state, boardBg }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
   // quieter than the handoff's web numbers (owner: "cool vibe... not
-  // distracting"): lower ceiling, shallower swell
+  // distracting"): lower ceiling, shallower swell. CALM IS SILENT (owner:
+  // "the weird light hue") — opacity 0, but the Canvas STAYS MOUNTED: a
+  // Skia teardown mid-close was a hitch on finale/danger closes (no
+  // entering/exiting on persistent UI).
+  const silent = state === 'calm';
   const breath = useAnimatedStyle(() => ({
-    opacity: 0.35 + t.value * 0.25,
+    opacity: silent ? 0 : 0.35 + t.value * 0.25,
     transform: [{ scale: 0.99 + t.value * 0.08 }],
   }));
 
@@ -64,12 +68,6 @@ export function BoardAura({ w, h, state, boardBg }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const ringSpin = useDerivedValue(() => [{ rotate: spin.value * Math.PI * 2 }]);
-
-  // CALM IS SILENT (owner 2026-07-23: "get rid of the weird light hue") —
-  // the ambient blue-violet wash during normal play is gone; the aura only
-  // speaks when it has something to say (danger red, the finale's charge).
-  // After the hooks — the hook count must never change across states.
-  if (state === 'calm') return null;
 
   const pal = AURA[state];
   return (
