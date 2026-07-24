@@ -40,12 +40,13 @@ export default function RoomsScreen() {
   // DEEP LINK (owner: AASA on sworbl.com) — /rooms?code=ABC123 lands on
   // the join face prefilled. NEVER auto-joins: the door charges points,
   // so the swipe stays the consent.
-  const params = useLocalSearchParams<{ code?: string }>();
+  const params = useLocalSearchParams<{ code?: string; make?: string }>();
   const linkedCode =
     typeof params.code === 'string' && /^[A-Za-z0-9]{4,8}$/.test(params.code)
       ? params.code.toUpperCase()
       : null;
-  const [face, setFace] = useState<Face>(linkedCode ? 'join' : 'pick');
+  // the shelf's + cell lands straight on CREATE (owner)
+  const [face, setFace] = useState<Face>(linkedCode ? 'join' : params.make === '1' ? 'create' : 'pick');
   const [myCodes] = useState<string[]>(() => savedRooms());
   // THE INBOX (owner: "add in users and have them be added") — pending
   // offers; accepting pays the door, so it's a tap, never automatic
@@ -222,6 +223,16 @@ export default function RoomsScreen() {
           {face === 'create' && (
             <>
               <Text style={[styles.title, { color: theme.ink }]}>make a room</Text>
+              {/* the ASK (owner: "you ask them if it's public or private")
+                  — private ships; public is the next table to build */}
+              <View style={styles.chipRow}>
+                <View style={[styles.chip, { backgroundColor: ACCENT, boxShadow: `inset 0 -3px 0 ${ACCENT_EDGE}` }]}>
+                  <Text style={[styles.chipText, { color: '#FFFFFF' }]}>🔒 private</Text>
+                </View>
+                <View style={[styles.chip, { backgroundColor: theme.pill, opacity: 0.45 }]}>
+                  <Text style={[styles.chipText, { color: theme.sub }]}>🌐 public · soon</Text>
+                </View>
+              </View>
               <TextInput
                 value={name}
                 onChangeText={setName}

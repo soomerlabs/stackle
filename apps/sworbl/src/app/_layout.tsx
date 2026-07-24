@@ -96,6 +96,9 @@ export default function RootLayout() {
               now? wtf") — full-screen modal slides up like the sheet,
               never a sideways push */}
           <Stack.Screen name="storm" options={{ presentation: 'fullScreenModal' }} />
+          {/* the DAILY BOARD opens like GUESS (owner): native pageSheet,
+              swipe down to dismiss — the run pauses itself on the way out */}
+          <Stack.Screen name="play" options={{ presentation: 'modal' }} />
           <Stack.Screen name="guess" options={{ presentation: 'modal' }} />
           <Stack.Screen name="archetypes" options={{ presentation: 'modal' }} />
           <Stack.Screen

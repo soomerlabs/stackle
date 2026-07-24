@@ -8,6 +8,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 
 import { ArchetypeBadge } from '@/components/home/archetype-badge';
+import { CountdownDock } from '@/components/home/countdown-dock';
 import { HeroWord } from '@/components/home/hero-word';
 import { StandingsStrip } from '@/components/home/standings-strip';
 import { gameSurface } from '@/game/palette';
@@ -62,6 +63,10 @@ export function HeroCard({
       <Pressable onPress={() => router.push('/leaderboard')} hitSlop={4}>
         <StandingsStrip theme={theme} podium={podium} you={you} />
       </Pressable>
+
+      {/* a DONE day: the countdown moves onto the card (the dock's old
+          job — the peek band died with the hand-built sheet) */}
+      {played && <CountdownDock played />}
 
       {/* the buttons live IN the card (owner: no floating corner) */}
       {!played && (

@@ -4,7 +4,7 @@
 // row. No horizontal scrolling anywhere.
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 
 import { dailyStormBoards } from '@/game/storm-seeds';
 import { listPausedRuns, type PausedRun } from '@/game/storm-runs';
@@ -41,8 +41,13 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
         <Text style={[styles.subtitle, { color: theme.faint }]}>pick your weather</Text>
       </View>
 
-      {/* strongest first (owner) — hurricane leads the walk down */}
-      <View style={styles.tierRow}>
+      {/* strongest first (owner) — hurricane leads the walk down. A
+          SCROLLER now (owner: "storms will be created — we'll need to
+          scroll"): fixed square tiles, never squashed */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tierRow}>
         {[...boards].reverse().map((b) => {
           const c = crowns?.[b.seed];
           const run = paused.find((p) => p.seed === b.seed);
@@ -61,13 +66,6 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
               // paused = the BADGE + amber meta, never a hue flood
               // (owner: "all red omg hurricane looks awful")
               style={[styles.tier, { backgroundColor: theme.pill }]}>
-              {/* the mid-run badge (owner: "highlighted with a paused
-                  icon on the top right") */}
-              {run && (
-                <View style={styles.pausedBadge}>
-                  <Text style={styles.pausedBadgeText}>⏸</Text>
-                </View>
-              )}
               {b.intensity.key === 'hurricane' ? (
                 <View style={styles.flag}>
                   <View style={styles.flagCenter} />
@@ -79,7 +77,7 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
                 {tierWord}
               </Text>
               <Text
-                style={[styles.tierMeta, { color: run ? '#F5B84A' : theme.faint }]}
+                style={[styles.tierMeta, { color: run ? ACCENT : theme.faint }]}
                 numberOfLines={1}>
                 {run
                   ? run.score > 0
@@ -94,15 +92,15 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
             </Pressable>
           );
         })}
-      </View>
+        {/* + — make your own board (owner: just the plus, full size);
+            the rooms sheet asks public or private */}
+        <Pressable
+          onPress={() => router.push('/rooms?make=1')}
+          style={[styles.tier, styles.plusTier, { borderColor: theme.dashed }]}>
+          <Text style={[styles.plusMark, { color: theme.faint }]}>+</Text>
+        </Pressable>
+      </ScrollView>
 
-      {/* PRIVATE ROOMS — the card's last door */}
-      <Pressable onPress={() => router.push('/rooms')} style={styles.privateRow} hitSlop={4}>
-        <Text style={styles.privateLock}>🔒</Text>
-        <Text style={[styles.privateText, { color: theme.ink }]}>private rooms</Text>
-        <View style={styles.spring} />
-        <Text style={[styles.privateGo, { color: ACCENT }]}>you set the pot ›</Text>
-      </Pressable>
     </View>
   );
 }
@@ -144,37 +142,20 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   tierRow: {
-    flexDirection: 'row',
-    gap: 8,
+    gap: 9,
+    paddingVertical: 2,
   },
+  // NICE-SIZED SQUARES (owner) — fixed, readable, never squashed
   tier: {
-    flex: 1,
-    borderRadius: 14, borderCurve: 'continuous',
-    alignItems: 'center',
-    paddingVertical: 10,
-    gap: 2,
-    overflow: 'visible',
-  },
-  pausedBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    width: 19,
-    height: 19,
-    borderRadius: 7, borderCurve: 'continuous',
-    backgroundColor: '#F5B84A',
-    boxShadow: 'inset 0 -2px 0 #CE9022',
+    width: 92,
+    height: 92,
+    borderRadius: 16, borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
-  },
-  pausedBadgeText: {
-    fontSize: 9,
-    color: '#1F1442',
-    includeFontPadding: false,
+    gap: 2,
   },
   tierEmoji: {
-    fontSize: 24,
+    fontSize: 26,
     includeFontPadding: false,
   },
   // the maritime warning AS the icon (owner): red square, black center
@@ -198,25 +179,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 12,
   },
+  plusTier: {
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    backgroundColor: 'transparent',
+  },
+  plusMark: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 28,
+    includeFontPadding: false,
+  },
   tierMeta: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 10,
     fontVariant: ['tabular-nums'],
-  },
-  privateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  privateLock: {
-    fontSize: 14,
-  },
-  privateText: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 13.5,
-  },
-  privateGo: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 12,
   },
 });

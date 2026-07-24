@@ -7,7 +7,7 @@
 import { router } from 'expo-router';
 import React, { useState, useEffect, useMemo, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { AppState, StyleSheet, Text, View, Pressable, useWindowDimensions } from 'react-native';
-import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -53,8 +53,9 @@ interface PlaySheetProps {
   // layer — mounting mid-gesture was the pull jank). The round only ARMS
   // (count-in starts) when `active` flips true at sheet-dock.
   active: boolean;
-  // built by HOME (it owns sheetY): finger-following close drag on the top bar
-  closeGesture: React.ComponentProps<typeof GestureDetector>['gesture'];
+  // OPTIONAL now (native-sheet era): the route host has no sheetY to
+  // scrub, so the ✕ and the paused-cover tap are the close affordances
+  closeGesture?: React.ComponentProps<typeof GestureDetector>['gesture'];
 }
 
 export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function PlaySheet(
@@ -500,6 +501,9 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
     phase === 'idle' || phase === 'countin' || phase === 'live' || phase === 'paused' || phase === 'finale';
 
   const fullClose = useMemo(() => {
+    // native-sheet host: no home-owned drag — an inert pan keeps the
+    // detector tree stable (conditional JSX would remount the subtree)
+    if (!closeGesture) return Gesture.Pan().enabled(false);
     const g = closeGesture as PanGesture;
     // yield to the board's trace AND the finale keyboard's glide — a downward
     // stroke on tiles or keys must never slide the sheet away

@@ -90,10 +90,10 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
           </View>
           <View style={styles.rowText}>
             <Text style={[styles.rowName, { color: theme.ink }]}>your showdown</Text>
-            <Text style={[styles.rowStat, { color: '#F5B84A' }]}>⏸ paused mid-run</Text>
+            <Text style={[styles.rowStat, { color: ACCENT }]}>paused mid-run</Text>
           </View>
           <View style={styles.spring} />
-          <Text style={[styles.rowGo, { color: '#F5B84A' }]}>resume ›</Text>
+          <Text style={[styles.rowGo, { color: ACCENT }]}>resume ›</Text>
         </Pressable>
       ))}
 
@@ -118,12 +118,12 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
               <Text style={[styles.rowName, { color: theme.ink }]} numberOfLines={1}>
                 vs {c.posterName.toLowerCase()}
               </Text>
-              <Text style={[styles.rowStat, { color: '#F5B84A' }]} numberOfLines={1}>
+              <Text style={[styles.rowStat, { color: ACCENT }]} numberOfLines={1}>
                 unfinished — your {c.stake} ✦ is on the table
               </Text>
             </View>
             <View style={styles.spring} />
-            <Text style={[styles.rowGo, { color: '#F5B84A' }]}>finish ›</Text>
+            <Text style={[styles.rowGo, { color: ACCENT }]}>finish ›</Text>
           </Pressable>
         );
       })}
