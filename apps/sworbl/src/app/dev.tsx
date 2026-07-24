@@ -19,6 +19,7 @@ import { PALETTE } from '@/game/palette';
 import { dealDaily, getDevDay, setDevDay, authoredDays } from '@/game/daily';
 import { fetchRemoteEntry, loadRemoteEntry } from '@/net/dailies-remote';
 import { getNetLog, clearNetLog } from '@/net/net-log';
+import { supabase } from '@/net/supabase';
 import { loadDay, resetDay, getResetNonce, bumpResetNonce } from '@/game/persist';
 import { isFullDictionary, dict } from '@/game/dict';
 import { getLbFieldMode, setLbFieldMode, type LbFieldMode } from '@/game/standings';
@@ -32,6 +33,26 @@ import { haptic } from '@/game/haptics';
 import { toast } from '@/components/toast';
 
 const LB_MODES: LbFieldMode[] = ['live', 'full', '2', '1', '0'];
+
+// WALLET override (owner: "clear out points") — writes the player's own
+// row directly (same RLS lane as the rename upsert). Dev-only shortcut;
+// the real economy only ever moves through the edge functions.
+async function setWalletTo(v: number, refresh: (m: string) => void) {
+  const sb = supabase();
+  if (!sb) {
+    refresh('offline — no wallet to touch');
+    return;
+  }
+  const uid = (await sb.auth.getSession()).data.session?.user.id;
+  if (!uid) {
+    refresh('no session — open home once first');
+    return;
+  }
+  const { error } = await sb
+    .from('players')
+    .upsert({ id: uid, showdown_points: v }, { onConflict: 'id' });
+  refresh(error ? `wallet: ${error.message}` : `wallet → ${v} ✦`);
+}
 
 // module-state reads during render are INVISIBLE to the React Compiler —
 // it caches the JSX and the row never updates (owner: toggles stuck on
@@ -325,6 +346,22 @@ export default function DevScreen() {
             <Text style={[styles.actionText, { color: flags.stall ? '#FF8A8E' : theme.faint }]}>
               {flags.stall ? 'ON' : 'off'}
             </Text>
+          </Pressable>
+
+          {/* ---- WALLET (owner: "clear out points" — test the velvet
+              rope + the inline offer without going broke honestly) ---- */}
+          <Text style={sectionLabel}>WALLET</Text>
+          <Pressable
+            onPress={() => void setWalletTo(0, refresh)}
+            style={[styles.actionRow, { backgroundColor: theme.card }]}>
+            <Text style={[styles.actionText, { color: theme.ink }]}>drain points → 0</Text>
+            <Text style={[styles.actionText, { color: '#FF8A8E' }]}>broke test</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void setWalletTo(100, refresh)}
+            style={[styles.actionRow, { backgroundColor: theme.card }]}>
+            <Text style={[styles.actionText, { color: theme.ink }]}>refill points → 100</Text>
+            <Text style={[styles.actionText, { color: theme.faint }]}>fresh start</Text>
           </Pressable>
 
           {/* ---- NETWORK (owner: a log of the supabase calls) ---- */}

@@ -155,17 +155,20 @@ export default function LobbyScreen() {
       <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
       <SafeAreaView style={styles.safe} edges={['bottom']}>
         <View style={styles.content}>
-          {/* tier identity — the flag IS the hurricane */}
+          {/* tier identity — the flag IS the hurricane. Showdown faces
+              drop the weather chip (owner: "get rid of the far emoji") —
+              the matchup avatars are the identity there. */}
           <View style={styles.tierRow}>
-            {intensity.key === 'hurricane' ? (
-              <View style={[styles.tierChip, styles.flagChip]}>
-                <View style={styles.flagCenter} />
-              </View>
-            ) : (
-              <View style={styles.tierChip}>
-                <Text style={styles.tierWeather}>{intensity.emoji}</Text>
-              </View>
-            )}
+            {!(creating || joining) &&
+              (intensity.key === 'hurricane' ? (
+                <View style={[styles.tierChip, styles.flagChip]}>
+                  <View style={styles.flagCenter} />
+                </View>
+              ) : (
+                <View style={styles.tierChip}>
+                  <Text style={styles.tierWeather}>{intensity.emoji}</Text>
+                </View>
+              ))}
             <View>
               <Text style={[styles.tierName, { color: theme.ink }]}>
                 {joining ? 'showdown' : creating ? 'showdown' : stormName(seed)}
