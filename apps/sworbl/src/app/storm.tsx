@@ -307,13 +307,13 @@ export default function StormScreen() {
             <Text style={[styles.title, { color: theme.ink }]}>{stormName(seed)}</Text>
             <Text style={[styles.sub, { color: theme.sub }]}>
               {claimLost
-                ? 'someone took this showdown first — the board is still yours to run.'
+                ? 'someone took this showdown first — the board is still open to play.'
                 : duel
                   ? `${duel.name.toLowerCase()} put up ${duel.score.toLocaleString()} on this board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — beat it.`
-                  : `everyone gets this exact board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — best run counts.`}
+                  : `everyone gets this exact board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — best score counts.`}
             </Text>
             <Pressable onPress={startRun} style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }]}>
-              <Text style={[styles.ctaText, { color: '#FFFFFF' }]}>RUN IT</Text>
+              <Text style={[styles.ctaText, { color: '#FFFFFF' }]}>PLAY</Text>
             </Pressable>
           </View>
         )}
@@ -321,7 +321,7 @@ export default function StormScreen() {
         {phase === 'done' && (
           <View style={styles.cover}>
             <Text style={[styles.eyebrow, { color: theme.faint }]}>
-              {duel ? (score > duel.score ? 'SHOWDOWN WON ✦' : 'SHOWDOWN LOST') : 'RUN BANKED'}
+              {duel ? (score > duel.score ? 'SHOWDOWN WON ✦' : 'SHOWDOWN LOST') : 'YOUR SCORE'}
             </Text>
             <Text style={[styles.bigScore, { color: theme.ink }]}>{score}</Text>
             {duel && (
@@ -337,10 +337,10 @@ export default function StormScreen() {
               </Text>
             )}
             <Text style={[styles.sub, { color: theme.sub }]}>
-              {wordsRef.current.length} words · score sent — best run counts
+              {wordsRef.current.length} words · best score counts
             </Text>
             {board != null && board.length === 0 && (
-              <Text style={[styles.sub, { color: theme.faint }]}>first run on this board ✦</Text>
+              <Text style={[styles.sub, { color: theme.faint }]}>no one else yet — you set the bar ✦</Text>
             )}
             {board != null && board.length > 0 && (
               <View style={styles.lbBox}>
@@ -358,7 +358,7 @@ export default function StormScreen() {
               </View>
             )}
             <Pressable onPress={runAgain} style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }]}>
-              <Text style={[styles.ctaText, { color: '#FFFFFF' }]}>RUN IT AGAIN</Text>
+              <Text style={[styles.ctaText, { color: '#FFFFFF' }]}>PLAY AGAIN</Text>
             </Pressable>
             <Pressable
               onPress={postAsDuel}
@@ -378,7 +378,7 @@ export default function StormScreen() {
             <Pressable
               onPress={() =>
                 Share.share({
-                  message: `sworbl storm ⛈ ${stormName(seed)} — ${score} pts in the ${intensity.label}. same board, every player. beat my run: sworbl://storm?seed=${seed}`,
+                  message: `sworbl storm ⛈ ${stormName(seed)} — ${score} pts in the ${intensity.label}. same board, every player. beat my score: sworbl://storm?seed=${seed}`,
                 }).catch(() => {})
               }
               style={[styles.cta, styles.ctaCard, { backgroundColor: theme.card }]}>

@@ -67,7 +67,7 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
               <Text style={[styles.meta, { color: c?.mine != null ? theme.faint : ACCENT }]}>
                 {mins}:{String(secs).padStart(2, '0')}
                 {b.intensity.key === 'hurricane' ? ' · no mercy' : ''}
-                {c?.mine != null ? ` · best ${c.mine.toLocaleString()}` : ' · run it ›'}
+                {c?.mine != null ? ` · best ${c.mine.toLocaleString()}` : ' · play ›'}
               </Text>
             </Pressable>
           );

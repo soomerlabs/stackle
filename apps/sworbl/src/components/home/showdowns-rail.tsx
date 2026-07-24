@@ -38,7 +38,7 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
             <Text style={styles.startPlusGlyph}>+</Text>
           </View>
           <Text style={styles.startLabel}>start{'\n'}one</Text>
-          <Text style={styles.startMeta}>run · post · wait</Text>
+          <Text style={styles.startMeta}>play · post your score</Text>
         </Pressable>
 
         {duels.map((d) => {
