@@ -15,6 +15,7 @@ import { PALETTE, tileColorFor } from '@/game/palette';
 import { getPlayerName } from '@/game/player';
 import { stormIntensity, stormName } from '@/game/storm-seeds';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
+import { TraceLaunch } from '@/components/trace-launch';
 import { claimShowdown, fetchMyShowdownPoints } from '@/net/duels';
 import { fetchPractice } from '@/net/standings-remote';
 
@@ -187,25 +188,20 @@ export default function LobbyScreen() {
             </View>
           )}
 
-          {/* the ONE button */}
-          <Pressable
-            onPress={joining ? accept : play}
+          {/* THE TRACE IS THE BUTTON (owner: on brand) — spell it to go */}
+          <TraceLaunch
+            onCommit={joining ? accept : play}
             disabled={claiming === 'busy' || claiming === 'taken' || claiming === 'poor'}
-            style={[
-              styles.cta,
-              { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` },
-              (claiming === 'busy' || claiming === 'taken') && { opacity: 0.55 },
-            ]}>
-            <Text style={styles.ctaText}>
-              {joining
+            caption={
+              joining
                 ? claiming === 'busy'
-                  ? 'CLAIMING…'
-                  : 'ACCEPT & PLAY'
+                  ? 'claiming…'
+                  : 'trace to accept'
                 : creating
-                  ? 'PLAY & POST'
-                  : 'PLAY'}
-            </Text>
-          </Pressable>
+                  ? 'trace to play & post'
+                  : 'trace to play'
+            }
+          />
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.notNow}>
             <Text style={[styles.notNowText, { color: theme.faint }]}>not now</Text>
           </Pressable>
