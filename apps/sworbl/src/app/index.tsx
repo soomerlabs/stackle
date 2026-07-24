@@ -354,6 +354,8 @@ export default function HomeScreen() {
                 ? { rank: standings.youRow.rank, score: standings.youRow.score }
                 : null
             }
+            guessesUsed={day?.sworb?.guessesUsed ?? 0}
+            roundsPlayed={day?.rounds.played ?? 0}
             onPlay={openToPlay}
             onGuess={sworbPending && deal ? () => router.push('/guess') : undefined}
           />

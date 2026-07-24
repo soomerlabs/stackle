@@ -18,18 +18,18 @@ interface Props {
 export function AppBar({ theme, onPerson, onSettings, points, onPoints }: Props) {
   return (
     <View style={styles.bar}>
-      <Pressable onPress={onPerson} hitSlop={8} style={styles.side}>
+      <Pressable onPress={onPerson} hitSlop={8} style={styles.side} accessibilityRole="button" accessibilityLabel="profile">
         <Icon name="person" size={23} color={theme.icon} />
       </Pressable>
       <Brand ink={theme.ink} />
       {points != null && (
         <View pointerEvents="box-none" style={styles.pointsSlot}>
-          <Pressable onPress={onPoints ?? onPerson} hitSlop={8} style={[styles.pointsChip, { backgroundColor: theme.pill }]}>
+          <Pressable onPress={onPoints ?? onPerson} hitSlop={8} style={[styles.pointsChip, { backgroundColor: theme.pill }]} accessibilityRole="button" accessibilityLabel={`points balance ${points ?? 0}, open wallet`}>
             <Text style={[styles.pointsText, { color: theme.ink }]}>✦ {points.toLocaleString()}</Text>
           </Pressable>
         </View>
       )}
-      <Pressable onPress={onSettings} hitSlop={8} style={[styles.side, styles.right]}>
+      <Pressable onPress={onSettings} hitSlop={8} style={[styles.side, styles.right]} accessibilityRole="button" accessibilityLabel="settings">
         <Icon name="settings" size={23} color={theme.icon} />
       </Pressable>
     </View>

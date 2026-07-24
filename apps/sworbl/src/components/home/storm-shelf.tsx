@@ -36,6 +36,8 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
         <Pressable
           onPress={() => router.push('/about-mode?mode=storms')}
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="about storms"
           style={[styles.infoDot, { backgroundColor: theme.pill }]}>
           <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
         </Pressable>

@@ -263,12 +263,13 @@ export async function claimShowdown(id: number): Promise<'ok' | 'taken' | 'poor'
 // retry carrying the same ref can never double-charge.
 export async function spendPoints(
   action: 'hint' | 'storm-squall' | 'storm-thunder' | 'storm-hurricane',
-  ref?: string
+  ref?: string,
+  seed?: string // storm doors: the receipt names its board (entitlement)
 ): Promise<{ balance: number } | 'poor' | 'error'> {
   const sb = supabase();
   if (!sb) return 'error';
   try {
-    const { data, error } = await sb.functions.invoke('spend-points', { body: { action, ref } });
+    const { data, error } = await sb.functions.invoke('spend-points', { body: { action, ref, seed } });
     if (data?.ok) return { balance: Number(data.balance) };
     const status = (error as { context?: { status?: number } } | null)?.context?.status;
     return status === 402 ? 'poor' : 'error';

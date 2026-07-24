@@ -119,7 +119,12 @@ export function recordSworb(dayKey: string, sworb: SworbState): number {
 
 // live progress — cheap synchronous writes on change (MMKV/localStorage both sync)
 export function saveProgress(dayKey: string, score: number, found: string[]): void {
-  engine.store.set(K.DAILY_PREFIX + dayKey, score);
+  // the day-key score is the DERIVED day score (bestRound + bonus); a
+  // live round's running score may only ever RAISE it (kill-safety for
+  // a record round). Audit H1: the sheet's mount-save wrote round 2's
+  // fresh 0 over a banked 500 and home's headline number vanished.
+  const stored = engine.store.getInt(K.DAILY_PREFIX + dayKey, 0);
+  engine.store.set(K.DAILY_PREFIX + dayKey, Math.max(stored, score));
   engine.store.setJSON(K.FOUND_PREFIX + dayKey, found);
 }
 

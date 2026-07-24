@@ -143,7 +143,7 @@ export function HeroWord({ theme, deal, played, solved, width, onGuess }: Props)
       </Pressable>
       {played && !solved && (
         <Text style={[styles.missLine, { color: theme.sub }]}>
-          not cracked — tomorrow's another sworbl
+          not cracked — tomorrow's another sworb
         </Text>
       )}
       {/* pre-play: six BLANK hint slots (no letter counts, no spoilers).

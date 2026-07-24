@@ -69,6 +69,10 @@ Deno.serve(async (req) => {
     if (typeof body.seed !== "string" || !/^[a-z0-9-]{3,24}$/.test(body.seed))
       return bad("bad seed");
   } else if (typeof day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return bad("bad day");
+  // the outbox may deliver YESTERDAY late (offline) — but never tomorrow
+  // (audit M2: future-day submissions pre-seeded future standings)
+  const maxDay = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  if (day > maxDay) return bad("that day hasn't happened yet");
   if (typeof score !== "number" || !Number.isInteger(score) || score < 0 || score >= 100000)
     return bad("bad score");
   if (typeof solved !== "boolean") return bad("bad solved");
@@ -113,6 +117,30 @@ Deno.serve(async (req) => {
     new Response(JSON.stringify(o), { headers: { "Content-Type": "application/json" } });
 
   if (mode === "practice") {
+    // THE DOOR IS REAL NOW (audit C3): paid-tier boards (slot b/c/d)
+    // demand an entry receipt — share links, deep links, and replay
+    // paths all pass through here, so the honor system retires.
+    const slotMatch = body.seed!.match(/^s-\d{8}-([bcd])$/);
+    if (slotMatch) {
+      const tier = { b: "squall", c: "thunder", d: "hurricane" }[slotMatch[1] as "b" | "c" | "d"];
+      const today = new Date().toISOString().slice(0, 10);
+      const [receipt, legacy, taken] = await Promise.all([
+        admin.from("point_events").select("id")
+          .eq("player_id", user.id).eq("reason", `storm-${tier} ${body.seed}`).limit(1),
+        // pre-seed-receipt entries (same-day) stay honored
+        admin.from("point_events").select("id, created_at")
+          .eq("player_id", user.id).eq("reason", `storm-${tier}`)
+          .gte("created_at", `${today}T00:00:00Z`).limit(1),
+        // showdown TAKERS paid an ante, not a door — the claim is the ticket
+        admin.from("open_duels").select("id")
+          .eq("taker", user.id).eq("seed", body.seed!).limit(1),
+      ]);
+      const entitled =
+        (receipt.data?.length ?? 0) > 0 ||
+        (legacy.data?.length ?? 0) > 0 ||
+        (taken.data?.length ?? 0) > 0;
+      if (!entitled) return bad("no entry for this board", 402);
+    }
     const { data: prior } = await admin
       .from("practice_scores")
       .select("score")

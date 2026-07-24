@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
   const user = userData?.user;
   if (!user) return bad("not signed in", 401);
 
-  let body: { action?: string; ref?: string };
+  let body: { action?: string; ref?: string; seed?: string };
   try {
     body = await req.json();
   } catch {
@@ -40,6 +40,14 @@ Deno.serve(async (req) => {
   }
   const price = PRICES[body.action ?? ""];
   if (price === undefined) return bad("bad action");
+  // STORM DOORS carry their board (audit C3): the receipt names the seed,
+  // and submit-score demands a matching receipt before a paid board scores
+  const seed = typeof body.seed === "string" && /^[a-z0-9-]{3,24}$/.test(body.seed)
+    ? body.seed
+    : null;
+  const reason = body.action!.startsWith("storm-") && seed
+    ? `${body.action} ${seed}`
+    : body.action;
   const ref = typeof body.ref === "string" && body.ref.length <= 64 ? body.ref : null;
 
   const admin = createClient(
@@ -53,6 +61,7 @@ Deno.serve(async (req) => {
     const { data: seen } = await admin
       .from("point_events")
       .select("id")
+      .eq("player_id", user.id)
       .eq("ref", ref)
       .maybeSingle();
     if (seen) {
@@ -79,7 +88,7 @@ Deno.serve(async (req) => {
   if (error) return bad(error.message, 500);
   const { error: evErr } = await admin
     .from("point_events")
-    .insert({ player_id: user.id, delta: -price, reason: body.action, ref });
+    .insert({ player_id: user.id, delta: -price, reason, ref });
   // no receipt, no charge (audit M1): a failed ledger insert refunds -
   // otherwise a retry with the same ref finds nothing and charges again
   if (evErr && (evErr as { code?: string }).code !== "23505") {

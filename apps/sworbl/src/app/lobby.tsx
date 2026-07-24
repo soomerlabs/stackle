@@ -11,6 +11,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { toast } from '@/components/toast';
+import { haptic } from '@/game/haptics';
 import { track } from '@/net/analytics';
 
 import { PALETTE, tileColorFor } from '@/game/palette';
@@ -127,7 +129,12 @@ export default function LobbyScreen() {
     setBuyingPack(null);
     // the paywall experiment's core datum: WHO taps buy AT THE DOOR
     track('pack_tap', { pack: key, source: 'door', door: doorPrice, ok: r !== 'error' });
-    if (r !== 'error') setBalance(r.balance);
+    if (r !== 'error') {
+      setBalance(r.balance);
+      // the purchase gets its BEAT (audit: the block just vanished)
+      haptic.good();
+      toast(`+${POINT_PACKS.find((p) => p.key === key)?.points ?? 0} ✦ — the door's open`, { pal: 2 });
+    }
   };
 
   const [entering, setEntering] = useState<'idle' | 'busy' | 'poor' | 'error'>('idle');
@@ -144,7 +151,8 @@ export default function LobbyScreen() {
       for (let attempt = 0; attempt < 3; attempt++) {
         r = await spendPoints(
           `storm-${intensity.key}` as 'storm-squall',
-          `${entryRef.current}-${activeSeed}`
+          `${entryRef.current}-${activeSeed}`,
+          activeSeed // the receipt names the board — the door is enforced
         );
         if (r !== 'error') break;
         await new Promise((res) => setTimeout(res, 500 * (attempt + 1)));
@@ -397,7 +405,7 @@ export default function LobbyScreen() {
                                 : { backgroundColor: theme.pill },
                             ]}>
                             <Text style={[styles.handChipText, { color: sealed === v ? '#FFFFFF' : theme.sub }]}>
-                              {v ? '🂠 sealed' : 'open'}
+                              {v ? 'sealed' : 'open'}
                             </Text>
                           </Pressable>
                         ))}
@@ -439,9 +447,14 @@ export default function LobbyScreen() {
                   )}
                 </>
               )}
-              {/* THE STAKES (owner: points on the line) */}
+{/* THE STAKES — the TRUE total, composed (audit: the door and
+                  the ante were shown in two places, never added up) */}
               <Text style={[styles.stakeLine, { color: theme.faint }]}>
-                {`ante ${(joining ? joinStake : stake).toLocaleString()} ✦ · winner takes ${((joining ? joinStake : stake) * 2).toLocaleString()}`}
+                {joining
+                  ? `ante ${joinStake.toLocaleString()} ✦ · winner takes ${(joinStake * 2).toLocaleString()}`
+                  : intensity.entry > 0
+                    ? `ante ${stakeVal} + door ${intensity.entry} = ${(stakeVal + intensity.entry).toLocaleString()} ✦ · winner takes ${(stakeVal * 2).toLocaleString()}`
+                    : `ante ${stakeVal.toLocaleString()} ✦ · winner takes ${(stakeVal * 2).toLocaleString()}`}
                 {balance != null ? ` · you have ${balance.toLocaleString()}` : ''}
               </Text>
               {claiming === 'poor' && (
@@ -551,7 +564,7 @@ export default function LobbyScreen() {
           )}
           {entering === 'error' && (
             <Text style={[styles.claimNote, { color: '#F58A66' }]}>
-              the door didn&rsquo;t answer — swipe again (a retry never double-charges)
+              the door didn&rsquo;t answer — tap again, it never charges twice
             </Text>
           )}
           {/* one honest button (owner: "i'm over the PLAY mechanic —

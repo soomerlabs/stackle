@@ -49,6 +49,8 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
         <Pressable
           onPress={() => router.push('/about-mode?mode=showdowns')}
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="about showdowns"
           style={[styles.infoDot, { backgroundColor: theme.pill }]}>
           <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
         </Pressable>
@@ -152,7 +154,7 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
                 {d.forMe
                   ? '⚔️ calls YOU out'
                   : d.sealed
-                    ? '🂠 score sealed'
+                    ? 'score sealed'
                     : `⚑ beat ${d.score.toLocaleString()}`}
               </Text>
             </View>
@@ -170,7 +172,7 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
           </View>
           <View style={styles.rowText}>
             <Text style={[styles.rowName, { color: theme.ink }]}>
-              your post · {d.sealed ? '🂠 sealed' : `${d.score.toLocaleString()} pts`} · {d.stake} ✦
+              your post · {d.sealed ? 'sealed' : `${d.score.toLocaleString()} pts`} · {d.stake} ✦
             </Text>
             <View style={styles.waitRow}>
               <View style={[styles.waitDot, { backgroundColor: ACCENT }]} />

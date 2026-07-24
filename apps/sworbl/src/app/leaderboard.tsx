@@ -144,7 +144,7 @@ export default function LeaderboardScreen() {
   const share = () => {
     const line =
       played && myRank
-        ? `sworbl — #${myRank} ${page === 0 ? 'today' : 'all-time'} with ${myScore.toLocaleString()} ✦`
+        ? `sworbl — #${myRank} ${page === 0 ? 'today' : 'all-time'} with ${myScore.toLocaleString()} pts`
         : 'sworbl — the daily word storm ✦';
     Share.share({ message: line }).catch(() => {});
   };

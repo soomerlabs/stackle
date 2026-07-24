@@ -5,7 +5,7 @@
 //   · LB FIELD: full/2/1/0 stub-field knob (web lbFieldDbg)
 //   · ACTIONS: restart day, wipe all (two-tap arm, never an Alert)
 // __DEV__ builds only (settings hides the entry otherwise).
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -92,6 +92,10 @@ function readFlags() {
 }
 
 export default function DevScreen() {
+  // audit H2: the route itself shipped in release bundles (deep-linkable)
+  // — only the settings ENTRY was gated. A prod build bounces home.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  if (!__DEV__) return <Redirect href="/" />;
   const theme = useTheme();
   const [stamp, setStamp] = useState(0); // bump → re-derive everything
   const [armWipe, setArmWipe] = useState(false);

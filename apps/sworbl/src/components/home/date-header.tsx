@@ -35,12 +35,12 @@ export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo }: Pr
           // TITLE-SIZED score + the icon says it all (owner)
           <View style={styles.scoreRow}>
             <Text style={[styles.score, { color: theme.ink }]}>{score.toLocaleString()}</Text>
-            <Pressable onPress={onShare} hitSlop={12} style={[styles.shareBtn, { backgroundColor: theme.pill }]}>
+            <Pressable onPress={onShare} hitSlop={12} style={[styles.shareBtn, { backgroundColor: theme.pill }]} accessibilityRole="button" accessibilityLabel="share today\u2019s result">
               <Icon name="share" size={15} color={ACCENT} />
             </Pressable>
           </View>
         ) : onInfo ? (
-          <Pressable onPress={onInfo} hitSlop={12} style={[styles.infoChip, { backgroundColor: theme.card }]}>
+          <Pressable onPress={onInfo} hitSlop={12} style={[styles.infoChip, { backgroundColor: theme.card }]} accessibilityRole="button" accessibilityLabel="how to play">
             <Icon name="info" size={14} color={ACCENT} />
           </Pressable>
         ) : undefined

@@ -23,12 +23,14 @@ interface Props {
   width: number; // the card's INNER width (home hands it down)
   podium: React.ComponentProps<typeof StandingsStrip>['podium'];
   you: React.ComponentProps<typeof StandingsStrip>['you'];
+  guessesUsed: number; // the day's scarcest resource, finally metered
+  roundsPlayed: number; // 0 rounds = the word tap goes to PLAY, not GUESS
   onPlay: () => void;
   onGuess?: () => void;
 }
 
 export function HeroCard({
-  theme, deal, played, solved, sworbPending, width, podium, you, onPlay, onGuess,
+  theme, deal, played, solved, sworbPending, width, podium, you, guessesUsed, roundsPlayed, onPlay, onGuess,
 }: Props) {
   return (
     <View style={[styles.card, { backgroundColor: theme.card }]}>
@@ -39,6 +41,8 @@ export function HeroCard({
         <Pressable
           onPress={() => router.push('/about-mode?mode=daily')}
           hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel="about the daily sworb"
           style={[styles.infoDot, { backgroundColor: theme.pill }]}>
           <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
         </Pressable>
@@ -46,7 +50,10 @@ export function HeroCard({
         {deal && <ArchetypeBadge theme={theme} archetype={deal.archetype} />}
       </View>
 
-      {/* the word — tap anywhere to play; the guess door nests inside */}
+      {/* the word — tap anywhere to play; the guess door nests inside.
+          AUDIT (guess trap): before the FIRST round the word tap goes to
+          PLAY too — the most inviting object must not spend the scarcest
+          resource on an untaught tap */}
       <Pressable onPress={!played ? onPlay : undefined} disabled={played}>
         <HeroWord
           theme={theme}
@@ -54,13 +61,38 @@ export function HeroCard({
           played={played || solved}
           solved={solved}
           width={width}
-          onGuess={onGuess}
+          onGuess={roundsPlayed > 0 ? onGuess : undefined}
         />
       </Pressable>
 
+      {/* THE GUESS METER (audit: "no visible meter, hair trigger") —
+          six pips; spent ones fill. Only while the guess is live. */}
+      {!played && sworbPending && roundsPlayed > 0 && (
+        <View style={styles.meterRow}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.meterPip,
+                i < guessesUsed
+                  ? { backgroundColor: ACCENT }
+                  : { backgroundColor: theme.pill },
+              ]}
+            />
+          ))}
+          <Text style={[styles.meterText, { color: theme.faint }]}>
+            {6 - guessesUsed} {6 - guessesUsed === 1 ? 'guess' : 'guesses'} left
+          </Text>
+        </View>
+      )}
+
       {/* one glance of the field, ON the card — the strip IS the door
           to the full board (owner: no separate leaderboard button) */}
-      <Pressable onPress={() => router.push('/leaderboard')} hitSlop={4}>
+      <Pressable
+        onPress={() => router.push('/leaderboard')}
+        hitSlop={4}
+        accessibilityRole="button"
+        accessibilityLabel="open the leaderboard">
         <StandingsStrip theme={theme} podium={podium} you={you} />
       </Pressable>
 
@@ -135,6 +167,22 @@ const styles = StyleSheet.create({
   infoDotText: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 10,
+  },
+  meterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  meterPip: {
+    width: 7,
+    height: 7,
+    borderRadius: 2.5, borderCurve: 'continuous',
+  },
+  meterText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 11.5,
+    marginLeft: 5,
   },
   btnRow: {
     flexDirection: 'row',

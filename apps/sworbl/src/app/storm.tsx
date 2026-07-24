@@ -415,7 +415,11 @@ export default function StormScreen() {
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
           {/* the modal RISES, so it CLOSES (owner: × not ‹) */}
-          <Pressable onPress={leave} hitSlop={12}>
+          <Pressable
+            onPress={leave}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="close the board (a live run pauses)">
             <Icon name="close" size={22} color={theme.icon} />
           </Pressable>
         </View>
@@ -536,6 +540,17 @@ export default function StormScreen() {
             </Text>
             <Text style={[styles.bigScore, { color: theme.ink }]}>{score.toLocaleString()}</Text>
             <Text
+              // a stuck sealed verdict is TAPPABLE (audit: one missed
+              // 2.5s recheck could hang the settle forever)
+              onPress={
+                duel?.sealed && !verdict && Number.isFinite(duelId)
+                  ? () => {
+                      void resolveShowdown(duelId).then((v) => {
+                        if (typeof v === 'object') setVerdict(v);
+                      });
+                    }
+                  : undefined
+              }
               style={[
                 styles.sub,
                 {
@@ -555,7 +570,7 @@ export default function StormScreen() {
                   ? duel.sealed
                     ? verdict
                       ? `the seal breaks — ${duel.name.toLowerCase()} had ${verdict.theirScore.toLocaleString()}${verdict.won ? ` · pot ${verdict.pot} ✦` : ''}`
-                      : 'their hand stays sealed until your run is validated…'
+                      : 'still settling — tap here to check again'
                     : verdict
                       ? verdict.won
                         ? `you beat ${duel.name.toLowerCase()}'s ${verdict.theirScore.toLocaleString()} · pot ${verdict.pot} ✦`

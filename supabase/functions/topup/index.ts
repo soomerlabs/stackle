@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
   );
   if (ref) {
     const { data: seen } = await admin
-      .from("point_events").select("id").eq("ref", ref).maybeSingle();
+      .from("point_events").select("id").eq("player_id", user.id).eq("ref", ref).maybeSingle();
     if (seen) {
       const { data: w } = await admin
         .from("players").select("showdown_points").eq("id", user.id).maybeSingle();
