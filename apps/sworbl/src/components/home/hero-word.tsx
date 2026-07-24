@@ -192,6 +192,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     gap: 8,
+    marginTop: 12, // air between the word blocks and the hint slots (owner)
   },
   // BOARD PARITY (owner): the same dashed ghost pills as the in-game clue
   // fan — blank slot, presence only, never shape

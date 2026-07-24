@@ -21,13 +21,12 @@ interface Props {
   width: number; // the card's INNER width (home hands it down)
   podium: React.ComponentProps<typeof StandingsStrip>['podium'];
   you: React.ComponentProps<typeof StandingsStrip>['you'];
-  fieldSize: number; // how many are on today's board
   onPlay: () => void;
   onGuess?: () => void;
 }
 
 export function HeroCard({
-  theme, deal, played, solved, sworbPending, width, podium, you, fieldSize, onPlay, onGuess,
+  theme, deal, played, solved, sworbPending, width, podium, you, onPlay, onGuess,
 }: Props) {
   return (
     <View style={[styles.card, { backgroundColor: theme.card }]}>
@@ -78,14 +77,12 @@ export function HeroCard({
         </View>
       )}
 
-      {/* the full board is one tap deeper */}
+      {/* the full board is one tap deeper — a real button under the
+          play row (owner) */}
       <Pressable
         onPress={() => router.push('/leaderboard')}
-        hitSlop={6}
-        style={styles.lbLink}>
-        <Text style={[styles.lbLinkText, { color: theme.faint }]}>
-          {fieldSize > 0 ? `${fieldSize} on the board today · ` : ''}leaderboard ›
-        </Text>
+        style={[styles.lbBtn, { backgroundColor: theme.pill }]}>
+        <Text style={[styles.lbBtnText, { color: theme.sub }]}>leaderboard ›</Text>
       </Pressable>
     </View>
   );
@@ -153,15 +150,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   guessText: {
+    // PLAY's twin (owner: "same size as Play") — weight parity, its own ink
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 13.5,
+    fontSize: 15,
+    letterSpacing: 0.4,
   },
-  lbLink: {
+  lbBtn: {
+    borderRadius: 14, borderCurve: 'continuous',
+    paddingVertical: 11,
     alignItems: 'center',
   },
-  lbLinkText: {
+  lbBtnText: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 12,
-    letterSpacing: 0.3,
+    fontSize: 13,
+    letterSpacing: 0.4,
   },
 });
