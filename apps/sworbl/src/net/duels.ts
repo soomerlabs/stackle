@@ -137,13 +137,14 @@ export async function resolveShowdown(id: number): Promise<ShowdownVerdict | 'pe
 export async function postDuel(
   seed: string,
   format: 'blitz' | 'themed' = 'blitz'
-): Promise<'ok' | 'no-run' | 'error'> {
+): Promise<'ok' | 'no-run' | 'has-open' | 'error'> {
   const sb = supabase();
   if (!sb) return 'error';
   try {
     const { data, error } = await sb.functions.invoke('post-duel', { body: { seed, format } });
     if (data?.ok) return 'ok';
     const status = (error as { context?: { status?: number } } | null)?.context?.status;
+    if (status === 409) return 'has-open'; // one open showdown per player
     return status === 422 ? 'no-run' : 'error';
   } catch {
     return 'error';

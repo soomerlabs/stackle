@@ -212,12 +212,12 @@ export default function StormScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [posted, setPosted] = useState<'idle' | 'busy' | 'ok' | 'error'>('idle');
+  const [posted, setPosted] = useState<'idle' | 'busy' | 'ok' | 'has-open' | 'error'>('idle');
   const postAsDuel = async () => {
     if (!seed || posted === 'busy' || posted === 'ok') return;
     setPosted('busy');
     const r = await postDuel(seed, blitz ? 'blitz' : 'themed');
-    setPosted(r === 'ok' ? 'ok' : 'error');
+    setPosted(r === 'ok' ? 'ok' : r === 'has-open' ? 'has-open' : 'error');
   };
 
   const runAgain = () => {
@@ -369,9 +369,11 @@ export default function StormScreen() {
                   ? 'showdown posted — waiting for a taker ✦'
                   : posted === 'busy'
                     ? 'posting…'
-                    : posted === 'error'
-                      ? 'post failed — again?'
-                      : 'post a showdown'}
+                    : posted === 'has-open'
+                      ? 'you already have one open — one at a time'
+                      : posted === 'error'
+                        ? 'post failed — again?'
+                        : 'post a showdown'}
               </Text>
             </Pressable>
             <Pressable

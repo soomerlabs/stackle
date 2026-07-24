@@ -39,6 +39,16 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // ONE OPEN SHOWDOWN PER PLAYER (owner: "so they cant spam us") —
+  // reposting the SAME seed refreshes it; a second seed waits its turn
+  const { data: open } = await admin
+    .from("open_duels")
+    .select("seed")
+    .eq("poster", user.id)
+    .eq("status", "open");
+  if ((open ?? []).some((r) => r.seed !== seed))
+    return bad("you already have an open showdown", 409);
+
   // the run must exist, validated, under the caller's own id
   const { data: run } = await admin
     .from("practice_scores")
