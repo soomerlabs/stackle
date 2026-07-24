@@ -193,6 +193,9 @@ export default function StormScreen() {
     if (phase !== 'done' || submittedRef.current || !seed) return;
     submittedRef.current = true;
     haptic.soft();
+    // NO SCORE, NO SEAT (owner ruling): a zero never posts to the board —
+    // quitting mid-run already leaves no trace; whiffing shouldn't either
+    if (score === 0) return;
     // SEQUENCED ON VALIDATION (audit: timers raced the drain) — the post
     // and the verdict both wait for the run to be server-validated
     void enqueuePractice(seed, score, wordsRef.current).then(() => {
@@ -388,7 +391,9 @@ export default function StormScreen() {
               </Text>
             )}
             <Text style={[styles.sub, { color: theme.sub }]}>
-              {wordsRef.current.length} words · best score counts
+              {score === 0
+                ? 'no score — the board never saw you'
+                : `${wordsRef.current.length} words · best score counts`}
             </Text>
             {board != null && board.length === 0 && (
               <Text style={[styles.sub, { color: theme.faint }]}>no one else yet — you set the bar ✦</Text>
