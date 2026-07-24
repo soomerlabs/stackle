@@ -80,6 +80,15 @@ Deno.serve(async (req) => {
   const { error: evErr } = await admin
     .from("point_events")
     .insert({ player_id: user.id, delta: -price, reason: body.action, ref });
+  // no receipt, no charge (audit M1): a failed ledger insert refunds -
+  // otherwise a retry with the same ref finds nothing and charges again
+  if (evErr && (evErr as { code?: string }).code !== "23505") {
+    await admin
+      .from("players")
+      .update({ showdown_points: balance })
+      .eq("id", user.id);
+    return bad("receipt failed - nothing charged, try again", 500);
+  }
   // a racing duplicate loses the unique-ref insert — refund its charge
   if (evErr && (evErr as { code?: string }).code === "23505") {
     const { data: w } = await admin

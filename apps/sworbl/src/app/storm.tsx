@@ -415,6 +415,9 @@ export default function StormScreen() {
         )}
 
         {phase === 'done' && (
+          // THE SETTLE (owner: "the post game looks awful lol") — one
+          // hierarchy: verdict · score · ONE status line · the board as a
+          // real card · one candy CTA · quiet card actions.
           <View style={styles.cover}>
             <Text style={[styles.eyebrow, { color: theme.faint }]}>
               {duel
@@ -423,94 +426,110 @@ export default function StormScreen() {
                     ? 'SHOWDOWN WON ✦'
                     : 'SHOWDOWN LOST'
                   : duel.sealed || duel.score == null
-                    ? 'SEALED HAND — SETTLING…'
+                    ? 'SEALED HAND'
                     : score > duel.score
                       ? 'SHOWDOWN WON ✦'
                       : 'SHOWDOWN LOST'
                 : 'YOUR SCORE'}
             </Text>
-            <Text style={[styles.bigScore, { color: theme.ink }]}>{score}</Text>
-            {duel && duel.score != null && !duel.sealed && (
-              <Text style={[styles.sub, { color: score > duel.score ? '#5FD6A8' : theme.sub }]}>
-                {score > duel.score
-                  ? `you beat ${duel.name.toLowerCase()}'s ${duel.score.toLocaleString()}`
-                  : `${duel.name.toLowerCase()} holds it — ${duel.score.toLocaleString()}`}
-              </Text>
-            )}
-            {/* THE REVEAL (owner: "you only find out after you commit") */}
-            {duel && duel.sealed && (
-              <Text style={[styles.sub, { color: verdict ? (verdict.won ? '#5FD6A8' : theme.sub) : theme.faint }]}>
-                {verdict
-                  ? `the seal breaks — ${duel.name.toLowerCase()} had ${verdict.theirScore.toLocaleString()}`
-                  : 'their hand stays sealed until your run is validated…'}
-              </Text>
-            )}
-            {verdict && (
-              <Text style={[styles.sub, { color: verdict.won ? '#5FD6A8' : theme.faint }]}>
-                {verdict.won
-                  ? `the pot is yours · +${verdict.pot} ✦`
-                  : 'the pot walks — run it back'}
-              </Text>
-            )}
+            <Text style={[styles.bigScore, { color: theme.ink }]}>{score.toLocaleString()}</Text>
+            <Text
+              style={[
+                styles.sub,
+                {
+                  color:
+                    score === 0
+                      ? theme.faint
+                      : duel
+                        ? (verdict ? verdict.won : !duel.sealed && duel.score != null && score > duel.score)
+                          ? '#5FD6A8'
+                          : theme.sub
+                        : theme.sub,
+                },
+              ]}>
+              {score === 0
+                ? 'no score — the board never saw you'
+                : duel
+                  ? duel.sealed
+                    ? verdict
+                      ? `the seal breaks — ${duel.name.toLowerCase()} had ${verdict.theirScore.toLocaleString()}${verdict.won ? ` · pot ${verdict.pot} ✦` : ''}`
+                      : 'their hand stays sealed until your run is validated…'
+                    : verdict
+                      ? verdict.won
+                        ? `you beat ${duel.name.toLowerCase()}'s ${verdict.theirScore.toLocaleString()} · pot ${verdict.pot} ✦`
+                        : `${duel.name.toLowerCase()} holds it — ${verdict.theirScore.toLocaleString()}`
+                      : duel.score != null && score > duel.score
+                        ? `you beat ${duel.name.toLowerCase()}'s ${duel.score.toLocaleString()}`
+                        : `${duel.name.toLowerCase()} holds it — ${duel.score?.toLocaleString() ?? ''}`
+                  : `${wordsRef.current.length} words · best score counts`}
+            </Text>
             {params.post === '1' && posted === 'has-open' && (
               <Text style={[styles.sub, { color: '#F58A66' }]}>
                 you already have a showdown open — this score wasn&rsquo;t posted
               </Text>
             )}
-            <Text style={[styles.sub, { color: theme.sub }]}>
-              {score === 0
-                ? 'no score — the board never saw you'
-                : `${wordsRef.current.length} words · best score counts`}
-            </Text>
-            {board != null && board.length === 0 && (
-              <Text style={[styles.sub, { color: theme.faint }]}>no one else yet — you set the bar ✦</Text>
-            )}
-            {board != null && board.length > 0 && (
-              <View style={styles.lbBox}>
-                {board.map((r, i) => (
+            {/* the board, in a real card — not floating rows */}
+            <View style={[styles.resultCard, { backgroundColor: theme.card }]}>
+              {board == null && (
+                <Text style={[styles.sub, { color: theme.faint }]}>checking the board…</Text>
+              )}
+              {board != null && board.length === 0 && (
+                <Text style={[styles.sub, { color: theme.faint }]}>
+                  no one else yet — you set the bar ✦
+                </Text>
+              )}
+              {board != null &&
+                board.map((r, i) => (
                   <View key={`${r.name}-${i}`} style={styles.lbRow}>
                     <Text style={[styles.lbRank, { color: theme.faint }]}>{i + 1}</Text>
                     <Text
                       style={[styles.lbName, { color: r.isMe ? ACCENT : theme.ink }]}
                       numberOfLines={1}>
-                      {r.name}
+                      {r.name.toLowerCase()}
                     </Text>
-                    <Text style={[styles.lbScore, { color: theme.sub }]}>{r.score}</Text>
+                    <Text style={[styles.lbScore, { color: theme.sub }]}>
+                      {r.score.toLocaleString()}
+                    </Text>
                   </View>
                 ))}
-              </View>
-            )}
-            <Pressable onPress={runAgain} style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }]}>
+            </View>
+            <Pressable
+              onPress={runAgain}
+              style={[styles.cta, styles.ctaWide, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }]}>
               <Text style={[styles.ctaText, { color: '#FFFFFF' }]}>PLAY AGAIN</Text>
             </Pressable>
-            <Pressable
-              onPress={postAsDuel}
-              style={[styles.cta, styles.ctaCard, { backgroundColor: theme.card }]}>
-              <Text style={[styles.ctaText, { color: posted === 'ok' ? '#5FD6A8' : theme.ink }]}>
-                {posted === 'ok'
-                  ? 'showdown posted — waiting for a taker ✦'
-                  : posted === 'busy'
-                    ? 'posting…'
-                    : posted === 'has-open'
-                      ? 'you already have one open — one at a time'
-                      : posted === 'poor'
-                        ? 'not enough points for the ante'
-                        : posted === 'error'
-                          ? 'post failed — again?'
-                          : 'post a showdown · ante 25 ✦'}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() =>
-                Share.share({
-                  // UNIVERSAL LINK (owner: AASA on sworbl.com) — installed
-                  // app opens the board; everyone else lands on the web
-                  message: `sworbl storm ⛈ ${score} pts in the ${stormName(seed)}. same board, every player. beat my score: https://sworbl.com/storm?seed=${seed}`,
-                }).catch(() => {})
-              }
-              style={[styles.cta, styles.ctaCard, { backgroundColor: theme.card }]}>
-              <Text style={[styles.ctaText, { color: theme.ink }]}>share this board</Text>
-            </Pressable>
+            <View style={styles.actionRow}>
+              <Pressable
+                onPress={postAsDuel}
+                style={[styles.cta, styles.ctaHalf, { backgroundColor: theme.card }]}>
+                <Text
+                  style={[styles.ctaSmallText, { color: posted === 'ok' ? '#5FD6A8' : theme.ink }]}
+                  numberOfLines={2}>
+                  {posted === 'ok'
+                    ? 'posted — waiting ✦'
+                    : posted === 'busy'
+                      ? 'posting…'
+                      : posted === 'has-open'
+                        ? 'one open already'
+                        : posted === 'poor'
+                          ? 'not enough ✦'
+                          : posted === 'error'
+                            ? 'post failed — again?'
+                            : 'post a showdown'}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() =>
+                  Share.share({
+                    // UNIVERSAL LINK (owner: AASA on sworbl.com) — installed
+                    // app opens the board; everyone else lands on the web
+                    message: `sworbl storm ⛈ ${score} pts in the ${stormName(seed)}. same board, every player. beat my score: https://sworbl.com/storm?seed=${seed}`,
+                  }).catch(() => {})
+                }
+                style={[styles.cta, styles.ctaHalf, { backgroundColor: theme.card }]}>
+                <Text style={[styles.ctaSmallText, { color: theme.ink }]}>share</Text>
+              </Pressable>
+            </View>
             <Pressable onPress={leave} style={styles.homeLink}>
               <Text style={[styles.ctaText, { color: theme.sub }]}>done ›</Text>
             </Pressable>
@@ -571,9 +590,9 @@ const styles = StyleSheet.create({
     borderRadius: 2.5, borderCurve: 'continuous',
     backgroundColor: '#17171C',
   },
-  cover: { alignItems: 'center', gap: 14, paddingHorizontal: 32 },
+  cover: { alignItems: 'center', gap: 12, paddingHorizontal: 28, alignSelf: 'stretch' },
   title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 26 },
-  bigScore: { fontFamily: 'Fredoka_600SemiBold', fontSize: 54 },
+  bigScore: { fontFamily: 'Fredoka_600SemiBold', fontSize: 54, includeFontPadding: false },
   sub: { fontFamily: 'Fredoka_600SemiBold', fontSize: 13.5, textAlign: 'center', lineHeight: 20 },
   ctaCard: {},
   homeLink: { paddingVertical: 6 },
@@ -584,6 +603,24 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     minWidth: 180,
     alignItems: 'center',
+  },
+  // the settle's grammar (owner: post game redo)
+  resultCard: {
+    alignSelf: 'stretch',
+    borderRadius: 18, borderCurve: 'continuous',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 9,
+    marginTop: 2,
+  },
+  ctaWide: { alignSelf: 'stretch' },
+  actionRow: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' },
+  ctaHalf: { flex: 1, minWidth: 0, paddingHorizontal: 12, justifyContent: 'center' },
+  ctaSmallText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 13,
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
   ctaText: { fontFamily: 'Fredoka_600SemiBold', fontSize: 15, letterSpacing: 0.8 },
   lbBox: { alignSelf: 'stretch', gap: 6, paddingHorizontal: 8 },

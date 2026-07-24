@@ -65,7 +65,6 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
             </View>
           </View>
           <Text style={[styles.name, { color: theme.ink }]}>start a{'\n'}showdown</Text>
-          <Text style={[styles.meta, { color: theme.faint }]}>play › post › wait</Text>
         </Pressable>
 
         {/* open challengers: beat their score — a SEALED hand hides it

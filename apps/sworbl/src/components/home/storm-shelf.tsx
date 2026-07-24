@@ -108,9 +108,9 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
                     ? `${c.top.score.toLocaleString()} · ${c.top.name.toLowerCase()}`
                     : 'no crown yet'}
                 </Text>
-                <Text style={[styles.meta, { color: c?.mine != null ? theme.faint : ACCENT }]}>
+                <Text style={[styles.meta, { color: theme.faint }]}>
                   {mins}:{String(secs).padStart(2, '0')}
-                  {c?.mine != null ? ` · best ${c.mine.toLocaleString()}` : ' · play ›'}
+                  {c?.mine != null ? ` · best ${c.mine.toLocaleString()}` : ''}
                 </Text>
               </View>
             </Pressable>

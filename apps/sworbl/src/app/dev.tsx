@@ -34,6 +34,29 @@ import { toast } from '@/components/toast';
 
 const LB_MODES: LbFieldMode[] = ['live', 'full', '2', '1', '0'];
 
+// COLLAPSIBLE SECTIONS (owner: "our dev menu is getting unruly quick") -
+// every section folds; only TODAY starts open. Tap the label to toggle.
+function DevSection({ title, open: openDefault, theme, children }: {
+  title: string;
+  open?: boolean;
+  theme: ReturnType<typeof useTheme>;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(!!openDefault);
+  return (
+    <View style={{ alignSelf: 'stretch' }}>
+      <Pressable
+        onPress={() => setOpen((o) => !o)}
+        hitSlop={6}
+        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 }}>
+        <Text style={[styles.sectionLabel, { color: theme.faint, marginTop: 0 }]}>{title}</Text>
+        <Text style={[styles.sectionLabel, { color: theme.faint, marginTop: 0 }]}>{open ? '–' : '+'}</Text>
+      </Pressable>
+      {open && <View style={{ gap: 10 }}>{children}</View>}
+    </View>
+  );
+}
+
 // WALLET override (owner: "clear out points") — writes the player's own
 // row directly (same RLS lane as the rename upsert). Dev-only shortcut;
 // the real economy only ever moves through the edge functions.
@@ -119,8 +142,6 @@ export default function DevScreen() {
     haptic.bad();
   };
 
-  const sectionLabel = [styles.sectionLabel, { color: theme.faint }];
-
   return (
     <View style={[styles.root, { backgroundColor: theme.bg }]}>
       <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
@@ -129,8 +150,7 @@ export default function DevScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ScreenHeader theme={theme} eyebrow="DEVELOPER" title="dev tools" />
 
-          {/* ---- TODAY ---- */}
-          <Text style={sectionLabel}>TODAY</Text>
+          <DevSection theme={theme} title="TODAY" open>
           <View style={[styles.card, { backgroundColor: theme.card }]}>
             <View style={styles.kvRow}>
               <Text style={[styles.kvKey, { color: theme.sub }]}>day</Text>
@@ -184,6 +204,16 @@ export default function DevScreen() {
                 })}
               </View>
             )}
+            {/* ALL the board's words (owner ask): clues above, the
+                extra spellables + the riddle here */}
+            {deal && deal.poolExtras.length > 0 && (
+              <Text style={[styles.metaLine, { color: theme.faint }]}>
+                extras: {deal.poolExtras.join(' · ')}
+              </Text>
+            )}
+            {!!deal?.hint && (
+              <Text style={[styles.defLine, { color: theme.sub }]}>riddle: “{deal.hint}”</Text>
+            )}
             <View style={[styles.hairline, { backgroundColor: theme.hairline }]} />
             <Text style={[styles.metaLine, { color: theme.faint }]}>
               route {day?.route ?? '—'} · score {(day?.score ?? 0).toLocaleString()} · fuel{' '}
@@ -194,8 +224,8 @@ export default function DevScreen() {
             </Text>
           </View>
 
-          {/* ---- PLAY A DAY ---- */}
-          <Text style={sectionLabel}>PLAY A DAY</Text>
+          </DevSection>
+          <DevSection theme={theme} title="PLAY A DAY">
           <View style={[styles.card, { backgroundColor: theme.card }]}>
             <View style={styles.chipWrap}>
               {days.map((d) => {
@@ -242,8 +272,8 @@ export default function DevScreen() {
             )}
           </View>
 
-          {/* ---- LB FIELD ---- */}
-          <Text style={sectionLabel}>STANDINGS FIELD</Text>
+          </DevSection>
+          <DevSection theme={theme} title="STANDINGS FIELD">
           <View style={[styles.card, styles.segCard, { backgroundColor: theme.card }]}>
             {LB_MODES.map((m) => (
               <Pressable
@@ -260,8 +290,8 @@ export default function DevScreen() {
             ))}
           </View>
 
-          {/* ---- CLUE AUDIT ---- */}
-          <Text style={sectionLabel}>BOARD AUDIT</Text>
+          </DevSection>
+          <DevSection theme={theme} title="BOARD AUDIT + STRESS">
           <Pressable
             onPress={() => {
               setClueAudit(!getClueAudit());
@@ -348,9 +378,8 @@ export default function DevScreen() {
             </Text>
           </Pressable>
 
-          {/* ---- WALLET (owner: "clear out points" — test the velvet
-              rope + the inline offer without going broke honestly) ---- */}
-          <Text style={sectionLabel}>WALLET</Text>
+          </DevSection>
+          <DevSection theme={theme} title="WALLET">
           <Pressable
             onPress={() => void setWalletTo(0, refresh)}
             style={[styles.actionRow, { backgroundColor: theme.card }]}>
@@ -364,8 +393,8 @@ export default function DevScreen() {
             <Text style={[styles.actionText, { color: theme.faint }]}>fresh start</Text>
           </Pressable>
 
-          {/* ---- NETWORK (owner: a log of the supabase calls) ---- */}
-          <Text style={sectionLabel}>NETWORK · last {getNetLog().length} supabase calls</Text>
+          </DevSection>
+          <DevSection theme={theme} title={`NETWORK · last ${getNetLog().length} calls`}>
           {getNetLog().slice(0, 14).map((e, i) => (
             <View key={`${e.ts}-${i}`} style={styles.netRow}>
               <Text style={[styles.netTime, { color: theme.faint }]}>
@@ -397,8 +426,8 @@ export default function DevScreen() {
             <Text style={[styles.actionText, { color: theme.ink }]}>clear network log</Text>
           </Pressable>
 
-          {/* ---- STORAGE ---- */}
-          <Text style={sectionLabel}>STORAGE</Text>
+          </DevSection>
+          <DevSection theme={theme} title="STORAGE">
           <Pressable
             onPress={() => {
               // live round-trip probe: write → read → remove → read → keys()
@@ -422,8 +451,8 @@ export default function DevScreen() {
             <Text style={[styles.actionGlyph, { color: theme.faint }]}>⚗</Text>
           </Pressable>
 
-          {/* ---- ACTIONS ---- */}
-          <Text style={sectionLabel}>ACTIONS</Text>
+          </DevSection>
+          <DevSection theme={theme} title="ACTIONS">
           <Pressable onPress={restartToday} style={[styles.actionRow, { backgroundColor: theme.card }]}>
             <Text style={[styles.actionText, { color: theme.ink }]}>
               restart {deal?.dayKey ?? 'today'}
@@ -438,6 +467,7 @@ export default function DevScreen() {
             </Text>
             <Text style={[styles.actionGlyph, { color: 'rgba(255,255,255,0.7)' }]}>⌫</Text>
           </Pressable>
+          </DevSection>
 
         </ScrollView>
       </SafeAreaView>

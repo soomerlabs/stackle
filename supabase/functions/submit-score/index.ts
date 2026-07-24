@@ -96,6 +96,9 @@ Deno.serve(async (req) => {
   if (mode === "practice" ? delta !== 0 : !DAILY.legalBonuses(rounds).includes(delta))
     return bad("score does not reconcile");
   if (delta > 0 && !solved) return bad("bonus without solve");
+  // a "solve" that carries no bonus is a faucet claim, not a solve
+  // (audit C1: {solved:true, delta:0} passed reconciliation and minted)
+  if (solved && delta <= 0) return bad("solve without bonus");
 
   // validated: write with the service role (clients have no write policies).
   // The one-shot law is PER-MODE POLICY now (docs/modes-spec.md):
@@ -166,15 +169,23 @@ Deno.serve(async (req) => {
     .eq("player_id", user.id)
     .eq("day", day)
     .maybeSingle();
-  // the solve faucet on the keep-best path: only when THIS submission
-  // brings the solve (prior wasn't solved)
-  if (solved && prior && !prior.solved) await awardSolve();
-  if (prior && prior.score >= score) return json({ ok: true, kept: prior.score });
-  const { error: upErr } = await admin
+  // keep-best decides FIRST; the faucet only pays when the row actually
+  // flips to solved (audit C1: award-before-update was replayable — the
+  // row never recorded the solve, so every retry minted +15)
+  const bringsSolve = solved && prior && !prior.solved;
+  if (prior && prior.score >= score && !bringsSolve)
+    return json({ ok: true, kept: prior.score });
+  const keepScore = prior && prior.score >= score ? prior.score : score;
+  const { data: upd, error: upErr } = await admin
     .from("submissions")
-    .update({ score, solved, guesses, mode, words: row.words })
+    .update({ score: keepScore, solved: solved || prior?.solved || false, guesses, mode, words: row.words })
     .eq("player_id", user.id)
-    .eq("day", day);
+    .eq("day", day)
+    .eq("solved", prior?.solved ?? false) // the solve flips at most once
+    .select("player_id");
   if (upErr) return bad(upErr.message, 500);
+  // pay only when OUR update landed the flip (a racing duplicate matches
+  // zero rows and never mints)
+  if (bringsSolve && upd?.length) await awardSolve();
   return json({ ok: true, improved: true });
 });

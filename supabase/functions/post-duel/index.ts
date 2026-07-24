@@ -40,7 +40,9 @@ Deno.serve(async (req) => {
   );
 
   // ONE OPEN SHOWDOWN PER PLAYER (owner: "so they cant spam us") —
-  // reposting the SAME seed refreshes it; a second seed waits its turn
+  // a second seed waits its turn. Audit C2: the upsert must never touch
+  // a row that left 'open' (mid-match rewrites, dead-row charges), and a
+  // refresh of your own open post never re-antes.
   const { data: open } = await admin
     .from("open_duels")
     .select("seed")
@@ -48,6 +50,15 @@ Deno.serve(async (req) => {
     .eq("status", "open");
   if ((open ?? []).some((r) => r.seed !== seed))
     return bad("you already have an open showdown", 409);
+  const { data: existing } = await admin
+    .from("open_duels")
+    .select("status, stake")
+    .eq("poster", user.id)
+    .eq("seed", seed)
+    .maybeSingle();
+  if (existing && existing.status !== "open")
+    return bad("that board's showdown already ran", 409);
+  const refreshing = !!existing; // open row of ours — ante already paid
 
   // THE ANTE (owner: "put what you're willing to gamble") — the poster
   // names the stake; the taker must match it at claim.
@@ -71,18 +82,32 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!run) return bad("no validated run on this seed");
 
-  const { error } = await admin.from("open_duels").upsert(
-    {
-      seed,
-      poster: user.id,
-      format,
-      score: run.score,
-      words: run.words ?? [],
-      stake: STAKE,
-      sealed: body.sealed === true,
-    },
-    { onConflict: "seed,poster" },
-  );
+  // refresh keeps the ORIGINAL stake (the ante already on the table);
+  // the guarded upsert can never land on a row that left 'open'
+  const finalStake = refreshing ? Number(existing!.stake) || 25 : STAKE;
+  if (refreshing) {
+    const { data: upd, error } = await admin
+      .from("open_duels")
+      .update({ format, score: run.score, words: run.words ?? [], sealed: body.sealed === true })
+      .eq("poster", user.id)
+      .eq("seed", seed)
+      .eq("status", "open")
+      .select("id");
+    if (error) return bad(error.message, 500);
+    if (!upd?.length) return bad("that board's showdown already ran", 409);
+    return new Response(JSON.stringify({ ok: true, score: run.score, stake: finalStake, refreshed: true }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const { error } = await admin.from("open_duels").insert({
+    seed,
+    poster: user.id,
+    format,
+    score: run.score,
+    words: run.words ?? [],
+    stake: STAKE,
+    sealed: body.sealed === true,
+  });
   if (error) return bad(error.message, 500);
   // ante lands AFTER the post succeeds (a failed post never charges)
   await admin

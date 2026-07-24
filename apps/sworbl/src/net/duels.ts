@@ -194,7 +194,7 @@ export async function fetchMyShowdownPoints(): Promise<number | null> {
 }
 
 // SHOWDOWN lifecycle (owner: taking claims it; decided = off the rail)
-export async function claimShowdown(id: number): Promise<'ok' | 'taken' | 'poor' | 'error'> {
+export async function claimShowdown(id: number): Promise<'ok' | 'taken' | 'poor' | 'played' | 'error'> {
   const sb = supabase();
   if (!sb) return 'error';
   try {
@@ -202,6 +202,7 @@ export async function claimShowdown(id: number): Promise<'ok' | 'taken' | 'poor'
     if (data?.ok) return 'ok';
     const status = (error as { context?: { status?: number } } | null)?.context?.status;
     if (status === 402) return 'poor'; // can't cover the ante
+    if (status === 412) return 'played'; // already banked this board — no free money
     return status === 409 ? 'taken' : 'error';
   } catch {
     return 'error';

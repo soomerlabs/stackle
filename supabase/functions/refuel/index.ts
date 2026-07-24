@@ -3,7 +3,7 @@
 // guarded update means double-taps and races land exactly one grant.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const DAILY_REFUEL = 25;
+const DAILY_REFUEL = 100; // owner: 'only 25? lets do 100'
 
 const bad = (msg: string, status = 422) =>
   new Response(JSON.stringify({ ok: false, error: msg }), {

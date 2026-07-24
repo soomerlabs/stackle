@@ -52,6 +52,15 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!duel) return bad("no such showdown", 404);
     if (duel.poster === user.id) return bad("that's your own post");
+    // audit C4: a taker holding a validated score on this seed claims a
+    // decided match (resolve reads keep-best) - free money. Blocked.
+    const { data: played } = await admin
+      .from("practice_scores")
+      .select("score")
+      .eq("player_id", user.id)
+      .eq("seed", duel.seed)
+      .maybeSingle();
+    if (played) return bad("you already played this board", 412);
     // the taker must cover the ante BEFORE the claim locks
     const stake = Number(duel.stake) || 0;
     const { data: wallet } = await admin

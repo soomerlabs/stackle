@@ -31,9 +31,9 @@ export default function PointsScreen() {
     if (buyingRef.current) return;
     buyingRef.current = true;
     setBuying(pack.key);
-    // one receipt per pack per minute-bucket — a retry inside the window
-    // can never double-grant (same law as every purchase)
-    const ref = `topup-${pack.key}-${Math.floor(Date.now() / 60000)}`;
+    // one receipt per purchase INTENT (audit M4: a minute-bucket ref
+    // collapsed two deliberate buys) — random ref per tap
+    const ref = `topup-${pack.key}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const r = await buyPack(pack.key, ref);
     buyingRef.current = false;
     setBuying(null);

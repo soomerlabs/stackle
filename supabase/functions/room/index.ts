@@ -92,7 +92,16 @@ Deno.serve(async (req) => {
         await credit(user.id, entry, "room refund");
         return bad(error.message, 500);
       }
-      await admin.from("room_members").insert({ room_id: room!.id, player_id: user.id });
+      const { error: seatErr } = await admin
+        .from("room_members")
+        .insert({ room_id: room!.id, player_id: user.id });
+      // audit M2: an unseated host can't win their own pot AND gets
+      // re-charged as a "joiner" later - unwind the whole create
+      if (seatErr) {
+        await admin.from("rooms").delete().eq("id", room!.id);
+        await credit(user.id, entry, "room refund");
+        return bad("could not seat you - nothing charged, try again", 500);
+      }
       return json({ ok: true, room });
     }
     await credit(user.id, entry, "room refund");
@@ -138,8 +147,21 @@ Deno.serve(async (req) => {
       await credit(user.id, room.entry, "room refund");
       return bad(error.message, 500);
     }
-    const newPot = (room.pot ?? 0) + room.entry;
-    await admin.from("rooms").update({ pot: newPot }).eq("id", room.id);
+    // audit M3: the pot bump only lands while the room is still OPEN -
+    // a join racing the settle unwinds instead of feeding a paid-out pot
+    const { data: fresh } = await admin
+      .from("rooms")
+      .select("pot")
+      .eq("id", room.id)
+      .eq("status", "open")
+      .maybeSingle();
+    if (!fresh) {
+      await admin.from("room_members").delete().eq("room_id", room.id).eq("player_id", user.id);
+      await credit(user.id, room.entry, "room refund");
+      return bad("room is settled", 409);
+    }
+    const newPot = (Number(fresh.pot) || 0) + room.entry;
+    await admin.from("rooms").update({ pot: newPot }).eq("id", room.id).eq("status", "open");
     return json({ ok: true, room: { ...card, pot: newPot, seats: (seatCount ?? 0) + 1, youAreIn: true } });
   }
 

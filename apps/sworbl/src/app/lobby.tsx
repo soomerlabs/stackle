@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PALETTE, tileColorFor } from '@/game/palette';
 import { getPlayerName } from '@/game/player';
 import { POINT_PACKS } from '@/game/point-packs';
-import { stormIntensity, stormName } from '@/game/storm-seeds';
+import { dailyStormBoards, stormIntensity, stormName } from '@/game/storm-seeds';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
 import { TraceLaunch } from '@/components/trace-launch';
 import { buyPack, claimShowdown, fetchMyShowdownPoints, spendPoints } from '@/net/duels';
@@ -47,7 +47,13 @@ export default function LobbyScreen() {
   const [stake, setStake] = useState(25);
   const [sealed, setSealed] = useState(false);
 
-  const intensity = stormIntensity(seed);
+  // PICK YOUR WEATHER (owner: "can i pick what kind i want?") — creating
+  // a showdown offers all four boards; the rail's squall is just the
+  // default. Storms and takes keep the seed they arrived with.
+  const boards = useMemo(() => dailyStormBoards(), []);
+  const [pickedSeed, setPickedSeed] = useState<string | null>(null);
+  const activeSeed = creating && pickedSeed ? pickedSeed : seed;
+  const intensity = stormIntensity(activeSeed);
   const tierPal = intensity.hue;
   const myName = getPlayerName();
   const myPal = PALETTE[tileColorFor(myName[0]?.toLowerCase() ?? 'p', 0)];
@@ -65,7 +71,7 @@ export default function LobbyScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed]);
 
-  const [claiming, setClaiming] = useState<'idle' | 'busy' | 'taken' | 'poor' | 'error'>('idle');
+  const [claiming, setClaiming] = useState<'idle' | 'busy' | 'taken' | 'poor' | 'played' | 'error'>('idle');
   // the wallet — stakes on showdown faces, ENTRY on paid storm tiers
   const [balance, setBalance] = useState<number | null>(null);
   useEffect(() => {
@@ -82,7 +88,9 @@ export default function LobbyScreen() {
   // entry, showdowns cost the ante. Short = no swipe, and the sheet
   // points at the wallet. balance null (offline) never gates — the
   // server 402 stays the backstop.
-  const doorPrice = joining ? joinStake : creating ? stake : intensity.entry;
+  // creating pays BOTH the board's door and the ante (audit H4: gating
+  // on the stake alone let players pay the door, play, then fail to post)
+  const doorPrice = joining ? joinStake : creating ? stake + intensity.entry : intensity.entry;
   const broke = balance != null && balance < doorPrice;
   // a poster who can't cover the default snaps to their biggest
   // affordable stake — the gate should redirect, not just refuse
@@ -101,20 +109,32 @@ export default function LobbyScreen() {
     if (buyingRef.current) return;
     buyingRef.current = true;
     setBuyingPack(key);
-    const r = await buyPack(key, `topup-${key}-${Math.floor(Date.now() / 60000)}`);
+    // random ref per tap (audit M4) — each intent is its own receipt
+    const r = await buyPack(key, `topup-${key}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
     buyingRef.current = false;
     setBuyingPack(null);
     if (r !== 'error') setBalance(r.balance);
   };
 
   const [entering, setEntering] = useState<'idle' | 'busy' | 'poor'>('idle');
+  // one receipt per sheet visit (audit H3): a lost response retried with
+  // the same ref can never charge the door twice
+  const entryRef = useRef(`entry-${Math.random().toString(36).slice(2, 10)}`);
   const play = async () => {
     // PAID TIERS charge at the door (owner: "enter some points to get
     // into the storms") — drizzle stays the free on-ramp
     if (intensity.entry > 0 && !joining) {
       if (entering === 'busy') return;
       setEntering('busy');
-      const r = await spendPoints(`storm-${intensity.key}` as 'storm-squall');
+      let r: Awaited<ReturnType<typeof spendPoints>> = 'error';
+      for (let attempt = 0; attempt < 3; attempt++) {
+        r = await spendPoints(
+          `storm-${intensity.key}` as 'storm-squall',
+          `${entryRef.current}-${activeSeed}`
+        );
+        if (r !== 'error') break;
+        await new Promise((res) => setTimeout(res, 500 * (attempt + 1)));
+      }
       if (r === 'poor') {
         setEntering('poor');
         return;
@@ -127,7 +147,7 @@ export default function LobbyScreen() {
     // REPLACE, not push — the sheet dismisses and the board owns the
     // screen; back from the board is home (owner flow)
     router.replace(
-      `/storm?seed=${seed}&go=1${creating ? `&post=1&stake=${stake}&sealed=${sealed ? 1 : 0}` : ''}`
+      `/storm?seed=${activeSeed}&go=1${creating ? `&post=1&stake=${stake}&sealed=${sealed ? 1 : 0}` : ''}`
     );
   };
 
@@ -142,7 +162,7 @@ export default function LobbyScreen() {
       );
       return;
     }
-    setClaiming(r === 'taken' ? 'taken' : r === 'poor' ? 'poor' : 'error');
+    setClaiming(r === 'taken' ? 'taken' : r === 'poor' ? 'poor' : r === 'played' ? 'played' : 'error');
   };
 
   if (!seed) {
@@ -169,18 +189,45 @@ export default function LobbyScreen() {
                   <Text style={styles.tierWeather}>{intensity.emoji}</Text>
                 </View>
               ))}
-            <View>
+            <View style={styles.tierText}>
               <Text style={[styles.tierName, { color: theme.ink }]}>
-                {joining ? 'showdown' : creating ? 'showdown' : stormName(seed)}
+                {joining ? 'showdown' : creating ? 'showdown' : stormName(activeSeed)}
               </Text>
+              {/* no double title (owner): the meta never repeats the name —
+                  and it WRAPS (flexed container, no one-line overflow) */}
               <Text style={[styles.tierMeta, { color: theme.faint }]}>
-                {intensity.label} · {fmt(intensity.clockSecs)}
+                {(creating || joining) ? `${intensity.label} · ` : ''}
+                {fmt(intensity.clockSecs)}
                 {intensity.key === 'hurricane' ? ' · no mercy' : ''}
                 {intensity.entry > 0 ? ` · entry ${intensity.entry} ✦` : ' · free'}
                 {balance != null ? ` · you have ${balance.toLocaleString()}` : ''}
               </Text>
             </View>
           </View>
+
+          {/* PICK YOUR WEATHER (owner) — which board carries the 1v1 */}
+          {creating && (
+            <View style={styles.tierPickRow}>
+              {boards.map((b) => {
+                const on = activeSeed === b.seed;
+                return (
+                  <Pressable
+                    key={b.seed}
+                    onPress={() => setPickedSeed(b.seed)}
+                    style={[
+                      styles.tierPick,
+                      on
+                        ? { backgroundColor: b.intensity.hue.bg, boxShadow: `inset 0 -3px 0 ${b.intensity.hue.edge}` }
+                        : { backgroundColor: theme.pill },
+                    ]}>
+                    <Text style={[styles.tierPickEmoji, !on && { opacity: 0.55 }]}>
+                      {b.intensity.emoji}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
 
           {/* the matchup (showdowns) or the board's standings (storms) */}
           {(creating || joining) ? (
@@ -273,6 +320,11 @@ export default function LobbyScreen() {
                   someone claimed this one first
                 </Text>
               )}
+              {claiming === 'played' && (
+                <Text style={[styles.claimNote, { color: '#F58A66' }]}>
+                  you&rsquo;ve already played this board — that&rsquo;d be free money. pick another fight.
+                </Text>
+              )}
               {claiming === 'error' && (
                 <Text style={[styles.claimNote, { color: theme.faint }]}>
                   couldn&rsquo;t claim — check your connection
@@ -343,7 +395,7 @@ export default function LobbyScreen() {
           )}
           <TraceLaunch
             onCommit={joining ? accept : play}
-            disabled={broke || claiming === 'busy' || claiming === 'taken' || claiming === 'poor' || entering === 'busy' || entering === 'poor'}
+            disabled={broke || claiming === 'busy' || claiming === 'taken' || claiming === 'poor' || claiming === 'played' || entering === 'busy' || entering === 'poor'}
             caption={
               broke
                 ? 'not enough points'
@@ -378,6 +430,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  tierText: {
+    flex: 1, // the meta line WRAPS instead of running off the sheet
+  },
+  tierPickRow: {
+    flexDirection: 'row',
+    gap: 9,
+  },
+  tierPick: {
+    width: 46,
+    height: 42,
+    borderRadius: 12, borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tierPickEmoji: {
+    fontSize: 21,
   },
   tierChip: {
     width: 44,

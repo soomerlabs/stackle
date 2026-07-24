@@ -63,9 +63,21 @@ Deno.serve(async (req) => {
   const { error } = await admin
     .from("players").update({ showdown_points: balance }).eq("id", user.id);
   if (error) return bad(error.message, 500);
-  await admin.from("point_events").insert({
+  const { error: evErr } = await admin.from("point_events").insert({
     player_id: user.id, delta: grant, reason: `top-up (mock ${body.pack})`, ref,
   });
+  // no receipt, no grant (audit M1) - a ref-retry after a silent receipt
+  // failure would double-grant
+  if (evErr) {
+    await admin.from("players").update({ showdown_points: me.showdown_points ?? 0 }).eq("id", user.id);
+    if ((evErr as { code?: string }).code === "23505") {
+      return new Response(
+        JSON.stringify({ ok: true, balance: me.showdown_points ?? 0, alreadyApplied: true }),
+        { headers: { "Content-Type": "application/json" } },
+      );
+    }
+    return bad("receipt failed - try again", 500);
+  }
   return new Response(JSON.stringify({ ok: true, balance }), {
     headers: { "Content-Type": "application/json" },
   });

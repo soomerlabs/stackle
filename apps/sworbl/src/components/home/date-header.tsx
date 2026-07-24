@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
   masthead: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center', // one shared center line (owner) — LEFT aligned
     gap: 6,
   },
   infoDot: {

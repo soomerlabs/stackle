@@ -8,13 +8,34 @@
 alter table public.open_duels
   add column if not exists sealed boolean not null default false;
 
--- view append is REPLACE-safe (new columns at the end)
+-- view append is REPLACE-safe (new columns at the end). SEALED HANDS
+-- (audit C4): the view is the rail's read - a sealed post serves NULL
+-- score/words, so the number cannot leak before the reveal.
 create or replace view public.open_duel_board as
-  select d.id, d.seed, d.format, d.score, d.words, d.created_at, d.poster, p.name,
+  select d.id, d.seed, d.format,
+         case when d.sealed then null else d.score end as score,
+         case when d.sealed then null else d.words end as words,
+         d.created_at, d.poster, p.name,
          d.stake, d.sealed
   from public.open_duels d
   join public.players p on p.id = d.poster
   where d.status = 'open';
+
+-- table reads tighten to match (audit C4): open unsealed rows stay
+-- public (ghost races); sealed/finished rows only for the two players
+drop policy if exists "duels read all" on public.open_duels;
+create policy "duels read gated" on public.open_duels for select
+  using (
+    (status = 'open' and sealed = false)
+    or poster = auth.uid()
+    or taker = auth.uid()
+  );
+
+-- audit H2: a poster could delete a TAKEN duel and destroy the taker's
+-- ante + win - retract is for open posts only
+drop policy if exists "duels delete own" on public.open_duels;
+create policy "duels delete own open" on public.open_duels for delete
+  using (auth.uid() = poster and status = 'open');
 
 -- daily refuel: one grant per UTC day, tracked on the player
 alter table public.players
@@ -61,7 +82,8 @@ create policy rooms_member_read on public.rooms for select
   using (exists (select 1 from public.room_members m
                  where m.room_id = id and m.player_id = auth.uid()));
 
+-- own rows only (audit N2: the self-referential policy recursed) -
+-- clients never list a room's members directly; the edge fn does
 drop policy if exists room_members_read on public.room_members;
 create policy room_members_read on public.room_members for select
-  using (exists (select 1 from public.room_members m2
-                 where m2.room_id = room_id and m2.player_id = auth.uid()));
+  using (player_id = auth.uid());
