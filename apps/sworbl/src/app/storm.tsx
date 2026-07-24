@@ -8,7 +8,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { AppState, InteractionManager, Share } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GameBoard } from '@/components/game/game-board';
 import { ScoreHeader } from '@/components/game/score-header';
@@ -292,9 +292,18 @@ export default function StormScreen() {
   const tile = Math.min(64, Math.floor((Math.min(winW, 480) - 32) / (5 + 4 * 0.16)));
   const gap = Math.round(tile * 0.16);
 
+  // SYNCHRONOUS insets (owner: "launched super high then had to come
+  // down") — SafeAreaView re-measures natively inside the fullScreenModal
+  // and paints frame 1 with ZERO insets, so the whole screen rendered at
+  // the notch and dropped. The hook reads the root provider's resolved
+  // insets on the very first frame — no jump. Daily never re-measures
+  // (the sheet lives inside home), which is why only storms did this.
+  const insets = useSafeAreaInsets();
+  const rootPad = { paddingTop: insets.top, paddingBottom: insets.bottom };
+
   if (!seed) {
     return (
-      <SafeAreaView style={[styles.root, { backgroundColor: theme.bg }]}>
+      <View style={[styles.root, rootPad, { backgroundColor: theme.bg }]}>
         <Text style={[styles.title, { color: theme.ink }]}>bad seed</Text>
         <Text style={[styles.sub, { color: theme.sub }]}>
           storm links look like /storm?seed=first-storm
@@ -302,12 +311,12 @@ export default function StormScreen() {
         <Pressable onPress={leave} style={[styles.cta, styles.ctaCard, { backgroundColor: theme.card }]}>
           <Text style={[styles.ctaText, { color: theme.ink }]}>back</Text>
         </Pressable>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.root, { backgroundColor: theme.bg }]}>
+    <View style={[styles.root, rootPad, { backgroundColor: theme.bg }]}>
       {/* top bar: seed identity + the clock + live score */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
@@ -507,7 +516,7 @@ export default function StormScreen() {
           </View>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
