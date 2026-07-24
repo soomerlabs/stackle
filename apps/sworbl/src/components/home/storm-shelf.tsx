@@ -2,6 +2,7 @@
 // grammar: the four tiers as candy chips inside it (hurricane still
 // flies the warning flag), the private-rooms door as the card's last
 // row. No horizontal scrolling anywhere.
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
@@ -44,6 +45,7 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
       {/* strongest first (owner) — hurricane leads the walk down. A
           SCROLLER now (owner: "storms will be created — we'll need to
           scroll"): fixed square tiles, never squashed */}
+      <View style={styles.scrollerWrap}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -100,6 +102,16 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
           <Text style={[styles.plusMark, { color: theme.faint }]}>+</Text>
         </Pressable>
       </ScrollView>
+      {/* the right-edge fade (owner: "blend in nice… no hard line") —
+          tiles dissolve into the card at its true edge */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={[`${theme.card}00`, theme.card]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={styles.edgeFade}
+      />
+      </View>
 
     </View>
   );
@@ -141,9 +153,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 10,
   },
+  // bleeds to the card's true edges so tiles dissolve, never clip
+  scrollerWrap: {
+    marginHorizontal: -16,
+  },
   tierRow: {
     gap: 9,
     paddingVertical: 2,
+    paddingLeft: 16,
+    paddingRight: 44, // the last tile clears the fade fully when scrolled
+  },
+  edgeFade: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 34,
   },
   // NICE-SIZED SQUARES (owner) — fixed, readable, never squashed
   tier: {
