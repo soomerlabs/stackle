@@ -150,7 +150,7 @@ export function GuessStage({
       <ClueFan clues={clues} found={found} nudged={nudged} gs={gs} />
       {twist && (
         <View style={styles.twistPill}>
-          <Text style={styles.twistText}>today's twist: {twist}</Text>
+          <Text style={styles.twistText}>archetype: {twist}</Text>
         </View>
       )}
     </Animated.View>

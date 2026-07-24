@@ -64,7 +64,7 @@ export function ResultView({ word, definition, archetype, solved, guessesUsed, s
       )}
       {!!archetype && ARCHETYPE_LABEL[archetype] && (
         <Animated.View entering={FadeIn.delay(800)} style={styles.twistPill}>
-          <Text style={styles.twistText}>today's twist: {ARCHETYPE_LABEL[archetype]}</Text>
+          <Text style={styles.twistText}>archetype: {ARCHETYPE_LABEL[archetype]}</Text>
         </Animated.View>
       )}
       <Animated.View entering={FadeIn.delay(900)} style={styles.scoreRow}>

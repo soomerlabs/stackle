@@ -93,6 +93,7 @@ export default function RootLayout() {
           {/* the guess rides up as a SHEET (owner) — iOS pageSheet, pull
               down to bail (intel parks on every guess regardless) */}
           <Stack.Screen name="guess" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="archetypes" options={{ presentation: 'modal' }} />
         </Stack>
         <ToastHost />
       </ThemeProvider>
