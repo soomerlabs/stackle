@@ -51,6 +51,7 @@ export default function LobbyScreen() {
   // CALL-OUT (owner: "can i select a specific user?") — optional; blank
   // keeps the seat open to anyone
   const [callout, setCallout] = useState('');
+  const [more, setMore] = useState(false); // the sealed/call-out drawer
 
   // PICK YOUR WEATHER (owner: "can i pick what kind i want?") — creating
   // a showdown offers all four boards; the rail's squall is just the
@@ -220,30 +221,6 @@ export default function LobbyScreen() {
             </View>
           </View>
 
-          {/* PICK YOUR WEATHER (owner) — which board carries the 1v1 */}
-          {creating && (
-            <View style={styles.tierPickRow}>
-              {boards.map((b) => {
-                const on = activeSeed === b.seed;
-                return (
-                  <Pressable
-                    key={b.seed}
-                    onPress={() => setPickedSeed(b.seed)}
-                    style={[
-                      styles.tierPick,
-                      on
-                        ? { backgroundColor: b.intensity.hue.bg, boxShadow: `inset 0 -3px 0 ${b.intensity.hue.edge}` }
-                        : { backgroundColor: theme.pill },
-                    ]}>
-                    <Text style={[styles.tierPickEmoji, !on && { opacity: 0.55 }]}>
-                      {b.intensity.emoji}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-
           {/* the matchup (showdowns) or the board's standings (storms) */}
           {(creating || joining) ? (
             <View style={styles.duelBlock}>
@@ -262,73 +239,114 @@ export default function LobbyScreen() {
                   </View>
                 )}
               </View>
-              <Text style={[styles.duelLine, { color: theme.sub }]}>
-                {joining
-                  ? sealedJoin
+              {joining && (
+                <Text style={[styles.duelLine, { color: theme.sub }]}>
+                  {sealedJoin
                     ? `${vsName!.toLowerCase()}'s score is sealed — you find out what you were up against after your own run.`
-                    : `${vsName!.toLowerCase()} put up ${vsScore.toLocaleString()}. beat it and the pot is yours.`
-                  : 'play the board — your score becomes an open challenge.'}
-              </Text>
-              {/* THE NAMED GAMBLE (owner): the poster picks the ante */}
+                    : `${vsName!.toLowerCase()} put up ${vsScore.toLocaleString()}. beat it and the pot is yours.`}
+                </Text>
+              )}
+              {/* THE UNCLUTTERED CREATE (owner: "so cluttered, break it
+                  up") — two labeled rows carry the core path (board →
+                  ante → swipe); sealed + call-outs fold behind a quiet
+                  disclosure, the app's own grammar */}
               {creating && (
                 <>
-                  <View style={styles.stakeRow}>
-                    {STAKES.map((s, i) => {
-                      const pal = PALETTE[i % PALETTE.length];
-                      const on = stake === s;
-                      const broke = balance != null && balance < s;
-                      return (
-                        <Pressable
-                          key={s}
-                          disabled={broke}
-                          onPress={() => setStake(s)}
-                          style={[
-                            styles.stakeChip,
-                            on
-                              ? { backgroundColor: pal.bg, boxShadow: `inset 0 -3px 0 ${pal.edge}` }
-                              : { backgroundColor: theme.pill, opacity: broke ? 0.35 : 1 },
-                          ]}>
-                          <Text style={[styles.stakeChipText, { color: on ? '#1F1442' : theme.sub }]}>
-                            {s} ✦
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
+                  <View style={styles.group}>
+                    <Text style={[styles.groupLabel, { color: theme.faint }]}>board</Text>
+                    <View style={styles.stakeRow}>
+                      {boards.map((b) => {
+                        const on = activeSeed === b.seed;
+                        return (
+                          <Pressable
+                            key={b.seed}
+                            onPress={() => setPickedSeed(b.seed)}
+                            style={[
+                              styles.tierPick,
+                              on
+                                ? { backgroundColor: b.intensity.hue.bg, boxShadow: `inset 0 -3px 0 ${b.intensity.hue.edge}` }
+                                : { backgroundColor: theme.pill },
+                            ]}>
+                            <Text style={[styles.tierPickEmoji, !on && { opacity: 0.5 }]}>
+                              {b.intensity.emoji}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
                   </View>
-                  {/* the hand: open (ghost race) or sealed (poker) */}
-                  <View style={styles.handRow}>
-                    {([false, true] as const).map((v) => (
-                      <Pressable
-                        key={String(v)}
-                        onPress={() => setSealed(v)}
-                        style={[
-                          styles.handChip,
-                          sealed === v
-                            ? { backgroundColor: ACCENT, boxShadow: `inset 0 -3px 0 ${ACCENT_EDGE}` }
-                            : { backgroundColor: theme.pill },
-                        ]}>
-                        <Text style={[styles.handChipText, { color: sealed === v ? '#FFFFFF' : theme.sub }]}>
-                          {v ? 'sealed' : 'open hand'}
-                        </Text>
-                      </Pressable>
-                    ))}
+                  <View style={styles.group}>
+                    <Text style={[styles.groupLabel, { color: theme.faint }]}>ante</Text>
+                    <View style={styles.stakeRow}>
+                      {STAKES.map((s, i) => {
+                        const pal = PALETTE[i % PALETTE.length];
+                        const on = stake === s;
+                        const short = balance != null && balance < s;
+                        return (
+                          <Pressable
+                            key={s}
+                            disabled={short}
+                            onPress={() => setStake(s)}
+                            style={[
+                              styles.stakeChip,
+                              on
+                                ? { backgroundColor: pal.bg, boxShadow: `inset 0 -3px 0 ${pal.edge}` }
+                                : { backgroundColor: theme.pill, opacity: short ? 0.35 : 1 },
+                            ]}>
+                            <Text style={[styles.stakeChipText, { color: on ? '#1F1442' : theme.sub }]}>
+                              {s} ✦
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
                   </View>
-                  <Text style={[styles.handHint, { color: theme.faint }]}>
-                    {sealed
-                      ? 'they won’t see your score until their run is in'
-                      : 'they race your recorded run, score in view'}
-                  </Text>
-                  {/* CALL-OUT — name your opponent, or leave the seat open */}
-                  <TextInput
-                    value={callout}
-                    onChangeText={setCallout}
-                    placeholder="call someone out (optional)"
-                    placeholderTextColor={theme.faint}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    maxLength={24}
-                    style={[styles.calloutInput, { color: theme.ink, backgroundColor: theme.pill }]}
-                  />
+                  {/* the quiet drawer — most posts never need it */}
+                  <Pressable onPress={() => setMore((m) => !m)} hitSlop={8}>
+                    <Text style={[styles.moreLink, { color: more ? theme.sub : theme.faint }]}>
+                      {more
+                        ? 'less'
+                        : sealed || callout.trim()
+                          ? `${sealed ? '🂠 sealed' : 'open hand'}${callout.trim() ? ` · ⚔️ ${callout.trim().toLowerCase()}` : ''} ›`
+                          : 'sealed hand · call someone out ›'}
+                    </Text>
+                  </Pressable>
+                  {more && (
+                    <>
+                      <View style={styles.handRow}>
+                        {([false, true] as const).map((v) => (
+                          <Pressable
+                            key={String(v)}
+                            onPress={() => setSealed(v)}
+                            style={[
+                              styles.handChip,
+                              sealed === v
+                                ? { backgroundColor: ACCENT, boxShadow: `inset 0 -3px 0 ${ACCENT_EDGE}` }
+                                : { backgroundColor: theme.pill },
+                            ]}>
+                            <Text style={[styles.handChipText, { color: sealed === v ? '#FFFFFF' : theme.sub }]}>
+                              {v ? 'sealed' : 'open hand'}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                      <Text style={[styles.handHint, { color: theme.faint }]}>
+                        {sealed
+                          ? 'they won’t see your score until their run is in'
+                          : 'they race your recorded run, score in view'}
+                      </Text>
+                      <TextInput
+                        value={callout}
+                        onChangeText={setCallout}
+                        placeholder="call someone out (optional)"
+                        placeholderTextColor={theme.faint}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        maxLength={24}
+                        style={[styles.calloutInput, { color: theme.ink, backgroundColor: theme.pill }]}
+                      />
+                    </>
+                  )}
                 </>
               )}
               {/* THE STAKES (owner: points on the line) */}
@@ -561,6 +579,21 @@ const styles = StyleSheet.create({
   stakeRow: {
     flexDirection: 'row',
     gap: 8,
+  },
+  group: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  groupLabel: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 10.5,
+    letterSpacing: 1.2,
+  },
+  moreLink: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 12,
+    letterSpacing: 0.3,
+    paddingVertical: 2,
   },
   stakeChip: {
     borderRadius: 11, borderCurve: 'continuous',
