@@ -231,6 +231,12 @@ ONE gesture: tracing P·L·A·Y IS the swipe.
 - FALLBACKS: the plain swipe-up must still work for muscle memory; the
   armed chevron state dies (there IS no separate armed state — the arm
   is the corner).
+- THE CORNER FAB (owner addendum): the whole trace lives in a corner,
+  out of the way — and the corner is the L's NATURAL home: P·L run
+  along the bottom edge, A·Y climb the side edge. Home's full-width
+  dock band retires; the sections get the space. Open questions for
+  the build: where the next-sworbl countdown lives on a done day, and
+  how the corner coexists with the parked sheet's peek/frost.
 - BUILD HOME: this is the OPENING move of the universal-play-door
   session — the dock gesture is being rebuilt context-aware there
   anyway; the hockey stick is its input layer. It must not be bolted
