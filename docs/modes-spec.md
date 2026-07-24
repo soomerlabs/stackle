@@ -257,3 +257,15 @@ ONE gesture: tracing P·L·A·Y IS the swipe.
   anyway; the hockey stick is its input layer. It must not be bolted
   onto the current dock (the zombie-arm/slow-drag fixes live in the
   current geometry's assumptions).
+
+## ECONOMY ADDENDA (owner 2026-07-24 late)
+- STORM ENTRIES: the ladder charges at the door — drizzle FREE (the
+  on-ramp), squall 5 / thunder 10 / hurricane 20 ✦ (server-priced via
+  spend-points; the lobby charges at swipe-commit).
+- THE FAUCET: solving the daily pays +15 ✦ (submit-score awards on the
+  submission that first carries the solve). The ritual funds the stakes.
+- PRIVATE STORMS, ORGANIZER RULES: the creator sets the entry terms for
+  their board (entry fee in points, or their own conditions) — the
+  organizer owns the door. Rides the private-storms build.
+- FUTURE: storm entry pots paying the day's crown holder needs a settle
+  job (cron) — pinned, not built.

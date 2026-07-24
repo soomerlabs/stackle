@@ -16,7 +16,7 @@ import { getPlayerName } from '@/game/player';
 import { stormIntensity, stormName } from '@/game/storm-seeds';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
 import { TraceLaunch } from '@/components/trace-launch';
-import { claimShowdown, fetchMyShowdownPoints } from '@/net/duels';
+import { claimShowdown, fetchMyShowdownPoints, spendPoints } from '@/net/duels';
 import { fetchPractice } from '@/net/standings-remote';
 
 function fmt(secs: number): string {
@@ -54,10 +54,9 @@ export default function LobbyScreen() {
   }, [seed]);
 
   const [claiming, setClaiming] = useState<'idle' | 'busy' | 'taken' | 'poor' | 'error'>('idle');
-  // the wallet, for the stakes line (showdown faces only)
+  // the wallet — stakes on showdown faces, ENTRY on paid storm tiers
   const [balance, setBalance] = useState<number | null>(null);
   useEffect(() => {
-    if (!creating && !joining) return;
     let live = true;
     void fetchMyShowdownPoints().then((v) => live && v != null && setBalance(v));
     return () => {
@@ -66,7 +65,23 @@ export default function LobbyScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const play = () => {
+  const [entering, setEntering] = useState<'idle' | 'busy' | 'poor'>('idle');
+  const play = async () => {
+    // PAID TIERS charge at the door (owner: "enter some points to get
+    // into the storms") — drizzle stays the free on-ramp
+    if (intensity.entry > 0 && !joining) {
+      if (entering === 'busy') return;
+      setEntering('busy');
+      const r = await spendPoints(`storm-${intensity.key}` as 'storm-squall');
+      if (r === 'poor') {
+        setEntering('poor');
+        return;
+      }
+      if (r === 'error') {
+        setEntering('idle');
+        return;
+      }
+    }
     // REPLACE, not push — the sheet dismisses and the board owns the
     // screen; back from the board is home (owner flow)
     router.replace(`/storm?seed=${seed}&go=1${creating ? '&post=1' : ''}`);
@@ -113,6 +128,8 @@ export default function LobbyScreen() {
               <Text style={[styles.tierMeta, { color: theme.faint }]}>
                 {intensity.label} · {fmt(intensity.clockSecs)}
                 {intensity.key === 'hurricane' ? ' · no mercy' : ''}
+                {intensity.entry > 0 ? ` · entry ${intensity.entry} ✦` : ' · free'}
+                {balance != null ? ` · you have ${balance.toLocaleString()}` : ''}
               </Text>
             </View>
           </View>
@@ -189,17 +206,22 @@ export default function LobbyScreen() {
           )}
 
           {/* THE TRACE IS THE BUTTON (owner: on brand) — spell it to go */}
+          {entering === 'poor' && (
+            <Text style={[styles.claimNote, { color: '#F58A66' }]}>
+              not enough points for the entry — the drizzle is always free
+            </Text>
+          )}
           <TraceLaunch
             onCommit={joining ? accept : play}
-            disabled={claiming === 'busy' || claiming === 'taken' || claiming === 'poor'}
+            disabled={claiming === 'busy' || claiming === 'taken' || claiming === 'poor' || entering === 'busy' || entering === 'poor'}
             caption={
               joining
                 ? claiming === 'busy'
                   ? 'claiming…'
-                  : 'trace to accept'
+                  : 'swipe to accept'
                 : creating
-                  ? 'trace to play & post'
-                  : 'trace to play'
+                  ? 'swipe to play & post'
+                  : 'swipe to play'
             }
           />
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.notNow}>
@@ -309,7 +331,7 @@ const styles = StyleSheet.create({
   },
   lbBlock: {
     gap: 9,
-    paddingTop: 2,
+    justifyContent: 'center', // the empty line centers in the space (owner)
     // FIXED height (audit: fitToContents re-measured when the async top-5
     // landed and the sheet visibly grew) — loading paints into this space
     height: 148,
@@ -318,7 +340,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 13,
     textAlign: 'center',
-    marginTop: 22,
   },
   lbRow: {
     flexDirection: 'row',

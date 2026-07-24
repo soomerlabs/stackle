@@ -141,17 +141,33 @@ Deno.serve(async (req) => {
       w.t !== undefined ? { word: w.word, pts: w.pts, t: Math.round(w.t) } : { word: w.word, pts: w.pts }
     ),
   };
+  // THE FAUCET (owner economy): the daily SOLVE pays +15 points — the
+  // ritual funds the stakes. Awarded once, on the submission that
+  // carries the solve for the first time.
+  const awardSolve = async () => {
+    const { data: pl } = await admin.from("players").select("showdown_points").eq("id", user.id).maybeSingle();
+    if (pl) {
+      await admin.from("players").update({ showdown_points: (pl.showdown_points ?? 0) + 15 }).eq("id", user.id);
+    }
+  };
+
   const { error } = await admin.from("submissions").insert(row);
-  if (!error) return json({ ok: true, duplicate: false });
+  if (!error) {
+    if (solved) await awardSolve();
+    return json({ ok: true, duplicate: false });
+  }
   if (error.code !== "23505") return bad(error.message, 500);
 
   // duplicate day: keep-best (ONE mode now — modes-spec round decay)
   const { data: prior } = await admin
     .from("submissions")
-    .select("score")
+    .select("score, solved")
     .eq("player_id", user.id)
     .eq("day", day)
     .maybeSingle();
+  // the solve faucet on the keep-best path: only when THIS submission
+  // brings the solve (prior wasn't solved)
+  if (solved && prior && !prior.solved) await awardSolve();
   if (prior && prior.score >= score) return json({ ok: true, kept: prior.score });
   const { error: upErr } = await admin
     .from("submissions")

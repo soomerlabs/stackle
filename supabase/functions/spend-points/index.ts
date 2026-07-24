@@ -7,6 +7,10 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const PRICES: Record<string, number> = {
   hint: 25,
+  // storm entries (owner): the ladder charges as it climbs
+  'storm-squall': 5,
+  'storm-thunder': 10,
+  'storm-hurricane': 20,
 };
 
 const bad = (msg: string, status = 422) =>

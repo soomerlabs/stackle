@@ -173,7 +173,9 @@ export async function claimShowdown(id: number): Promise<'ok' | 'taken' | 'poor'
 }
 
 // the wallet's client spender — prices live SERVER-side only
-export async function spendPoints(action: 'hint'): Promise<{ balance: number } | 'poor' | 'error'> {
+export async function spendPoints(
+  action: 'hint' | 'storm-squall' | 'storm-thunder' | 'storm-hurricane'
+): Promise<{ balance: number } | 'poor' | 'error'> {
   const sb = supabase();
   if (!sb) return 'error';
   try {

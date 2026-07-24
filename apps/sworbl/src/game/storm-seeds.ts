@@ -30,13 +30,14 @@ export interface StormIntensity {
   // drizzle blue · squall ice · thunder yellow · hurricane red)
   bolts: number; // 1-3 on the card chip
   emoji: string; // the weather itself (hurricane renders the FLAG instead)
+  entry: number; // points to enter (owner) — drizzle free, the on-ramp
 }
 
 export const INTENSITIES: Record<'a' | 'b' | 'c' | 'd', StormIntensity> = {
-  a: { key: 'drizzle', label: 'drizzle', clockSecs: 180, capSecs: 300, friendly: true, hue: { bg: '#5BC8F5', edge: '#2E9FD0' }, bolts: 1, emoji: '🌧️' },
-  b: { key: 'squall', label: 'squall', clockSecs: 120, capSecs: 200, friendly: true, hue: { bg: '#AEE3F7', edge: '#74B9D6' }, bolts: 2, emoji: '💨' },
-  c: { key: 'thunder', label: 'thunder', clockSecs: 90, capSecs: 150, friendly: false, hue: { bg: '#F5B84A', edge: '#CE9022' }, bolts: 3, emoji: '⛈️' },
-  d: { key: 'hurricane', label: 'hurricane', clockSecs: 60, capSecs: 100, friendly: false, hue: { bg: '#E5484D', edge: '#8C2328' }, bolts: 4, emoji: '🌀' },
+  a: { key: 'drizzle', label: 'drizzle', clockSecs: 180, capSecs: 300, friendly: true, hue: { bg: '#5BC8F5', edge: '#2E9FD0' }, bolts: 1, emoji: '🌧️', entry: 0 },
+  b: { key: 'squall', label: 'squall', clockSecs: 120, capSecs: 200, friendly: true, hue: { bg: '#AEE3F7', edge: '#74B9D6' }, bolts: 2, emoji: '💨', entry: 5 },
+  c: { key: 'thunder', label: 'thunder', clockSecs: 90, capSecs: 150, friendly: false, hue: { bg: '#F5B84A', edge: '#CE9022' }, bolts: 3, emoji: '⛈️', entry: 10 },
+  d: { key: 'hurricane', label: 'hurricane', clockSecs: 60, capSecs: 100, friendly: false, hue: { bg: '#E5484D', edge: '#8C2328' }, bolts: 4, emoji: '🌀', entry: 20 },
 };
 
 // rules from the seed alone — foreign seeds (first-storm, shares) play
