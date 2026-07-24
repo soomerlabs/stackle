@@ -171,9 +171,6 @@ export default function HomeScreen() {
   // HOME PULL-TO-REFRESH (owner networking audit): standings + day spec
   const [homeRefreshing, setHomeRefreshing] = useState(false);
   const [duelsNonce, setDuelsNonce] = useState(0);
-  // THE PLAY DOOR SELECTION (owner): what the FAB launches. Daily by
-  // default; a tapped storm card links the trace to its board.
-  const [selectedStorm, setSelectedStorm] = useState<string | null>(null);
   const homeRefresh = useCallback(async () => {
     if (!deal) return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -335,7 +332,6 @@ export default function HomeScreen() {
   }, []);
   const closeSettled = useCallback(() => {
     closingRef.current = false;
-    haptic.soft(); // THE close beat — one soft tap as the sheet docks
     // the day re-read happens AFTER the park lands (owner butter audit:
     // refreshing at +300ms detonated home's biggest re-render — FlipTiles,
     // pager, standings, dock swap — in the MIDDLE of the park spring)
@@ -803,12 +799,7 @@ export default function HomeScreen() {
             }
           />
 
-          <StormShelf
-            theme={theme}
-            refreshNonce={duelsNonce}
-            selectedSeed={selectedStorm}
-            onSelect={setSelectedStorm}
-          />
+          <StormShelf theme={theme} refreshNonce={duelsNonce} />
 
           <ShowdownsRail theme={theme} refreshNonce={duelsNonce} />
         </ScrollView>
@@ -889,20 +880,9 @@ export default function HomeScreen() {
       {/* THE FAB, TOPMOST (owner: "the blur is hijacking the hit") — it
           renders ABOVE the parked sheet layers so the corner is always
           tappable; it fades itself once the sheet rises */}
-      <PlayFab
-        sheetY={sheetY}
-        closedY={closedY}
-        onCommit={
-          selectedStorm
-            ? () => {
-                sheetY.value = withSpring(closedY, PARK_SPRING);
-                setSelectedStorm(null);
-                router.push(`/storm?seed=${selectedStorm}&go=1`);
-              }
-            : openToPlay
-        }
-        enabled={(!played || !!selectedStorm) && !!deal}
-      />
+      {/* the FAB is the DAILY's door (owner): storms + showdowns launch
+          from their own lobbies' PLAY — that's the natural flow */}
+      <PlayFab sheetY={sheetY} closedY={closedY} onCommit={openToPlay} enabled={!played && !!deal} />
     </View>
   );
 }

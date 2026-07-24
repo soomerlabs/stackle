@@ -39,16 +39,7 @@ function HurricaneFlag() {
   );
 }
 
-export function StormShelf({
-  theme, refreshNonce, selectedSeed, onSelect,
-}: {
-  theme: Theme;
-  refreshNonce?: number;
-  // PLAY DOOR (owner): tap = select (the FAB launches it); tapping the
-  // SELECTED card again opens its lobby for details
-  selectedSeed?: string | null;
-  onSelect?: (seed: string) => void;
-}) {
+export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce?: number }) {
   const boards = useMemo(() => dailyStormBoards(), []);
   const [crowns, setCrowns] = useState<Crowns | null>(null);
   useEffect(() => {
@@ -84,21 +75,8 @@ export function StormShelf({
           return (
             <Pressable
               key={b.seed}
-              onPress={() => {
-                if (selectedSeed === b.seed || !onSelect) router.push(`/lobby?seed=${b.seed}`);
-                else onSelect(b.seed);
-              }}
-              style={[
-                styles.block,
-                { backgroundColor: theme.card },
-                // ON-BRAND selection (owner): the sworble violet, always —
-                // never per-tier rainbow borders
-                selectedSeed === b.seed && {
-                  borderWidth: 2,
-                  borderColor: ACCENT,
-                  transform: [{ translateY: -2 }],
-                },
-              ]}>
+              onPress={() => router.push(`/lobby?seed=${b.seed}`)}
+              style={[styles.block, { backgroundColor: theme.card }]}>
               {/* SPLIT CELL (owner): the weather OWNS the left half —
                   big emoji (the flag for hurricane, pulsing red); data
                   stacks on the right */}

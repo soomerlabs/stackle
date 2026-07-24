@@ -5,12 +5,12 @@
 // Release past the commit line = open; short of it = spring home.
 // Radiance (owner): aurora candy glow breathes off the blocks — the
 // only affordance. All motion is UI-thread shared values.
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue, useAnimatedStyle, useDerivedValue, useAnimatedReaction,
-  withSpring, withTiming, runOnJS, interpolate, interpolateColor, Extrapolation,
+  withSpring, withTiming, withRepeat, Easing, runOnJS, interpolate, interpolateColor, Extrapolation,
   type SharedValue,
 } from 'react-native-reanimated';
 
@@ -18,8 +18,8 @@ import { haptic } from '@/game/haptics';
 import { PALETTE, INK, gameSurface } from '@/game/palette';
 import { useTheme } from '@/game/theme';
 
-const TILE = 48; // the old dock blocks' size (owner)
-const GAP = 8;
+const TILE = 56; // bigger (owner)
+const GAP = 9;
 const CELL = TILE + GAP;
 // THE TRUE STICK (owner): bottom row reads PL, the column reads LAY —
 // the L IS the corner, shared by both strokes. Trace right, then up.
@@ -76,9 +76,41 @@ function FabTile({ i, sLit, mono }: {
   );
 }
 
+const GLOW_PALS = [0, 1, 2, 3]; // violet · cyan · mint · pink
+
+function GlowLayer({ i, phase }: { i: number; phase: SharedValue<number> }) {
+  const pal = PALETTE[GLOW_PALS[i]];
+  const pose = useAnimatedStyle(() => {
+    // distance around the 4-color wheel → crossfade weight
+    const d = Math.abs(((phase.value - i) % 4 + 4) % 4);
+    const w = Math.max(0, 1 - Math.min(d, 4 - d));
+    return { opacity: w * 0.5 };
+  });
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.glow,
+        pose,
+        {
+          backgroundColor: `${pal.bg}14`,
+          boxShadow: `0 0 26px 7px ${pal.bg}`,
+        },
+      ]}
+    />
+  );
+}
+
 export function PlayFab({ sheetY, closedY, commitFrac = 0.34, onCommit, enabled }: Props) {
   const gs = gameSurface(useTheme().mode);
   const mono = { bg: gs.mono.bg, edge: gs.mono.edge, ink: gs.monoInk };
+
+  // the wheel turns slowly, forever — UI thread only
+  const glowPhase = useSharedValue(0);
+  useEffect(() => {
+    glowPhase.value = withRepeat(withTiming(4, { duration: 7000, easing: Easing.linear }), -1, false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // sLit: how many tiles the trace has passed (0-4). UI-thread only.
   const sLit = useSharedValue(0);
   const sTracing = useSharedValue(0);
@@ -147,6 +179,9 @@ export function PlayFab({ sheetY, closedY, commitFrac = 0.34, onCommit, enabled 
     <Animated.View style={[styles.wrap, fabPose]} pointerEvents="box-none">
       <GestureDetector gesture={pan}>
         <View style={styles.stack} collapsable={false}>
+          {GLOW_PALS.map((i) => (
+            <GlowLayer key={`g${i}`} i={i} phase={glowPhase} />
+          ))}
           {[0, 1, 2, 3].map((i) => (
             <FabTile key={i} i={i} sLit={sLit} mono={mono} />
           ))}
@@ -170,19 +205,28 @@ const styles = StyleSheet.create({
     width: CELL + TILE, // two wide: the foot
     height: CELL * 2 + TILE, // three tall: the column
   },
+  glow: {
+    position: 'absolute',
+    left: 3,
+    right: 3,
+    top: 3,
+    bottom: 3,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+  },
   tile: {
     position: 'absolute',
     left: 0,
     width: TILE,
     height: TILE,
-    borderRadius: 12,
+    borderRadius: 15, // 0.26 × 56 — the tile squircle law
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
   },
   letter: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 19,
+    fontSize: 22,
     includeFontPadding: false,
   },
 });

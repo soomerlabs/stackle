@@ -6,8 +6,8 @@
 //                             land on both players (+10 win / +2 played)
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const WIN_PTS = 10;
-const PLAY_PTS = 2;
+// THE POT (owner: "literally gambling points") — each side antes the
+// stake; the winner takes it all. The old flat +10/+2 retires.
 
 const bad = (msg: string, status = 422) =>
   new Response(JSON.stringify({ ok: false, error: msg }), {
@@ -45,9 +45,22 @@ Deno.serve(async (req) => {
   );
 
   if (body.action === "claim") {
-    const { data: duel } = await admin.from("open_duels").select("poster, status").eq("id", id).maybeSingle();
+    const { data: duel } = await admin
+      .from("open_duels")
+      .select("poster, status, stake")
+      .eq("id", id)
+      .maybeSingle();
     if (!duel) return bad("no such showdown", 404);
     if (duel.poster === user.id) return bad("that's your own post");
+    // the taker must cover the ante BEFORE the claim locks
+    const stake = Number(duel.stake) || 0;
+    const { data: wallet } = await admin
+      .from("players")
+      .select("showdown_points")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (!wallet || (wallet.showdown_points ?? 0) < stake)
+      return bad("not enough points", 402);
     // atomic claim: only an OPEN row flips; the race's loser matches zero rows
     const { data: claimed, error } = await admin
       .from("open_duels")
@@ -57,13 +70,18 @@ Deno.serve(async (req) => {
       .select("id");
     if (error) return bad(error.message, 500);
     if (!claimed?.length) return bad("already taken", 409);
-    return json({ ok: true });
+    // ante lands after the claim wins (a lost race never charges)
+    await admin
+      .from("players")
+      .update({ showdown_points: (wallet.showdown_points ?? 0) - stake })
+      .eq("id", user.id);
+    return json({ ok: true, stake });
   }
 
   if (body.action === "resolve") {
     const { data: duel } = await admin
       .from("open_duels")
-      .select("seed, score, poster, taker, status")
+      .select("seed, score, poster, taker, status, stake")
       .eq("id", id)
       .maybeSingle();
     if (!duel) return bad("no such showdown", 404);
@@ -90,21 +108,17 @@ Deno.serve(async (req) => {
     if (error) return bad(error.message, 500);
     if (!decided?.length) return json({ ok: true, alreadyDecided: true });
 
-    // points: winner +10, both +2 for playing — via RPC-free read-modify
-    // (single-writer: only this function touches points, races are benign)
-    for (const [pid, delta] of [
-      [duel.poster, PLAY_PTS + (takerWins ? 0 : WIN_PTS)],
-      [duel.taker, PLAY_PTS + (takerWins ? WIN_PTS : 0)],
-    ] as Array<[string, number]>) {
-      const { data: pl } = await admin.from("players").select("showdown_points").eq("id", pid).maybeSingle();
-      if (pl) {
-        await admin
-          .from("players")
-          .update({ showdown_points: (pl.showdown_points ?? 0) + delta })
-          .eq("id", pid);
-      }
+    // THE POT: both antes to the winner (single-writer function; races
+    // are benign)
+    const pot = (Number(duel.stake) || 0) * 2;
+    const { data: pl } = await admin.from("players").select("showdown_points").eq("id", winner).maybeSingle();
+    if (pl) {
+      await admin
+        .from("players")
+        .update({ showdown_points: (pl.showdown_points ?? 0) + pot })
+        .eq("id", winner);
     }
-    return json({ ok: true, won: takerWins, yourScore: run.score, theirScore: duel.score });
+    return json({ ok: true, won: takerWins, yourScore: run.score, theirScore: duel.score, pot });
   }
 
   return bad("bad action");

@@ -49,6 +49,17 @@ Deno.serve(async (req) => {
   if ((open ?? []).some((r) => r.seed !== seed))
     return bad("you already have an open showdown", 409);
 
+  // THE ANTE (owner: points on the line) — posting stakes 25. Atomic:
+  // the decrement only lands if the balance covers it.
+  const STAKE = 25;
+  const { data: wallet } = await admin
+    .from("players")
+    .select("showdown_points")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!wallet || (wallet.showdown_points ?? 0) < STAKE)
+    return bad("not enough points", 402);
+
   // the run must exist, validated, under the caller's own id
   const { data: run } = await admin
     .from("practice_scores")
@@ -65,11 +76,17 @@ Deno.serve(async (req) => {
       format,
       score: run.score,
       words: run.words ?? [],
+      stake: STAKE,
     },
     { onConflict: "seed,poster" },
   );
   if (error) return bad(error.message, 500);
-  return new Response(JSON.stringify({ ok: true, score: run.score }), {
+  // ante lands AFTER the post succeeds (a failed post never charges)
+  await admin
+    .from("players")
+    .update({ showdown_points: (wallet.showdown_points ?? 0) - STAKE })
+    .eq("id", user.id);
+  return new Response(JSON.stringify({ ok: true, score: run.score, stake: STAKE }), {
     headers: { "Content-Type": "application/json" },
   });
 });
