@@ -10,6 +10,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { ArchetypeBadge } from '@/components/home/archetype-badge';
 import { HeroWord } from '@/components/home/hero-word';
 import { StandingsStrip } from '@/components/home/standings-strip';
+import { gameSurface } from '@/game/palette';
 import { ACCENT, ACCENT_EDGE, type Theme } from '@/game/theme';
 
 interface Props {
@@ -56,8 +57,11 @@ export function HeroCard({
         />
       </Pressable>
 
-      {/* one glance of the field, ON the card */}
-      <StandingsStrip theme={theme} podium={podium} you={you} />
+      {/* one glance of the field, ON the card — the strip IS the door
+          to the full board (owner: no separate leaderboard button) */}
+      <Pressable onPress={() => router.push('/leaderboard')} hitSlop={4}>
+        <StandingsStrip theme={theme} podium={podium} you={you} />
+      </Pressable>
 
       {/* the buttons live IN the card (owner: no floating corner) */}
       {!played && (
@@ -68,22 +72,22 @@ export function HeroCard({
             <Text style={styles.playText}>PLAY</Text>
           </Pressable>
           {sworbPending && !!onGuess && (
+            // PLAY's twin in the board's mono gray — SAME 3d ledge (owner)
             <Pressable
               onPress={onGuess}
-              style={[styles.guess, { backgroundColor: theme.pill }]}>
-              <Text style={[styles.guessText, { color: theme.ink }]}>guess the sworb</Text>
+              style={[
+                styles.guess,
+                {
+                  backgroundColor: gameSurface(theme.mode).mono.bg,
+                  boxShadow: `0 4px 0 ${gameSurface(theme.mode).mono.edge}`,
+                },
+              ]}>
+              <Text style={[styles.guessText, { color: theme.ink }]}>GUESS</Text>
             </Pressable>
           )}
         </View>
       )}
 
-      {/* the full board is one tap deeper — a real button under the
-          play row (owner) */}
-      <Pressable
-        onPress={() => router.push('/leaderboard')}
-        style={[styles.lbBtn, { backgroundColor: theme.pill }]}>
-        <Text style={[styles.lbBtnText, { color: theme.sub }]}>leaderboard ›</Text>
-      </Pressable>
     </View>
   );
 }
@@ -150,19 +154,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   guessText: {
-    // PLAY's twin (owner: "same size as Play") — weight parity, its own ink
+    // PLAY's exact twin (owner) — same metrics, gray house, GUESS
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 15,
-    letterSpacing: 0.4,
-  },
-  lbBtn: {
-    borderRadius: 14, borderCurve: 'continuous',
-    paddingVertical: 11,
-    alignItems: 'center',
-  },
-  lbBtnText: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 13,
-    letterSpacing: 0.4,
+    letterSpacing: 1.2,
   },
 });

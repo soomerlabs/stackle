@@ -13,7 +13,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, Share } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import engine from '@sworbl/engine';
 
-import { PALETTE } from '@/game/palette';
+import { PALETTE, tileColorFor } from '@/game/palette';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
 import { track } from '@/net/analytics';
 import {
@@ -61,6 +61,13 @@ export default function RoomsScreen() {
   // create face
   const [name, setName] = useState('');
   const [entry, setEntry] = useState(25);
+  // CUSTOM AMOUNTS (owner) — the organizer names any door, 0..500
+  const [customEntry, setCustomEntry] = useState(false);
+  const [entryText, setEntryText] = useState('');
+  const entryVal = customEntry
+    ? Math.min(500, Math.max(0, parseInt(entryText, 10) || 0))
+    : entry;
+  const entryOk = !customEntry || entryText.length > 0;
   const [creating, setCreating] = useState<'idle' | 'busy' | 'poor' | 'error'>('idle');
 
   // join face
@@ -104,8 +111,8 @@ export default function RoomsScreen() {
   const doCreate = async () => {
     if (creating === 'busy' || !name.trim()) return;
     setCreating('busy');
-    const r = await createRoom(name.trim(), entry);
-    track('room_create', { entry, ok: typeof r === 'object' });
+    const r = await createRoom(name.trim(), entryVal);
+    track('room_create', { entry: entryVal, custom: customEntry, ok: typeof r === 'object' });
     if (r === 'poor' || r === 'error') {
       setCreating(r);
       return;
@@ -150,51 +157,65 @@ export default function RoomsScreen() {
             <>
               <Text style={[styles.title, { color: theme.ink }]}>private rooms</Text>
               <Text style={[styles.sub, { color: theme.sub }]}>
-                your board, your buy-in, your circle. the pot goes to the top score when the host calls it.
+                a showdown for your whole circle — you set the door, everyone antes into one pot, top score takes it.
               </Text>
-              <View style={styles.pickRow}>
-                <Pressable
-                  onPress={() => setFace('create')}
-                  style={[styles.pickCard, { backgroundColor: theme.card }]}>
-                  <Text style={styles.pickEmoji}>🔒</Text>
-                  <Text style={[styles.pickLabel, { color: theme.ink }]}>make a room</Text>
-                  <Text style={[styles.pickMeta, { color: theme.faint }]}>you set the stakes</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setFace('join')}
-                  style={[styles.pickCard, { backgroundColor: theme.card }]}>
-                  <Text style={styles.pickEmoji}>🎟️</Text>
-                  <Text style={[styles.pickLabel, { color: theme.ink }]}>enter a code</Text>
-                  <Text style={[styles.pickMeta, { color: theme.faint }]}>got an invite?</Text>
-                </Pressable>
-              </View>
+              {/* ROWS, the showdowns grammar (owner: "more like showdowns") */}
+              <Pressable onPress={() => setFace('create')} style={styles.row} hitSlop={4}>
+                <View style={[styles.blockIcon, { backgroundColor: theme.pill }]}>
+                  <Text style={styles.blockEmoji}>🔒</Text>
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={[styles.rowName, { color: theme.ink }]}>make a room</Text>
+                  <Text style={[styles.rowStat, { color: theme.faint }]}>you dictate the money</Text>
+                </View>
+                <View style={styles.spring} />
+                <Text style={[styles.rowGo, { color: ACCENT }]}>post ›</Text>
+              </Pressable>
+              <Pressable onPress={() => setFace('join')} style={styles.row} hitSlop={4}>
+                <View style={[styles.blockIcon, styles.dashedIcon, { borderColor: theme.dashed }]}>
+                  <Text style={[styles.blockMark, { color: theme.faint }]}>?</Text>
+                </View>
+                <View style={styles.rowText}>
+                  <Text style={[styles.rowName, { color: theme.ink }]}>enter a code</Text>
+                  <Text style={[styles.rowStat, { color: theme.faint }]}>got an invite?</Text>
+                </View>
+                <View style={styles.spring} />
+                <Text style={[styles.rowGo, { color: ACCENT }]}>join ›</Text>
+              </Pressable>
               {/* pending offers — accepting pays the door (consent = tap) */}
-              {invites.length > 0 && (
-                <View style={styles.savedWrap}>
-                  <Text style={[styles.savedTitle, { color: theme.faint }]}>invites</Text>
-                  {invites.map((inv) => (
-                    <Pressable key={inv.code} onPress={() => doJoin(inv.code)} style={styles.savedRow}>
-                      <Text style={[styles.savedCode, styles.inviteName, { color: theme.ink }]} numberOfLines={1}>
+              {invites.map((inv) => {
+                const pal = PALETTE[tileColorFor(inv.inviterName[0]?.toLowerCase() ?? 'a', 0)];
+                return (
+                  <Pressable key={inv.code} onPress={() => doJoin(inv.code)} style={styles.row} hitSlop={4}>
+                    <View style={[styles.blockIcon, { backgroundColor: pal.bg, boxShadow: `inset 0 -3px 0 ${pal.edge}` }]}>
+                      <Text style={styles.blockLetter}>{inv.inviterName[0]?.toLowerCase()}</Text>
+                    </View>
+                    <View style={styles.rowText}>
+                      <Text style={[styles.rowName, { color: theme.ink }]} numberOfLines={1}>
                         {inv.inviterName.toLowerCase()}&rsquo;s {inv.name}
                       </Text>
-                      <Text style={[styles.savedGo, { color: ACCENT }]}>
-                        {inv.entry === 0 ? 'free' : `${inv.entry} ✦`} · join ›
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-              {myCodes.length > 0 && (
-                <View style={styles.savedWrap}>
-                  <Text style={[styles.savedTitle, { color: theme.faint }]}>your rooms</Text>
-                  {myCodes.map((c) => (
-                    <Pressable key={c} onPress={() => doJoin(c)} style={styles.savedRow}>
-                      <Text style={[styles.savedCode, { color: theme.ink }]}>{c}</Text>
-                      <Text style={[styles.savedGo, { color: ACCENT }]}>open ›</Text>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
+                      <Text style={[styles.rowStat, { color: ACCENT }]}>⚔️ you&rsquo;re invited</Text>
+                    </View>
+                    <View style={styles.spring} />
+                    <Text style={[styles.rowGo, { color: ACCENT }]}>
+                      {inv.entry === 0 ? 'free' : `${inv.entry} ✦`} · join ›
+                    </Text>
+                  </Pressable>
+                );
+              })}
+              {myCodes.map((c) => (
+                <Pressable key={c} onPress={() => doJoin(c)} style={styles.row} hitSlop={4}>
+                  <View style={[styles.blockIcon, { backgroundColor: theme.pill }]}>
+                    <Text style={[styles.blockMark, { color: theme.sub }]}>{c[0]}</Text>
+                  </View>
+                  <View style={styles.rowText}>
+                    <Text style={[styles.rowName, { color: theme.ink }]}>{c}</Text>
+                    <Text style={[styles.rowStat, { color: theme.faint }]}>your room</Text>
+                  </View>
+                  <View style={styles.spring} />
+                  <Text style={[styles.rowGo, { color: ACCENT }]}>open ›</Text>
+                </Pressable>
+              ))}
             </>
           )}
 
@@ -216,11 +237,14 @@ export default function RoomsScreen() {
               <View style={styles.chipRow}>
                 {ENTRIES.map((e, i) => {
                   const pal = PALETTE[i % PALETTE.length];
-                  const on = entry === e;
+                  const on = !customEntry && entry === e;
                   return (
                     <Pressable
                       key={e}
-                      onPress={() => setEntry(e)}
+                      onPress={() => {
+                        setCustomEntry(false);
+                        setEntry(e);
+                      }}
                       style={[
                         styles.chip,
                         on
@@ -233,7 +257,30 @@ export default function RoomsScreen() {
                     </Pressable>
                   );
                 })}
+                {/* CUSTOM (owner) — the organizer dictates ANY money */}
+                <Pressable
+                  onPress={() => setCustomEntry(true)}
+                  style={[
+                    styles.chip,
+                    customEntry
+                      ? { backgroundColor: ACCENT, boxShadow: `inset 0 -3px 0 ${ACCENT_EDGE}` }
+                      : { backgroundColor: theme.pill },
+                  ]}>
+                  <Text style={[styles.chipText, { color: customEntry ? '#FFFFFF' : theme.sub }]}>…</Text>
+                </Pressable>
               </View>
+              {customEntry && (
+                <TextInput
+                  value={entryText}
+                  onChangeText={(t) => setEntryText(t.replace(/[^0-9]/g, ''))}
+                  placeholder="name the door (0–500)"
+                  placeholderTextColor={theme.faint}
+                  keyboardType="number-pad"
+                  maxLength={3}
+                  autoFocus
+                  style={[styles.input, { color: theme.ink, backgroundColor: theme.card }]}
+                />
+              )}
               {creating === 'poor' && (
                 <Text style={[styles.note, { color: '#F58A66' }]}>
                   not enough points to cover your own buy-in
@@ -246,8 +293,8 @@ export default function RoomsScreen() {
               )}
               <Pressable
                 onPress={doCreate}
-                disabled={creating === 'busy' || !name.trim()}
-                style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }, !name.trim() && { opacity: 0.45 }]}>
+                disabled={creating === 'busy' || !name.trim() || !entryOk}
+                style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }, (!name.trim() || !entryOk) && { opacity: 0.45 }]}>
                 <Text style={styles.ctaText}>{creating === 'busy' ? 'MINTING…' : 'MAKE IT'}</Text>
               </Pressable>
               <Pressable onPress={() => setFace('pick')} hitSlop={8} style={styles.backLink}>
@@ -302,10 +349,25 @@ export default function RoomsScreen() {
           {face === 'room' && room && (
             <>
               <Text style={[styles.title, { color: theme.ink }]}>{room.name}</Text>
-              <Text style={[styles.sub, { color: theme.faint }]}>
-                {room.hostName.toLowerCase()}&rsquo;s room · {room.seats} in ·{' '}
-                {room.entry === 0 ? 'free door' : `${room.entry} ✦ door`} · pot {room.pot} ✦
-              </Text>
+              {/* the terms as PILLS — the storm sheet's grammar */}
+              <View style={styles.statRow}>
+                <View style={[styles.statPill, { backgroundColor: theme.pill }]}>
+                  <Text style={[styles.statText, { color: theme.ink }]}>
+                    {room.hostName.toLowerCase()}&rsquo;s room
+                  </Text>
+                </View>
+                <View style={[styles.statPill, { backgroundColor: theme.pill }]}>
+                  <Text style={[styles.statText, { color: theme.ink }]}>{room.seats} in</Text>
+                </View>
+                <View style={[styles.statPill, { backgroundColor: theme.pill }]}>
+                  <Text style={[styles.statText, { color: theme.ink }]}>
+                    {room.entry === 0 ? 'free door' : `door ${room.entry} ✦`}
+                  </Text>
+                </View>
+                <View style={[styles.statPill, { backgroundColor: '#F5B84A', boxShadow: 'inset 0 -2.5px 0 #CE9022' }]}>
+                  <Text style={[styles.statText, { color: '#1F1442' }]}>pot {room.pot} ✦</Text>
+                </View>
+              </View>
               {/* the code IS the invite — tap to share */}
               <Pressable
                 onPress={() =>
@@ -328,19 +390,26 @@ export default function RoomsScreen() {
                   </Text>
                 )}
                 {board != null &&
-                  board.map((r, i) => (
-                    <View key={`${r.name}-${i}`} style={styles.lbRow}>
-                      <Text style={[styles.lbRank, { color: theme.faint }]}>{i + 1}</Text>
-                      <Text
-                        style={[styles.lbName, { color: r.isMe ? ACCENT : theme.ink }]}
-                        numberOfLines={1}>
-                        {r.name.toLowerCase()}
-                      </Text>
-                      <Text style={[styles.lbScore, { color: theme.sub }]}>
-                        {r.score.toLocaleString()}
-                      </Text>
-                    </View>
-                  ))}
+                  board.map((r, i) => {
+                    const pal = PALETTE[tileColorFor(r.name[0]?.toLowerCase() ?? 'a', 0)];
+                    return (
+                      <View key={`${r.name}-${i}`} style={styles.lbRow}>
+                        <View style={[styles.blockIcon, styles.lbAvatar, { backgroundColor: pal.bg, boxShadow: `inset 0 -2.5px 0 ${pal.edge}` }]}>
+                          <Text style={[styles.blockLetter, styles.lbLetter]}>
+                            {r.name[0]?.toLowerCase()}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[styles.lbName, { color: r.isMe ? ACCENT : theme.ink }]}
+                          numberOfLines={1}>
+                          {i === 0 ? '♛ ' : ''}{r.name.toLowerCase()}
+                        </Text>
+                        <Text style={[styles.lbScore, { color: theme.sub }]}>
+                          {r.score.toLocaleString()}
+                        </Text>
+                      </View>
+                    );
+                  })}
               </View>
 
               {settled && (
@@ -378,7 +447,7 @@ export default function RoomsScreen() {
                     onPress={sendInvite}
                     disabled={inviting === 'busy' || !inviteName.trim()}
                     style={[styles.inviteBtn, { backgroundColor: theme.card }]}>
-                    <Text style={[styles.savedGo, { color: ACCENT }]}>
+                    <Text style={[styles.rowGo, { color: ACCENT }]}>
                       {inviting === 'busy'
                         ? '…'
                         : inviting === 'sent'
@@ -432,51 +501,77 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
-  pickRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  pickCard: {
-    flex: 1,
-    borderRadius: 16, borderCurve: 'continuous',
-    paddingVertical: 16,
-    paddingHorizontal: 14,
-    gap: 2,
-  },
-  pickEmoji: {
-    fontSize: 26,
-    marginBottom: 4,
-  },
-  pickLabel: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 14.5,
-  },
-  pickMeta: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 11,
-  },
-  savedWrap: {
-    gap: 8,
-    paddingTop: 2,
-  },
-  savedTitle: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 11,
-    letterSpacing: 0.4,
-  },
-  savedRow: {
+  // THE ROW GRAMMAR (owner: "more like showdowns") — block · text · go
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
   },
-  savedCode: {
+  spring: { flex: 1 },
+  rowText: {
+    gap: 1,
+    flexShrink: 1,
+  },
+  rowName: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 13.5,
+  },
+  rowStat: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 11,
+  },
+  rowGo: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
+  },
+  blockIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 9, borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dashedIcon: {
+    borderWidth: 2,
+    borderStyle: 'dashed',
+  },
+  blockEmoji: { fontSize: 14 },
+  blockMark: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 14,
+    includeFontPadding: false,
+  },
+  blockLetter: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 15,
-    letterSpacing: 2,
+    color: '#1F1442',
+    includeFontPadding: false,
+    marginTop: -2, // center on the FACE, not the box (inset ledge)
   },
-  savedGo: {
+  statRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+  },
+  statPill: {
+    borderRadius: 10, borderCurve: 'continuous',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  statText: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 12.5,
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
+  },
+  lbAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+  },
+  lbLetter: {
+    fontSize: 12,
+    marginTop: -1.5,
   },
   input: {
     borderRadius: 13, borderCurve: 'continuous',
@@ -556,10 +651,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 15,
     fontVariant: ['tabular-nums'],
-  },
-  inviteName: {
-    letterSpacing: 0,
-    flex: 1,
   },
   inviteRow: {
     flexDirection: 'row',

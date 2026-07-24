@@ -46,11 +46,18 @@ export default function LobbyScreen() {
   // 1v1 request") — poster picks the ante; the pot is always 2×
   const STAKES = [10, 25, 50, 100];
   const [stake, setStake] = useState(25);
+  // CUSTOM AMOUNTS (owner): name any ante — the server law is 5..200
+  const [customStake, setCustomStake] = useState(false);
+  const [stakeText, setStakeText] = useState('');
+  const stakeVal = customStake
+    ? Math.min(200, Math.max(0, parseInt(stakeText, 10) || 0))
+    : stake;
+  const stakeOk = !customStake || (stakeVal >= 5 && stakeVal <= 200);
   const [sealed, setSealed] = useState(false);
-  // CALL-OUT (owner: "can i select a specific user?") — optional; blank
-  // keeps the seat open to anyone
+  // PRIVATE SHOWDOWN (owner: first-class now) — a call-out reserves the
+  // seat for one named player; 'anyone' keeps it an open challenge
+  const [priv, setPriv] = useState(false);
   const [callout, setCallout] = useState('');
-  const [more, setMore] = useState(false); // the sealed/call-out drawer
 
   // PICK YOUR WEATHER (owner: "can i pick what kind i want?") — creating
   // a showdown offers all four boards; the rail's squall is just the
@@ -95,12 +102,12 @@ export default function LobbyScreen() {
   // server 402 stays the backstop.
   // creating pays BOTH the board's door and the ante (audit H4: gating
   // on the stake alone let players pay the door, play, then fail to post)
-  const doorPrice = joining ? joinStake : creating ? stake + intensity.entry : intensity.entry;
+  const doorPrice = joining ? joinStake : creating ? stakeVal + intensity.entry : intensity.entry;
   const broke = balance != null && balance < doorPrice;
   // a poster who can't cover the default snaps to their biggest
   // affordable stake — the gate should redirect, not just refuse
   useEffect(() => {
-    if (!creating || balance == null || balance >= stake) return;
+    if (!creating || customStake || balance == null || balance >= stake) return;
     const affordable = [...STAKES].reverse().find((s) => s <= balance);
     if (affordable) setStake(affordable);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,13 +162,14 @@ export default function LobbyScreen() {
     }
     // REPLACE, not push — the sheet dismisses and the board owns the
     // screen; back from the board is home (owner flow)
+    const named = priv && callout.trim() ? callout.trim() : '';
     track(creating ? 'showdown_create_launch' : 'storm_enter', {
       tier: intensity.key,
       entry: intensity.entry,
-      ...(creating ? { stake, sealed, callout: !!callout.trim() } : {}),
+      ...(creating ? { stake: stakeVal, sealed, callout: !!named, custom: customStake } : {}),
     });
     router.replace(
-      `/storm?seed=${activeSeed}&go=1${creating ? `&post=1&stake=${stake}&sealed=${sealed ? 1 : 0}${callout.trim() ? `&callout=${encodeURIComponent(callout.trim())}` : ''}` : ''}`
+      `/storm?seed=${activeSeed}&go=1${creating ? `&post=1&stake=${stakeVal}&sealed=${sealed ? 1 : 0}${named ? `&callout=${encodeURIComponent(named)}` : ''}` : ''}`
     );
   };
 
@@ -208,17 +216,54 @@ export default function LobbyScreen() {
               <Text style={[styles.tierName, { color: theme.ink }]}>
                 {joining ? 'showdown' : creating ? 'showdown' : stormName(activeSeed)}
               </Text>
-              {/* no double title (owner): the meta never repeats the name —
-                  and it WRAPS (flexed container, no one-line overflow) */}
-              <Text style={[styles.tierMeta, { color: theme.faint }]}>
-                {(creating || joining) ? `${intensity.label} · ` : ''}
-                {fmt(intensity.clockSecs)}
-                {intensity.key === 'hurricane' ? ' · no mercy' : ''}
-                {intensity.entry > 0 ? ` · entry ${intensity.entry} ✦` : ' · free'}
-                {balance != null ? ` · you have ${balance.toLocaleString()}` : ''}
-              </Text>
+              {/* showdown faces keep the one-line terms; the storm face
+                  speaks in PILLS below (owner: "these sheets are bad") */}
+              {(creating || joining) && (
+                <Text style={[styles.tierMeta, { color: theme.faint }]}>
+                  {intensity.label} · {fmt(intensity.clockSecs)}
+                  {intensity.entry > 0 ? ` · door ${intensity.entry} ✦` : ''}
+                </Text>
+              )}
             </View>
           </View>
+
+          {/* THE TERMS AS PILLS (storm redesign): clock · bag · door ·
+              wallet — glanceable, wrap-proof, no crammed meta line */}
+          {!creating && !joining && (
+            <View style={styles.statRow}>
+              <View style={[styles.statPill, { backgroundColor: theme.pill }]}>
+                <Text style={[styles.statText, { color: theme.ink }]}>⏱ {fmt(intensity.clockSecs)}</Text>
+              </View>
+              <View style={[styles.statPill, { backgroundColor: theme.pill }]}>
+                <Text style={[styles.statText, { color: theme.ink }]}>
+                  {intensity.friendly ? 'friendly letters' : 'harsh letters'}
+                </Text>
+              </View>
+              <View
+                style={[
+                  styles.statPill,
+                  intensity.entry > 0
+                    ? { backgroundColor: tierPal.bg, boxShadow: `inset 0 -2.5px 0 ${tierPal.edge}` }
+                    : { backgroundColor: theme.pill },
+                ]}>
+                <Text style={[styles.statText, { color: intensity.entry > 0 ? '#1F1442' : theme.ink }]}>
+                  {intensity.entry > 0 ? `door ${intensity.entry} ✦` : 'free'}
+                </Text>
+              </View>
+              {intensity.key === 'hurricane' && (
+                <View style={[styles.statPill, { backgroundColor: theme.pill }]}>
+                  <Text style={[styles.statText, { color: '#E5484D' }]}>no mercy</Text>
+                </View>
+              )}
+              {balance != null && (
+                <View style={[styles.statPill, { backgroundColor: theme.pill }]}>
+                  <Text style={[styles.statText, { color: theme.faint }]}>
+                    you have {balance.toLocaleString()} ✦
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {/* the matchup (showdowns) or the board's standings (storms) */}
           {(creating || joining) ? (
@@ -266,9 +311,16 @@ export default function LobbyScreen() {
                                 ? { backgroundColor: b.intensity.hue.bg, boxShadow: `inset 0 -3px 0 ${b.intensity.hue.edge}` }
                                 : { backgroundColor: theme.pill },
                             ]}>
-                            <Text style={[styles.tierPickEmoji, !on && { opacity: 0.5 }]}>
-                              {b.intensity.emoji}
-                            </Text>
+                            {b.intensity.key === 'hurricane' ? (
+                              // the flag IS the hurricane, here too (owner)
+                              <View style={[styles.pickFlag, !on && { opacity: 0.5 }]}>
+                                <View style={styles.pickFlagCenter} />
+                              </View>
+                            ) : (
+                              <Text style={[styles.tierPickEmoji, !on && { opacity: 0.5 }]}>
+                                {b.intensity.emoji}
+                              </Text>
+                            )}
                           </Pressable>
                         );
                       })}
@@ -279,13 +331,16 @@ export default function LobbyScreen() {
                     <View style={styles.stakeRow}>
                       {STAKES.map((s, i) => {
                         const pal = PALETTE[i % PALETTE.length];
-                        const on = stake === s;
+                        const on = !customStake && stake === s;
                         const short = balance != null && balance < s;
                         return (
                           <Pressable
                             key={s}
                             disabled={short}
-                            onPress={() => setStake(s)}
+                            onPress={() => {
+                              setCustomStake(false);
+                              setStake(s);
+                            }}
                             style={[
                               styles.stakeChip,
                               on
@@ -298,20 +353,38 @@ export default function LobbyScreen() {
                           </Pressable>
                         );
                       })}
+                      {/* CUSTOM (owner: "let them do custom amounts") */}
+                      <Pressable
+                        onPress={() => setCustomStake(true)}
+                        style={[
+                          styles.stakeChip,
+                          customStake
+                            ? { backgroundColor: ACCENT, boxShadow: `inset 0 -3px 0 ${ACCENT_EDGE}` }
+                            : { backgroundColor: theme.pill },
+                        ]}>
+                        <Text style={[styles.stakeChipText, { color: customStake ? '#FFFFFF' : theme.sub }]}>
+                          …
+                        </Text>
+                      </Pressable>
                     </View>
+                    {customStake && (
+                      <TextInput
+                        value={stakeText}
+                        onChangeText={(t) => setStakeText(t.replace(/[^0-9]/g, ''))}
+                        placeholder="name it (5–200)"
+                        placeholderTextColor={theme.faint}
+                        keyboardType="number-pad"
+                        maxLength={3}
+                        autoFocus
+                        style={[styles.calloutInput, styles.customInput, { color: theme.ink, backgroundColor: theme.pill }]}
+                      />
+                    )}
                   </View>
-                  {/* the quiet drawer — most posts never need it */}
-                  <Pressable onPress={() => setMore((m) => !m)} hitSlop={8}>
-                    <Text style={[styles.moreLink, { color: more ? theme.sub : theme.faint }]}>
-                      {more
-                        ? 'less'
-                        : sealed || callout.trim()
-                          ? `${sealed ? '🂠 sealed' : 'open hand'}${callout.trim() ? ` · ⚔️ ${callout.trim().toLowerCase()}` : ''} ›`
-                          : 'sealed hand · call someone out ›'}
-                    </Text>
-                  </Pressable>
-                  {more && (
-                    <>
+                  {/* the hand + the seat, side by side — every option
+                      visible, nothing crammed */}
+                  <View style={styles.optRow}>
+                    <View style={styles.group}>
+                      <Text style={[styles.groupLabel, { color: theme.faint }]}>hand</Text>
                       <View style={styles.handRow}>
                         {([false, true] as const).map((v) => (
                           <Pressable
@@ -324,27 +397,45 @@ export default function LobbyScreen() {
                                 : { backgroundColor: theme.pill },
                             ]}>
                             <Text style={[styles.handChipText, { color: sealed === v ? '#FFFFFF' : theme.sub }]}>
-                              {v ? 'sealed' : 'open hand'}
+                              {v ? '🂠 sealed' : 'open'}
                             </Text>
                           </Pressable>
                         ))}
                       </View>
-                      <Text style={[styles.handHint, { color: theme.faint }]}>
-                        {sealed
-                          ? 'they won’t see your score until their run is in'
-                          : 'they race your recorded run, score in view'}
-                      </Text>
-                      <TextInput
-                        value={callout}
-                        onChangeText={setCallout}
-                        placeholder="call someone out (optional)"
-                        placeholderTextColor={theme.faint}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        maxLength={24}
-                        style={[styles.calloutInput, { color: theme.ink, backgroundColor: theme.pill }]}
-                      />
-                    </>
+                    </View>
+                    <View style={styles.group}>
+                      <Text style={[styles.groupLabel, { color: theme.faint }]}>seat</Text>
+                      <View style={styles.handRow}>
+                        {([false, true] as const).map((v) => (
+                          <Pressable
+                            key={String(v)}
+                            onPress={() => setPriv(v)}
+                            style={[
+                              styles.handChip,
+                              priv === v
+                                ? { backgroundColor: ACCENT, boxShadow: `inset 0 -3px 0 ${ACCENT_EDGE}` }
+                                : { backgroundColor: theme.pill },
+                            ]}>
+                            <Text style={[styles.handChipText, { color: priv === v ? '#FFFFFF' : theme.sub }]}>
+                              {v ? '⚔️ private' : 'anyone'}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </View>
+                  </View>
+                  {priv && (
+                    <TextInput
+                      value={callout}
+                      onChangeText={setCallout}
+                      placeholder="who are you calling out?"
+                      placeholderTextColor={theme.faint}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      maxLength={24}
+                      autoFocus
+                      style={[styles.calloutInput, { color: theme.ink, backgroundColor: theme.pill }]}
+                    />
                   )}
                 </>
               )}
@@ -375,29 +466,38 @@ export default function LobbyScreen() {
               )}
             </View>
           ) : (
-            <View style={styles.lbBlock}>
-              {board === null && (
-                <Text style={[styles.lbEmpty, { color: theme.faint }]}>checking the board…</Text>
-              )}
-              {board != null && board.length === 0 && (
-                <Text style={[styles.lbEmpty, { color: theme.faint }]}>
-                  no scores yet — you set the bar
-                </Text>
-              )}
-              {board != null &&
-                board.map((r, i) => (
-                  <View key={`${r.name}-${i}`} style={styles.lbRow}>
-                    <Text style={[styles.lbRank, { color: theme.faint }]}>{i + 1}</Text>
-                    <Text
-                      style={[styles.lbName, { color: r.isMe ? ACCENT : theme.ink }]}
-                      numberOfLines={1}>
-                      {r.name.toLowerCase()}
-                    </Text>
-                    <Text style={[styles.lbScore, { color: theme.sub }]}>
-                      {r.score.toLocaleString()}
-                    </Text>
-                  </View>
-                ))}
+            // the board wears a FRAME now (storm redesign) — a quiet
+            // inner card, crown row on top, instead of floating rows
+            <View style={[styles.boardBox, { backgroundColor: theme.pill }]}>
+              <Text style={[styles.boardBoxLabel, { color: theme.faint }]}>
+                today&rsquo;s board · best score holds the crown
+              </Text>
+              <View style={styles.lbBlock}>
+                {board === null && (
+                  <Text style={[styles.lbEmpty, { color: theme.faint }]}>checking the board…</Text>
+                )}
+                {board != null && board.length === 0 && (
+                  <Text style={[styles.lbEmpty, { color: theme.faint }]}>
+                    no scores yet — you set the bar
+                  </Text>
+                )}
+                {board != null &&
+                  board.map((r, i) => (
+                    <View key={`${r.name}-${i}`} style={styles.lbRow}>
+                      <Text style={[styles.lbRank, { color: i === 0 ? '#F5B84A' : theme.faint }]}>
+                        {i === 0 ? '♛' : i + 1}
+                      </Text>
+                      <Text
+                        style={[styles.lbName, { color: r.isMe ? ACCENT : theme.ink }]}
+                        numberOfLines={1}>
+                        {r.name.toLowerCase()}
+                      </Text>
+                      <Text style={[styles.lbScore, { color: theme.sub }]}>
+                        {r.score.toLocaleString()}
+                      </Text>
+                    </View>
+                  ))}
+              </View>
             </View>
           )}
 
@@ -598,11 +698,30 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     letterSpacing: 1.2,
   },
-  moreLink: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 12,
-    letterSpacing: 0.3,
-    paddingVertical: 2,
+  optRow: {
+    flexDirection: 'row',
+    gap: 18,
+    justifyContent: 'center',
+  },
+  pickFlag: {
+    width: 22,
+    height: 22,
+    borderRadius: 7, borderCurve: 'continuous',
+    backgroundColor: '#E5484D',
+    boxShadow: 'inset 0 -3px 0 #8C2328',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pickFlagCenter: {
+    width: 8,
+    height: 8,
+    borderRadius: 2.5, borderCurve: 'continuous',
+    backgroundColor: '#17171C',
+  },
+  customInput: {
+    marginHorizontal: 0,
+    alignSelf: 'center',
+    minWidth: 150,
   },
   stakeChip: {
     borderRadius: 11, borderCurve: 'continuous',
@@ -681,12 +800,38 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontStyle: 'italic',
   },
+  statRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+  },
+  statPill: {
+    borderRadius: 10, borderCurve: 'continuous',
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  statText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
+  },
+  boardBox: {
+    borderRadius: 16, borderCurve: 'continuous',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  boardBoxLabel: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 10.5,
+    letterSpacing: 0.5,
+  },
   lbBlock: {
     gap: 9,
     justifyContent: 'center', // the empty line centers in the space (owner)
     // FIXED height (audit: fitToContents re-measured when the async top-5
     // landed and the sheet visibly grew) — loading paints into this space
-    height: 148,
+    height: 140,
   },
   lbEmpty: {
     fontFamily: 'Fredoka_600SemiBold',
