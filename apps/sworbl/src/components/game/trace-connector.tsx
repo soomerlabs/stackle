@@ -14,6 +14,8 @@ interface Props {
   gap: number;
   width: number;
   height: number;
+  sTrail?: unknown; // native-only (release evaporate) — web mirrors via jsPath
+  sTrailFade?: unknown;
 }
 
 export default function TraceConnector({ jsPath, size, gap, width, height }: Props) {

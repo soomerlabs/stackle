@@ -4,9 +4,11 @@
 // dashed KNOB at the tip, crown + points-to-beat on the right. The old
 // hard 2px line-fill was the owner-rejected look ("looks bad filled in").
 // Target is a STUB until Supabase standings land (then: today's #1).
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle, useSharedValue, withDelay, withSequence, withTiming, Easing,
+} from 'react-native-reanimated';
 import { GAME_DARK, type GameSurface } from '@/game/palette';
 import { Crown } from '@/components/crown';
 
@@ -20,8 +22,50 @@ interface Props {
 
 const EASE_MS = 500; // web: width 0.5s cubic-bezier(0.22,1,0.36,1)
 
+// THE RISER (fossil hudRise, 1.1s ease-out): +N floats up off the score as
+// it banks — the web's little dopamine puff, missing since the port
+function Riser({ delta, riseKey }: { delta: number; riseKey: number }) {
+  const t = useSharedValue(0);
+  useEffect(() => {
+    if (!riseKey) return;
+    t.value = 0;
+    t.value = withTiming(1, { duration: 1100, easing: Easing.out(Easing.quad) });
+  }, [riseKey]);
+  const st = useAnimatedStyle(() => {
+    // web keyframes: y 8→-1@20→-11@70→-18, scale .6→1.12@20→1@70→.95, fade out
+    const y = t.value < 0.2
+      ? 8 - (t.value / 0.2) * 9
+      : t.value < 0.7
+        ? -1 - ((t.value - 0.2) / 0.5) * 10
+        : -11 - ((t.value - 0.7) / 0.3) * 7;
+    const sc = t.value < 0.2
+      ? 0.6 + (t.value / 0.2) * 0.52
+      : t.value < 0.7
+        ? 1.12 - ((t.value - 0.2) / 0.5) * 0.12
+        : 1 - ((t.value - 0.7) / 0.3) * 0.05;
+    return {
+      opacity: t.value === 0 ? 0 : t.value < 0.7 ? 1 : 1 - (t.value - 0.7) / 0.3,
+      transform: [{ translateY: y }, { scale: sc }],
+    };
+  });
+  if (!riseKey) return null;
+  return (
+    <Animated.Text pointerEvents="none" style={[styles.riser, st]}>
+      +{delta}
+    </Animated.Text>
+  );
+}
+
 export function ScoreHeader({ score, target, marks, width, gs = GAME_DARK }: Props) {
   const ratio = Math.min(1, target > 0 ? score / target : 0);
+  // riser trigger: any score increase floats its delta up off the number
+  const prevScore = useRef(score);
+  const [rise, setRise] = useState({ key: 0, delta: 0 });
+  useEffect(() => {
+    const d = score - prevScore.current;
+    prevScore.current = score;
+    if (d > 0) setRise((r) => ({ key: r.key + 1, delta: d }));
+  }, [score]);
   // NUMERIC widths — Reanimated tweens numbers, not '%' strings (the header
   // silently broke on device with the string version). Track owns the FULL
   // rail now (owner: score and bar fought for the same line at big values)
@@ -55,7 +99,10 @@ export function ScoreHeader({ score, target, marks, width, gs = GAME_DARK }: Pro
       </View>
       {/* the reading line: score grows leftward forever, target sits right */}
       <View style={styles.reading}>
-        <Text style={[styles.score, { color: gs.ink }]}>{score.toLocaleString()}</Text>
+        <View>
+          <Text style={[styles.score, { color: gs.ink }]}>{score.toLocaleString()}</Text>
+          <Riser key={rise.key} delta={rise.delta} riseKey={rise.key} />
+        </View>
         <View style={styles.targetWrap}>
           <Crown width={14} style={styles.crown} />
           <Text style={styles.target}>{target.toLocaleString()}</Text>
@@ -80,6 +127,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 17,
     fontVariant: ['tabular-nums'],
+  },
+  riser: {
+    position: 'absolute',
+    left: '100%',
+    top: 0,
+    marginLeft: 6,
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 13,
+    color: '#5FD6A8', // fossil hudRise normal green
   },
   track: {
     // NO flex — in the old ROW layout flex:1 meant "grow wide"; in the

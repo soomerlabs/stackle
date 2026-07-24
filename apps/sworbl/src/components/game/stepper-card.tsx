@@ -229,6 +229,24 @@ export function StepperCard({ width, traceWord, verdict, sworb, countIn, gs = GA
   }, [sworb?.shakeKey]);
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shakeX.value }] }));
 
+  // CARD THUMP (fossil cardThumpA/B, 0.26s): the strip compresses when the
+  // flown letters land — timed to bottom out ON the last chip
+  const thumpS = useSharedValue(1);
+  useEffect(() => {
+    if (!verdict?.ok || !verdict.fly) return;
+    const impact = 255 + (verdict.word.length - 1) * 40;
+    thumpS.value = withDelay(
+      impact,
+      withSequence(
+        withTiming(0.977, { duration: 42, easing: Easing.out(Easing.quad) }),
+        withTiming(1.006, { duration: 94 }),
+        withTiming(1, { duration: 124 })
+      )
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verdict]);
+  const thumpStyle = useAnimatedStyle(() => ({ transform: [{ scale: thumpS.value }] }));
+
   // ONE persistent card, FIXED height — the two faces dissolve inside it
   // (owner: the card grew at the finale swap and jerked the board down)
   if (sworb) {
@@ -278,7 +296,8 @@ export function StepperCard({ width, traceWord, verdict, sworb, countIn, gs = GA
   }
 
   return (
-    <View style={[styles.card, { width, backgroundColor: gs.card, boxShadow: `0 4px 0 ${gs.cardEdge}` }]}>
+    <Animated.View
+      style={[styles.card, thumpStyle, { width, backgroundColor: gs.card, boxShadow: `0 4px 0 ${gs.cardEdge}` }]}>
       <Animated.View key="spell" exiting={FadeOut.duration(200)} style={styles.face}>
       {/* the banner: live chain chips, a landed verdict, or the idle line */}
       {verdict ? (
@@ -318,7 +337,7 @@ export function StepperCard({ width, traceWord, verdict, sworb, countIn, gs = GA
         </Animated.View>
       )}
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 

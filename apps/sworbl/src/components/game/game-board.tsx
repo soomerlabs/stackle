@@ -5,7 +5,7 @@ import { View, Text, StyleSheet, InteractionManager } from 'react-native';
 import { Gesture, GestureDetector, type PanGesture } from 'react-native-gesture-handler';
 import Animated, {
   FadeIn, useSharedValue, useAnimatedReaction, useAnimatedStyle, runOnJS, runOnUI,
-  withSequence, withTiming, Easing,
+  withSequence, withTiming, withDelay, Easing,
 } from 'react-native-reanimated';
 import engine from '@sworbl/engine';
 import { GameTile } from './game-tile';
@@ -288,7 +288,32 @@ function GameBoardInner({
     }
     prevConcealed.current = !!concealed;
   }, [concealed]);
-  const breathStyle = useAnimatedStyle(() => ({ transform: [{ scale: sBreath.value }] }));
+  // BOARD PUNCH (fossil boardPunchA/B, 0.34s springy): big words (6+ tiles)
+  // zoom-punch the whole card — the web's reward the port never had
+  const sPunch = useSharedValue(1);
+  const firePunch = useCallback(() => {
+    sPunch.value = withSequence(
+      withTiming(1.035, { duration: 120, easing: Easing.bezier(0.34, 1.5, 0.5, 1) }),
+      withTiming(1, { duration: 220, easing: Easing.inOut(Easing.quad) })
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const breathStyle = useAnimatedStyle(() => ({ transform: [{ scale: sBreath.value * sPunch.value }] }));
+
+  // SUBMIT BREATH (fossil submitDim): survivors recede to ~0.72 for a beat
+  // while the word leaves — the board "exhales" on every accepted word
+  const sSubmit = useSharedValue(0);
+  const fireSubmitDim = useCallback(() => {
+    sSubmit.value = withSequence(
+      withTiming(1, { duration: 140, easing: Easing.out(Easing.quad) }),
+      withDelay(180, withTiming(0, { duration: 250, easing: Easing.inOut(Easing.quad) }))
+    );
+  }, []);
+
+  // TRAIL EVAPORATE (fossil lastTrailSegs): the trace line FADES on release
+  // instead of vanishing — the held path + a 220ms opacity exit
+  const sTrail = useSharedValue<TraceTile[]>([]);
+  const sTrailFade = useSharedValue(0);
 
   // the tile layer ACTUALLY crossfades under the finale keyboard now — the
   // comment always said crossfade; the style was an instant opacity swap
@@ -572,6 +597,8 @@ function GameBoardInner({
           : { word: word.toUpperCase(), pts, ok: true, fly: true }
       );
       if (res.isNew) setFound(res.banked);
+      fireSubmitDim(); // the board exhales (fossil submitDim)
+      if (word.length >= 6) firePunch(); // big-word zoom-punch (fossil)
       // HINT LADDER steps (validated at give-time). DEFERRED (perf audit):
       // the nudge/free-clue milestones run solver sweeps — they used to fire
       // synchronously at commit, stacked on the letter flight. The word
@@ -715,6 +742,11 @@ function GameBoardInner({
         .onFinalize(() => {
           'worklet';
           sDragging.value = false;
+          if (sPath.value.length > 1) {
+            sTrail.value = sPath.value; // hold the shape for the evaporate
+            sTrailFade.value = 1;
+            sTrailFade.value = withTiming(0, { duration: 220 });
+          }
           sPath.value = [];
         });
       if (gestureRef) g.withRef(gestureRef);
@@ -813,6 +845,8 @@ function GameBoardInner({
           {/* web z-order: the dotted links run UNDER the blocks */}
           <TraceConnector
             sPath={sPath}
+            sTrail={sTrail}
+            sTrailFade={sTrailFade}
             jsPath={jsPath}
             size={size}
             gap={gap}
@@ -826,6 +860,7 @@ function GameBoardInner({
               size={size}
               gap={gap}
               sPath={sPath}
+              sSubmit={sSubmit}
               clearingSeq={clearingIds.get(t.id)}
               flight={flights.get(t.id)}
               nope={nope.seqs.has(t.id) ? nope.key : 0}

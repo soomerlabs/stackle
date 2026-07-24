@@ -32,6 +32,7 @@ interface Props {
   size: number;
   gap: number;
   sPath: SharedValue<TraceTile[]>;
+  sSubmit: SharedValue<number>; // submit breath: survivors recede (fossil submitDim 0.72)
   clearingSeq: number | undefined; // position in the swiped word (pop stagger), undefined = alive
   flight?: { dx: number; dy: number }; // 5f flight: vector to this letter's
   // chip slot in the stepper (undefined = not flying)
@@ -42,7 +43,7 @@ interface Props {
   gs: GameSurface; // scheme surface (STABLE module object — memo-safe)
 }
 
-function GameTileInner({ tile, size, gap, sPath, clearingSeq, flight, nope, nopeSeq, nopeTotal, concealed, gs }: Props) {
+function GameTileInner({ tile, size, gap, sPath, sSubmit, clearingSeq, flight, nope, nopeSeq, nopeTotal, concealed, gs }: Props) {
   const cell = size + gap;
   const x = tile.col * cell;
   const targetY = tile.row * cell;
@@ -193,7 +194,9 @@ function GameTileInner({ tile, size, gap, sPath, clearingSeq, flight, nope, nope
       { scale: headScale.value },
       { scaleY: squashY.value },
     ],
-    opacity: opacity.value * sDim.value,
+    // submit breath (fossil submitDim): the whole field recedes toward 0.72
+    // while an accepted word leaves; clearing/flying tiles are already fading
+    opacity: opacity.value * sDim.value * (1 - 0.28 * sSubmit.value),
   }));
 
   // the red BLENDS in and drains out (web rjArrive/rjDrainOut are color
