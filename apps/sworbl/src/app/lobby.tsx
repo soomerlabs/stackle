@@ -117,8 +117,8 @@ export default function LobbyScreen() {
                 <View style={styles.flagCenter} />
               </View>
             ) : (
-              <View style={[styles.tierChip, { backgroundColor: tierPal.bg, boxShadow: `inset 0 -3px 0 ${tierPal.edge}` }]}>
-                <Text style={styles.tierBolts}>{'⚡'.repeat(intensity.bolts)}</Text>
+              <View style={styles.tierChip}>
+                <Text style={styles.tierWeather}>{intensity.emoji}</Text>
               </View>
             )}
             <View>
@@ -139,12 +139,12 @@ export default function LobbyScreen() {
             <View style={styles.duelBlock}>
               <View style={styles.vsRow}>
                 <View style={[styles.bigAvatar, { backgroundColor: myPal.bg, boxShadow: `inset 0 -4px 0 ${myPal.edge}` }]}>
-                  <Text style={styles.bigAvatarLetter}>{myName[0]?.toLowerCase()}</Text>
+                  <Text style={styles.bigAvatarLetter}>{myName[0]?.toUpperCase()}</Text>
                 </View>
                 <Text style={[styles.vsBig, { color: theme.faint }]}>vs</Text>
                 {joining ? (
                   <View style={[styles.bigAvatar, { backgroundColor: themPal.bg, boxShadow: `inset 0 -4px 0 ${themPal.edge}` }]}>
-                    <Text style={styles.bigAvatarLetter}>{vsName![0]?.toLowerCase()}</Text>
+                    <Text style={styles.bigAvatarLetter}>{vsName![0]?.toUpperCase()}</Text>
                   </View>
                 ) : (
                   <View style={[styles.bigAvatar, styles.openSeat, { borderColor: theme.dashed }]}>
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     borderRadius: 4, borderCurve: 'continuous',
     backgroundColor: '#17171C',
   },
-  tierBolts: { fontSize: 13, letterSpacing: -2 },
+  tierWeather: { fontSize: 32 },
   tierName: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 21,
@@ -294,9 +294,10 @@ const styles = StyleSheet.create({
   bigAvatarLetter: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 26,
+    lineHeight: 28,
     color: '#1F1442',
     includeFontPadding: false,
-    marginTop: -3, // the 4px ledge — center on the face
+    marginTop: -4, // the 4px ledge — center on the FACE, not the box
   },
   openSeat: {
     borderWidth: 2.5,
