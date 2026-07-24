@@ -8,16 +8,11 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PALETTE } from '@/game/palette';
+import { POINT_PACKS as PACKS } from '@/game/point-packs';
 import { useTheme } from '@/game/theme';
 import {
   buyPack, fetchMyShowdownPoints, fetchPointEvents, type PointEvent,
 } from '@/net/duels';
-
-const PACKS = [
-  { key: 'splash' as const, points: 100, sticker: '$0.99', pal: 2 },
-  { key: 'surge' as const, points: 300, sticker: '$1.99', pal: 0 },
-  { key: 'deluge' as const, points: 800, sticker: '$4.99', pal: 4 },
-];
 
 export default function PointsScreen() {
   const theme = useTheme();

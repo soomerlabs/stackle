@@ -7,16 +7,17 @@
 // PLAY replaces the sheet with the full-screen board (back = home).
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PALETTE, tileColorFor } from '@/game/palette';
 import { getPlayerName } from '@/game/player';
+import { POINT_PACKS } from '@/game/point-packs';
 import { stormIntensity, stormName } from '@/game/storm-seeds';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
 import { TraceLaunch } from '@/components/trace-launch';
-import { claimShowdown, fetchMyShowdownPoints, spendPoints } from '@/net/duels';
+import { buyPack, claimShowdown, fetchMyShowdownPoints, spendPoints } from '@/net/duels';
 import { fetchPractice } from '@/net/standings-remote';
 
 function fmt(secs: number): string {
@@ -91,6 +92,20 @@ export default function LobbyScreen() {
     if (affordable) setStake(affordable);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [balance]);
+
+  // the inline top-up (owner: "want some? okay here ya go") — receipt-
+  // ref'd like every purchase; success lands the new balance in place
+  const [buyingPack, setBuyingPack] = useState<string | null>(null);
+  const buyingRef = useRef(false);
+  const buyInline = async (key: 'splash' | 'surge' | 'deluge') => {
+    if (buyingRef.current) return;
+    buyingRef.current = true;
+    setBuyingPack(key);
+    const r = await buyPack(key, `topup-${key}-${Math.floor(Date.now() / 60000)}`);
+    buyingRef.current = false;
+    setBuyingPack(null);
+    if (r !== 'error') setBalance(r.balance);
+  };
 
   const [entering, setEntering] = useState<'idle' | 'busy' | 'poor'>('idle');
   const play = async () => {
@@ -290,16 +305,32 @@ export default function LobbyScreen() {
 
           {/* THE TRACE IS THE BUTTON (owner: on brand) — spell it to go */}
           {broke && (
+            // THE OFFER (owner: "not enough, want some? okay here ya go")
+            // — the packs come TO the door: tap one, the balance lands in
+            // place, the gate lifts, the swipe wakes up. No detour.
             <View style={styles.brokeBlock}>
               <Text style={[styles.claimNote, { color: '#F58A66' }]}>
-                this door is {doorPrice.toLocaleString()} ✦ — you have {balance!.toLocaleString()}
-                {!joining && !creating ? '. the drizzle is always free' : ''}
+                this door is {doorPrice.toLocaleString()} ✦ — you have {balance!.toLocaleString()}. want some?
               </Text>
-              <Pressable
-                onPress={() => router.push('/points')}
-                style={[styles.pointsBtn, { backgroundColor: theme.card }]}>
-                <Text style={[styles.pointsBtnText, { color: ACCENT }]}>get points ›</Text>
-              </Pressable>
+              <View style={styles.packRow}>
+                {POINT_PACKS.map((p) => {
+                  const pal = PALETTE[p.pal];
+                  const busy = buyingPack === p.key;
+                  return (
+                    <Pressable
+                      key={p.key}
+                      disabled={buyingPack != null}
+                      onPress={() => buyInline(p.key)}
+                      style={[styles.packChip, { backgroundColor: pal.bg, boxShadow: `inset 0 -3px 0 ${pal.edge}` }]}>
+                      <Text style={styles.packChipPts}>{busy ? '…' : `+${p.points}`}</Text>
+                      <Text style={styles.packChipTag}>{p.sticker}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Text style={[styles.mockLine, { color: theme.faint }]}>
+                nothing charges yet — this is the dress rehearsal
+              </Text>
             </View>
           )}
           {entering === 'poor' && !broke && (
@@ -464,16 +495,36 @@ const styles = StyleSheet.create({
   },
   brokeBlock: {
     alignItems: 'center',
+    gap: 9,
+  },
+  packRow: {
+    flexDirection: 'row',
     gap: 8,
   },
-  pointsBtn: {
-    borderRadius: 11, borderCurve: 'continuous',
-    paddingHorizontal: 16,
+  packChip: {
+    borderRadius: 12, borderCurve: 'continuous',
+    paddingHorizontal: 14,
     paddingVertical: 8,
+    alignItems: 'center',
+    gap: 1,
   },
-  pointsBtnText: {
+  packChipPts: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 13,
+    fontSize: 14,
+    color: '#1F1442',
+    includeFontPadding: false,
+  },
+  packChipTag: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 10,
+    color: '#1F1442',
+    opacity: 0.7,
+    fontVariant: ['tabular-nums'],
+  },
+  mockLine: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 10.5,
+    fontStyle: 'italic',
   },
   lbBlock: {
     gap: 9,
