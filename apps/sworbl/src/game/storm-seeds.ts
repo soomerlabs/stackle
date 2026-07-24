@@ -36,7 +36,7 @@ export interface StormIntensity {
 
 export const INTENSITIES: Record<'a' | 'b' | 'c' | 'd', StormIntensity> = {
   a: { key: 'drizzle', label: 'diphthong drizzle', clockSecs: 180, capSecs: 300, friendly: true, hue: { bg: '#5BC8F5', edge: '#2E9FD0' }, bolts: 1, emoji: '🌧️', entry: 0 },
-  b: { key: 'squall', label: 'synonym squall', clockSecs: 120, capSecs: 200, friendly: true, hue: { bg: '#AEE3F7', edge: '#74B9D6' }, bolts: 2, emoji: '💨', entry: 5 },
+  b: { key: 'squall', label: 'synonym squall', clockSecs: 120, capSecs: 200, friendly: true, hue: { bg: '#AEE3F7', edge: '#74B9D6' }, bolts: 2, emoji: '🌨️', entry: 5 }, // snow squall (owner) — matches the ice-blue hue
   c: { key: 'thunder', label: 'thesaurus thunder', clockSecs: 90, capSecs: 150, friendly: false, hue: { bg: '#F5B84A', edge: '#CE9022' }, bolts: 3, emoji: '⛈️', entry: 10 },
   d: { key: 'hurricane', label: 'homonym hurricane', clockSecs: 60, capSecs: 100, friendly: false, hue: { bg: '#E5484D', edge: '#8C2328' }, bolts: 4, emoji: '🌀', entry: 20 },
 };
