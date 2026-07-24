@@ -54,16 +54,23 @@ export function dailyStormBoards(now: Date = new Date()): StormBoard[] {
   const dk = engine.core.dayKey(now).replace(/-/g, '');
   const rng = engine.core.mulberry32(engine.core.hashSeed('storms|' + dk));
   const pool = [...NAMES];
-  return (['a', 'b', 'c'] as const).map((slot) => {
-    const i = Math.floor(rng() * pool.length);
-    const name = pool.splice(i, 1)[0] ?? 'storm';
-    return { seed: `s-${dk}-${slot}`, name, intensity: INTENSITIES[slot] };
-  });
+  // THE BOARD IS THE TIER (owner: "actually call the one hurricane") —
+  // names are the ladder itself; the rng stays for future codename use
+  void rng;
+  void pool;
+  return (['a', 'b', 'c'] as const).map((slot) => ({
+    seed: `s-${dk}-${slot}`,
+    name: INTENSITIES[slot].label,
+    intensity: INTENSITIES[slot],
+  }));
 }
 
 // the name for any storm seed (deep links, the storm screen's title) —
 // today's boards resolve to their dealt names; foreign seeds show as-is
 export function stormName(seed: string, now: Date = new Date()): string {
-  const hit = dailyStormBoards(now).find((b) => b.seed === seed);
-  return hit?.name ?? seed;
+  void now;
+  // slot seeds wear their tier name any day (yesterday's hurricane is
+  // still "hurricane" in history/deep links); foreign seeds pass through
+  const m = seed.match(/^s-\d{8}-([abc])$/);
+  return m ? INTENSITIES[m[1] as 'a' | 'b' | 'c'].label : seed;
 }

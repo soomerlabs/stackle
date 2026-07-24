@@ -15,15 +15,17 @@ const again = dailyStormBoards(new Date('2026-07-23T23:59:00'));
 assert.deepStrictEqual(boards, again, 'same day → identical boards (any hour)');
 
 const tomorrow = dailyStormBoards(new Date('2026-07-24T00:01:00'));
-assert.notDeepStrictEqual(
+// names ARE the tiers now (owner: "actually call the one hurricane") —
+// constant identity, fresh BOARDS underneath every day
+assert.deepStrictEqual(
   boards.map((b) => b.name),
-  tomorrow.map((b) => b.name),
-  'new day → fresh mint (no rotation, owner law)'
+  ['drizzle', 'squall', 'hurricane'],
+  'the boards are named by tier'
 );
 assert.notDeepStrictEqual(
   boards.map((b) => b.seed),
   tomorrow.map((b) => b.seed),
-  'new day → new seeds'
+  'new day → new seeds (fresh boards under constant names)'
 );
 
 // every seed obeys the server's law: ^[a-z0-9-]{3,24}$
@@ -31,11 +33,10 @@ for (const b of boards.concat(tomorrow)) {
   assert.ok(/^[a-z0-9-]{3,24}$/.test(b.seed), `seed "${b.seed}" fits the server check`);
 }
 
-// names never collide within a day
-assert.strictEqual(new Set(boards.map((b) => b.name)).size, 3, 'three distinct names');
 
 // stormName resolves today's boards and passes foreign seeds through
-assert.strictEqual(stormName(boards[0].seed, DAY), boards[0].name, 'today resolves');
+assert.strictEqual(stormName(boards[0].seed, DAY), 'drizzle', 'slot seeds wear the tier name');
+assert.strictEqual(stormName('s-20990101-c'), 'hurricane', 'any day, any slot — tier name holds');
 assert.strictEqual(stormName('first-storm', DAY), 'first-storm', 'foreign seed passes through');
 
 console.log('storms: daily mint pinned (determinism, seed law, names)');

@@ -43,24 +43,19 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
               key={b.seed}
               onPress={() => router.push(`/storm?seed=${b.seed}`)}
               style={[styles.block, { backgroundColor: theme.card }]}>
-              <View style={styles.chipRow}>
+              {/* the LOGO chip: bolts for the lower tiers; the hurricane
+                  IS the maritime warning flag (owner: "get it") */}
+              {b.intensity.key === 'hurricane' ? (
+                <View style={[styles.chip, styles.flagChip]}>
+                  <View style={styles.flagCenter} />
+                </View>
+              ) : (
                 <View style={[styles.chip, { backgroundColor: pal.bg, boxShadow: `inset 0 -3px 0 ${pal.edge}` }]}>
                   <Text style={styles.chipGlyph}>
                     {'⚡'.repeat(b.intensity.bolts)}
                   </Text>
                 </View>
-                {/* THE HURRICANE WARNING FLAGS (owner lol — the real
-                    maritime signal: two red squares, black centers) */}
-                {b.intensity.key === 'hurricane' && (
-                  <View style={styles.flagRow}>
-                    {[0, 1].map((f) => (
-                      <View key={f} style={styles.flag}>
-                        <View style={styles.flagCenter} />
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
+              )}
               <Text style={[styles.name, { color: theme.ink }]} numberOfLines={1}>
                 {b.name}
               </Text>
@@ -70,8 +65,9 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
                   : 'no crown yet'}
               </Text>
               <Text style={[styles.meta, { color: c?.mine != null ? theme.faint : ACCENT }]}>
-                {b.intensity.label} · {mins}:{String(secs).padStart(2, '0')}
-                {c?.mine != null ? ` · best ${c.mine.toLocaleString()}` : ' ›'}
+                {mins}:{String(secs).padStart(2, '0')}
+                {b.intensity.key === 'hurricane' ? ' · no mercy' : ''}
+                {c?.mine != null ? ` · best ${c.mine.toLocaleString()}` : ' · run it ›'}
               </Text>
             </Pressable>
           );
@@ -125,20 +121,17 @@ const styles = StyleSheet.create({
     gap: 6,
     alignSelf: 'stretch',
   },
-  // the maritime hurricane warning: red square, black center — twice
-  flagRow: { flexDirection: 'row', gap: 3 },
-  flag: {
-    width: 13,
-    height: 13,
-    borderRadius: 3, borderCurve: 'continuous',
+  // the maritime hurricane warning AS the logo: red square, black center
+  flagChip: {
     backgroundColor: '#E5484D',
+    boxShadow: 'inset 0 -3px 0 #8C2328',
     alignItems: 'center',
     justifyContent: 'center',
   },
   flagCenter: {
-    width: 5,
-    height: 5,
-    borderRadius: 1.5, borderCurve: 'continuous',
+    width: 11,
+    height: 11,
+    borderRadius: 3, borderCurve: 'continuous',
     backgroundColor: '#17171C',
   },
   name: {
