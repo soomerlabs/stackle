@@ -26,10 +26,19 @@ export function saveSwaps(dayKey: string, swaps: SwapMap): void {
 // the EFFECTIVE core: deal.clues with swaps applied (chains resolve — a
 // replacement that itself got swapped follows through)
 export function applySwaps(clues: string[], swaps: SwapMap): string[] {
-  return clues.map((c) => {
+  // COLLISION GUARD (owner: duplicate 'gusty'/'foggy' pills): swaps persist
+  // per DAY, but every round deals a fresh clue set — a round-1 swap's
+  // replacement can reappear as a NATURAL clue in a later round's deal.
+  // A swap that would duplicate an existing entry is skipped (the original
+  // clue stays); a final unique-pass is the absolute floor, because the
+  // fan keys pills by clue.
+  const out: string[] = [];
+  for (const c of clues) {
     let cur = c;
     let guard = 0;
     while (swaps[cur] && guard++ < 8) cur = swaps[cur];
-    return cur;
-  });
+    if (cur !== c && (clues.includes(cur) || out.includes(cur))) cur = c;
+    if (!out.includes(cur)) out.push(cur);
+  }
+  return out;
 }

@@ -33,7 +33,7 @@ export function ClueFan({ clues, found, nudged, gs = GAME_DARK }: Props) {
           // blank slot: presence only, never shape
           return (
             <View
-              key={clue}
+              key={`${clue}-${i}`}
               style={[
                 styles.pill, styles.pillGhost, styles.pillBlank,
                 { width: GHOST_W[i % GHOST_W.length], borderColor: gs.line },
@@ -43,7 +43,7 @@ export function ClueFan({ clues, found, nudged, gs = GAME_DARK }: Props) {
         }
         return (
           <View
-            key={clue}
+            key={`${clue}-${i}`}
             style={[
               styles.pill,
               isFound
