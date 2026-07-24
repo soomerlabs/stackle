@@ -35,16 +35,20 @@ export function clearStormCtx(seed: string): void {
 }
 
 // paused runs that still have a live snapshot — stale ctx rows (snapshot
-// gone or >36h old, the board's day has passed) self-clean on read
-export function listPausedRuns(): StormCtx[] {
+// gone or >36h old, the board's day has passed) self-clean on read.
+// The snapshot's score rides along for the resume row's copy.
+export type PausedRun = StormCtx & { score: number };
+
+export function listPausedRuns(): PausedRun[] {
   const all = readAll();
-  const out: StormCtx[] = [];
+  const out: PausedRun[] = [];
   let dirty = false;
   for (const seed of Object.keys(all)) {
     const ctx = all[seed];
     const fresh = Date.now() - ctx.savedAt < 36 * 3600 * 1000;
-    if (fresh && loadRun(seed)) {
-      out.push(ctx);
+    const snap = fresh ? loadRun(seed) : null;
+    if (snap) {
+      out.push({ ...ctx, score: snap.score });
     } else {
       delete all[seed];
       dirty = true;

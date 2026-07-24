@@ -6,15 +6,20 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 
-import { dailyStormBoards } from '@/game/storm-seeds';
+import { dailyStormBoards, stormName } from '@/game/storm-seeds';
+import { listPausedRuns, type PausedRun } from '@/game/storm-runs';
 import { ACCENT, type Theme } from '@/game/theme';
 import { fetchStormCrowns } from '@/net/duels';
 
 export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce?: number }) {
   const boards = dailyStormBoards();
   const [crowns, setCrowns] = useState<Awaited<ReturnType<typeof fetchStormCrowns>>>(null);
+  // boards left mid-run (owner: "no way for me to get back into it") —
+  // non-showdown pauses live HERE; showdown pauses ride their own card
+  const [paused, setPaused] = useState<PausedRun[]>([]);
   useEffect(() => {
     let live = true;
+    setPaused(listPausedRuns().filter((c) => !c.post));
     void fetchStormCrowns(boards.map((b) => b.seed)).then((c) => live && c && setCrowns(c));
     return () => {
       live = false;
@@ -68,6 +73,26 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
           );
         })}
       </View>
+
+      {/* PAUSED MID-RUN — straight back to the board (NEVER through the
+          lobby: the door already charged; re-entering there would charge
+          it again). The cover lands on PAUSED → RESUME. */}
+      {paused.map((c) => (
+        <Pressable
+          key={`paused-${c.seed}`}
+          onPress={() => router.push(`/storm?seed=${c.seed}`)}
+          style={styles.privateRow}
+          hitSlop={4}>
+          <Text style={styles.privateLock}>⏸</Text>
+          <Text style={[styles.privateText, { color: theme.ink }]} numberOfLines={1}>
+            {stormName(c.seed)} — paused
+          </Text>
+          <View style={styles.spring} />
+          <Text style={[styles.privateGo, { color: '#F5B84A' }]}>
+            {c.score > 0 ? `${c.score.toLocaleString()} pts · ` : ''}resume ›
+          </Text>
+        </Pressable>
+      ))}
 
       {/* PRIVATE ROOMS — the card's last door */}
       <Pressable onPress={() => router.push('/rooms')} style={styles.privateRow} hitSlop={4}>
