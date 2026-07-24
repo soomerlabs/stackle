@@ -7,32 +7,33 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ARCHETYPE_PAL } from '@/components/game/result-view';
 import { PALETTE } from '@/game/palette';
 import { useTheme } from '@/game/theme';
 
 const BOOK = [
   {
-    key: 'straight-category', name: 'category', pal: 2,
+    key: 'straight-category', name: 'category',
     rule: 'every clue is a member of the word’s family.',
     example: 'FOREST ← pine, moss, birch, canopy',
   },
   {
-    key: 'connector', name: 'connector', pal: 0,
+    key: 'connector', name: 'connector',
     rule: 'every clue snaps onto the word to make a new one.',
     example: 'FIRE ← camp(fire), (fire)work, (fire)place',
   },
   {
-    key: 'sibling', name: 'sibling', pal: 1,
+    key: 'sibling', name: 'sibling',
     rule: 'the clues and the word are siblings — the answer belongs to the same set.',
     example: 'SILVER ← gold, copper, bronze, zinc',
   },
   {
-    key: 'lateral', name: 'lateral', pal: 4,
+    key: 'lateral', name: 'lateral',
     rule: 'the clues orbit the word — its parts, its props, its world.',
     example: 'CLOCK ← face, hands, alarm, chime',
   },
   {
-    key: 'wordplay', name: 'wordplay', pal: 5,
+    key: 'wordplay', name: 'wordplay',
     rule: 'the clues share a sound or shape with the word — listen, don’t think.',
     example: 'STONE ← bone, tone, throne, ozone',
   },
@@ -55,7 +56,7 @@ export default function ArchetypesScreen() {
             the truth.
           </Text>
           {BOOK.map((a) => {
-            const pal = PALETTE[a.pal];
+            const pal = PALETTE[ARCHETYPE_PAL[a.key] ?? 2];
             return (
               <View key={a.key} style={[styles.card, { backgroundColor: theme.card }]}>
                 <View style={[styles.chip, { backgroundColor: pal.bg, boxShadow: `inset 0 -3px 0 ${pal.edge}` }]}>

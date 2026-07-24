@@ -4,6 +4,7 @@
 import { router } from 'expo-router';
 import React from 'react';
 import { Text, Pressable, StyleSheet, View } from 'react-native';
+import { ARCHETYPE_PAL } from '@/components/game/result-view';
 import { PALETTE } from '@/game/palette';
 import { Icon } from '@/components/icon';
 import { ScreenHeader } from '@/components/screen-header';
@@ -18,9 +19,11 @@ interface Props {
   onShare?: () => void;
   onInfo?: () => void; // pre-play: the ⓘ lives where the score will
   archetypeLabel?: string | null; // the day's archetype — masthead right tag
+  archetype?: string | null; // the raw key — picks the tag's reasoned hue
 }
 
-export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo, archetypeLabel }: Props) {
+export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo, archetypeLabel, archetype }: Props) {
+  const archPal = PALETTE[ARCHETYPE_PAL[archetype ?? ''] ?? 2];
   const now = new Date();
   const weekday = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   const monthDay = now
@@ -64,7 +67,7 @@ export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo, arch
             hitSlop={8}
             style={[
               styles.archTag,
-              { backgroundColor: PALETTE[2].bg, boxShadow: `inset 0 -2.5px 0 ${PALETTE[2].edge}` },
+              { backgroundColor: archPal.bg, boxShadow: `inset 0 -2.5px 0 ${archPal.edge}` },
             ]}>
             <Text style={styles.archTagText}>{archetypeLabel}</Text>
             <View style={styles.archInfo}>

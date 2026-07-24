@@ -743,6 +743,7 @@ export default function HomeScreen() {
               theme={theme}
               dayKey={deal.dayKey}
               archetypeLabel={deal.archetype ? twistLabel(deal.archetype) : null}
+              archetype={deal.archetype}
               score={myScore > 0 ? myScore : null}
               streak={streak}
               onInfo={!played ? () => router.push('/how-to') : undefined}

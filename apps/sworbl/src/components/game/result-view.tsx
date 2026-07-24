@@ -15,6 +15,21 @@ export const ARCHETYPE_LABEL: Record<string, string> = {
   wordplay: 'wordplay',
 };
 
+// each archetype wears ONE palette hue, with a reason (owner: "a color
+// that has a reason") — consistent on the masthead tag and the book:
+//   category  → mint (2): a family tree — taxonomy is organic
+//   connector → cyan (1): links are blue — the hyperlink instinct
+//   sibling   → pink (3): kinship — warm blood, same family
+//   lateral   → violet (0): lateral thinking — imagination's color
+//   wordplay  → amber (4): the jester's gold — wit and puns
+export const ARCHETYPE_PAL: Record<string, number> = {
+  'straight-category': 2,
+  connector: 1,
+  sibling: 3,
+  lateral: 0,
+  wordplay: 4,
+};
+
 interface Props {
   word: string;
   definition: string;
