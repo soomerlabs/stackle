@@ -8,11 +8,10 @@
 // board is the practice lane on the room's own seed.
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import engine from '@sworbl/engine';
-
+import { savedRooms, rememberRoom, type SavedRoom } from '@/game/my-rooms';
 import { PALETTE, tileColorFor } from '@/game/palette';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
 import { track } from '@/net/analytics';
@@ -22,16 +21,7 @@ import {
 } from '@/net/duels';
 import { fetchPractice } from '@/net/standings-remote';
 
-const MY_ROOMS_KEY = 'sworbl_rn_my_rooms';
 const ENTRIES = [0, 10, 25, 50, 100];
-
-function savedRooms(): string[] {
-  return engine.store.getJSON(MY_ROOMS_KEY, []) as string[];
-}
-function rememberRoom(code: string) {
-  const cur = savedRooms().filter((c) => c !== code);
-  engine.store.setJSON(MY_ROOMS_KEY, [code, ...cur].slice(0, 6));
-}
 
 type Face = 'pick' | 'create' | 'join' | 'room';
 
@@ -40,14 +30,25 @@ export default function RoomsScreen() {
   // DEEP LINK (owner: AASA on sworbl.com) — /rooms?code=ABC123 lands on
   // the join face prefilled. NEVER auto-joins: the door charges points,
   // so the swipe stays the consent.
-  const params = useLocalSearchParams<{ code?: string; make?: string }>();
+  const params = useLocalSearchParams<{ code?: string; make?: string; open?: string }>();
   const linkedCode =
     typeof params.code === 'string' && /^[A-Za-z0-9]{4,8}$/.test(params.code)
       ? params.code.toUpperCase()
       : null;
   // the shelf's + cell lands straight on CREATE (owner)
   const [face, setFace] = useState<Face>(linkedCode ? 'join' : params.make === '1' ? 'create' : 'pick');
-  const [myCodes] = useState<string[]>(() => savedRooms());
+  const [myRooms] = useState<SavedRoom[]>(() => savedRooms());
+  // ?open=CODE — a saved-room tile jumps STRAIGHT back in (join is
+  // idempotent for members: the server never re-charges a seat you hold)
+  const openedRef = useRef(false);
+  useEffect(() => {
+    if (openedRef.current) return;
+    const c = typeof params.open === 'string' && /^[A-Za-z0-9]{4,8}$/.test(params.open) ? params.open : null;
+    if (!c) return;
+    openedRef.current = true;
+    void doJoin(c.toUpperCase());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // THE INBOX (owner: "add in users and have them be added") — pending
   // offers; accepting pays the door, so it's a tap, never automatic
   const [invites, setInvites] = useState<RoomInvite[]>([]);
@@ -102,7 +103,7 @@ export default function RoomsScreen() {
   }, [room?.seed]);
 
   const enterRoom = (r: RoomCard) => {
-    rememberRoom(r.code);
+    rememberRoom({ code: r.code, name: r.name, entry: r.entry });
     setRoom(r);
     setBoard(null);
     setSettled(null);
@@ -204,14 +205,16 @@ export default function RoomsScreen() {
                   </Pressable>
                 );
               })}
-              {myCodes.map((c) => (
-                <Pressable key={c} onPress={() => doJoin(c)} style={styles.row} hitSlop={4}>
+              {myRooms.map((r) => (
+                <Pressable key={r.code} onPress={() => doJoin(r.code)} style={styles.row} hitSlop={4}>
                   <View style={[styles.blockIcon, { backgroundColor: theme.pill }]}>
-                    <Text style={[styles.blockMark, { color: theme.sub }]}>{c[0]}</Text>
+                    <Text style={styles.blockEmoji}>🔒</Text>
                   </View>
                   <View style={styles.rowText}>
-                    <Text style={[styles.rowName, { color: theme.ink }]}>{c}</Text>
-                    <Text style={[styles.rowStat, { color: theme.faint }]}>your room</Text>
+                    <Text style={[styles.rowName, { color: theme.ink }]} numberOfLines={1}>{r.name}</Text>
+                    <Text style={[styles.rowStat, { color: theme.faint }]}>
+                      {r.code} · {r.entry === 0 ? 'free door' : `door ${r.entry} ✦`}
+                    </Text>
                   </View>
                   <View style={styles.spring} />
                   <Text style={[styles.rowGo, { color: ACCENT }]}>open ›</Text>

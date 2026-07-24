@@ -7,6 +7,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 
+import { savedRooms } from '@/game/my-rooms';
 import { dailyStormBoards } from '@/game/storm-seeds';
 import { listPausedRuns, type PausedRun } from '@/game/storm-runs';
 import { ACCENT, type Theme } from '@/game/theme';
@@ -94,6 +95,24 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
             </Pressable>
           );
         })}
+        {/* YOUR ROOMS ride the scroller (owner: "i created it — now
+            there's no history of it anywhere") — tap jumps straight
+            back into the room */}
+        {savedRooms().map((r) => (
+          <Pressable
+            key={`room-${r.code}`}
+            onPress={() => router.push(`/rooms?open=${r.code}`)}
+            style={[styles.tier, { backgroundColor: theme.pill }]}>
+            <Text style={styles.tierEmoji}>🔒</Text>
+            <Text style={[styles.tierWord, { color: theme.ink }]} numberOfLines={1}>
+              {r.name.toLowerCase()}
+            </Text>
+            <Text style={[styles.tierMeta, { color: theme.faint }]} numberOfLines={1}>
+              {r.entry === 0 ? 'free' : `${r.entry} ✦`}
+            </Text>
+          </Pressable>
+        ))}
+
         {/* + — make your own board (owner: just the plus, full size);
             the rooms sheet asks public or private */}
         <Pressable
