@@ -15,7 +15,7 @@ import { PALETTE, tileColorFor } from '@/game/palette';
 import { getPlayerName } from '@/game/player';
 import { stormIntensity, stormName } from '@/game/storm-seeds';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
-import { claimShowdown } from '@/net/duels';
+import { claimShowdown, fetchMyShowdownPoints } from '@/net/duels';
 import { fetchPractice } from '@/net/standings-remote';
 
 function fmt(secs: number): string {
@@ -52,7 +52,18 @@ export default function LobbyScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed]);
 
-  const [claiming, setClaiming] = useState<'idle' | 'busy' | 'taken' | 'error'>('idle');
+  const [claiming, setClaiming] = useState<'idle' | 'busy' | 'taken' | 'poor' | 'error'>('idle');
+  // the wallet, for the stakes line (showdown faces only)
+  const [balance, setBalance] = useState<number | null>(null);
+  useEffect(() => {
+    if (!creating && !joining) return;
+    let live = true;
+    void fetchMyShowdownPoints().then((v) => live && v != null && setBalance(v));
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const play = () => {
     // REPLACE, not push — the sheet dismisses and the board owns the
@@ -70,7 +81,7 @@ export default function LobbyScreen() {
       );
       return;
     }
-    setClaiming(r === 'taken' ? 'taken' : 'error');
+    setClaiming(r === 'taken' ? 'taken' : r === 'poor' ? 'poor' : 'error');
   };
 
   if (!seed) {
@@ -125,9 +136,19 @@ export default function LobbyScreen() {
               </View>
               <Text style={[styles.duelLine, { color: theme.sub }]}>
                 {joining
-                  ? `${vsName!.toLowerCase()} put up ${vsScore.toLocaleString()}. beat it and the points are yours.`
+                  ? `${vsName!.toLowerCase()} put up ${vsScore.toLocaleString()}. beat it and the pot is yours.`
                   : 'play the board — your score becomes an open challenge.'}
               </Text>
+              {/* THE STAKES (owner: points on the line) */}
+              <Text style={[styles.stakeLine, { color: theme.faint }]}>
+                ante 25 ✦ · winner takes 50
+                {balance != null ? ` · you have ${balance.toLocaleString()}` : ''}
+              </Text>
+              {claiming === 'poor' && (
+                <Text style={[styles.claimNote, { color: '#F58A66' }]}>
+                  not enough points for the ante — win some back on the boards
+                </Text>
+              )}
               {claiming === 'taken' && (
                 <Text style={[styles.claimNote, { color: '#F58A66' }]}>
                   someone claimed this one first
@@ -169,7 +190,7 @@ export default function LobbyScreen() {
           {/* the ONE button */}
           <Pressable
             onPress={joining ? accept : play}
-            disabled={claiming === 'busy' || claiming === 'taken'}
+            disabled={claiming === 'busy' || claiming === 'taken' || claiming === 'poor'}
             style={[
               styles.cta,
               { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` },
@@ -280,6 +301,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 19,
     paddingHorizontal: 12,
+  },
+  stakeLine: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 12,
+    letterSpacing: 0.4,
   },
   claimNote: {
     fontFamily: 'Fredoka_600SemiBold',

@@ -202,7 +202,7 @@ export default function StormScreen() {
       if (params.post === '1' && !autoPostedRef.current && posted === 'idle') {
         autoPostedRef.current = true;
         void postDuel(seed, blitz ? 'blitz' : 'themed').then((r) => {
-          setPosted(r === 'ok' ? 'ok' : r === 'has-open' ? 'has-open' : 'error');
+          setPosted(r === 'ok' ? 'ok' : r === 'has-open' ? 'has-open' : r === 'poor' ? 'poor' : 'error');
         });
       }
       if (duel && Number.isFinite(duelId)) {
@@ -232,13 +232,13 @@ export default function StormScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [posted, setPosted] = useState<'idle' | 'busy' | 'ok' | 'has-open' | 'error'>('idle');
+  const [posted, setPosted] = useState<'idle' | 'busy' | 'ok' | 'has-open' | 'poor' | 'error'>('idle');
   const autoPostedRef = useRef(false);
   const postAsDuel = async () => {
     if (!seed || posted === 'busy' || posted === 'ok') return;
     setPosted('busy');
     const r = await postDuel(seed, blitz ? 'blitz' : 'themed');
-    setPosted(r === 'ok' ? 'ok' : r === 'has-open' ? 'has-open' : 'error');
+    setPosted(r === 'ok' ? 'ok' : r === 'has-open' ? 'has-open' : r === 'poor' ? 'poor' : 'error');
   };
 
   const runAgain = () => {
@@ -360,7 +360,9 @@ export default function StormScreen() {
             )}
             {verdict && (
               <Text style={[styles.sub, { color: verdict.won ? '#5FD6A8' : theme.faint }]}>
-                {verdict.won ? '+12 showdown points ✦' : '+2 for the fight'} · settled
+                {verdict.won
+                  ? `the pot is yours · +${verdict.pot} ✦`
+                  : 'the pot walks — run it back'}
               </Text>
             )}
             {params.post === '1' && posted === 'has-open' && (
@@ -402,9 +404,11 @@ export default function StormScreen() {
                     ? 'posting…'
                     : posted === 'has-open'
                       ? 'you already have one open — one at a time'
-                      : posted === 'error'
-                        ? 'post failed — again?'
-                        : 'post a showdown'}
+                      : posted === 'poor'
+                        ? 'not enough points for the ante'
+                        : posted === 'error'
+                          ? 'post failed — again?'
+                          : 'post a showdown · ante 25 ✦'}
               </Text>
             </Pressable>
             <Pressable

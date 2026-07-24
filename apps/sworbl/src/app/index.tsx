@@ -900,7 +900,9 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 18,
     paddingTop: 14, // IDENTICAL header position on every screen
-    paddingBottom: 12,
+    // the showdowns row must scroll CLEAR of the corner FAB (owner) —
+    // the stick stands ~232 tall off the bottom edge
+    paddingBottom: 216,
     gap: 22,
     alignItems: 'center',
   },

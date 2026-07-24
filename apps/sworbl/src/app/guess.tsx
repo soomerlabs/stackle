@@ -6,7 +6,7 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GuessStage } from '@/components/game/guess-stage';
@@ -19,6 +19,7 @@ import {
   saveFinaleProgress, loadFinaleProgress, clearFinaleProgress,
 } from '@/game/persist';
 import { useTheme } from '@/game/theme';
+import { spendPoints } from '@/net/duels';
 import { enqueueSubmission } from '@/net/standings-remote';
 
 export default function GuessScreen() {
@@ -88,6 +89,33 @@ export default function GuessScreen() {
     [deal]
   );
 
+  // THE PAID HINT: 25 ✦ reveals one clue — and the ENGINE charges it
+  // again (foundCount rises → the reward tier drops). Fair by design.
+  const [hintState, setHintState] = useState<'idle' | 'busy' | 'poor' | 'done'>('idle');
+  const unfound = ctx ? ctx.swapped.filter((c) => !found.includes(c)) : [];
+  const buyHint = useCallback(async () => {
+    if (!deal || !ctx || hintState === 'busy' || !unfound.length) return;
+    setHintState('busy');
+    const r = await spendPoints('hint');
+    if (r === 'poor') {
+      setHintState('poor');
+      return;
+    }
+    if (r === 'error') {
+      setHintState('idle');
+      return;
+    }
+    const clue = unfound[0];
+    setFound((cur) => {
+      const next = cur.includes(clue) ? cur : [...cur, clue];
+      saveProgress(deal.dayKey, boot?.score ?? 0, next);
+      return next;
+    });
+    setHintState('done');
+    setTimeout(() => setHintState('idle'), 900);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deal, ctx, hintState, unfound, boot]);
+
   const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onDone = useCallback(
     (r: { solved: boolean; guessesUsed: number; bonus: number }) => {
@@ -142,6 +170,24 @@ export default function GuessScreen() {
             />
           )}
         </View>
+        {/* THE PAID HINT (owner economy): one clue for 25 ✦ — the tier
+            drop is the second half of the price */}
+        {unfound.length > 0 && (
+          <Pressable
+            onPress={buyHint}
+            disabled={hintState === 'busy'}
+            style={[styles.hintBtn, { backgroundColor: theme.card }]}>
+            <Text style={[styles.hintBtnText, { color: hintState === 'poor' ? '#F58A66' : theme.ink }]}>
+              {hintState === 'busy'
+                ? 'revealing…'
+                : hintState === 'poor'
+                  ? 'not enough points'
+                  : hintState === 'done'
+                    ? 'clue revealed ✦'
+                    : 'reveal a clue · 25 ✦ (lowers the bonus)'}
+            </Text>
+          </Pressable>
+        )}
         {/* the decay truth, where the choice is live (audit: it vanished
             with the in-sheet finale) */}
         <Text style={[styles.bailLine, { color: theme.faint }]}>
@@ -154,6 +200,18 @@ export default function GuessScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  hintBtn: {
+    alignSelf: 'center',
+    borderRadius: 12, borderCurve: 'continuous',
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    marginBottom: 8,
+  },
+  hintBtnText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 12.5,
+    letterSpacing: 0.3,
+  },
   bailLine: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 11.5,

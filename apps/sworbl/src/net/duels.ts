@@ -158,14 +158,29 @@ export async function fetchMyShowdownPoints(): Promise<number | null> {
 }
 
 // SHOWDOWN lifecycle (owner: taking claims it; decided = off the rail)
-export async function claimShowdown(id: number): Promise<'ok' | 'taken' | 'error'> {
+export async function claimShowdown(id: number): Promise<'ok' | 'taken' | 'poor' | 'error'> {
   const sb = supabase();
   if (!sb) return 'error';
   try {
     const { data, error } = await sb.functions.invoke('showdown', { body: { action: 'claim', id } });
     if (data?.ok) return 'ok';
     const status = (error as { context?: { status?: number } } | null)?.context?.status;
+    if (status === 402) return 'poor'; // can't cover the ante
     return status === 409 ? 'taken' : 'error';
+  } catch {
+    return 'error';
+  }
+}
+
+// the wallet's client spender — prices live SERVER-side only
+export async function spendPoints(action: 'hint'): Promise<{ balance: number } | 'poor' | 'error'> {
+  const sb = supabase();
+  if (!sb) return 'error';
+  try {
+    const { data, error } = await sb.functions.invoke('spend-points', { body: { action } });
+    if (data?.ok) return { balance: Number(data.balance) };
+    const status = (error as { context?: { status?: number } } | null)?.context?.status;
+    return status === 402 ? 'poor' : 'error';
   } catch {
     return 'error';
   }
@@ -175,6 +190,7 @@ export interface ShowdownVerdict {
   won: boolean;
   yourScore: number;
   theirScore: number;
+  pot: number; // the stakes, both sides — the winner's take
 }
 
 export async function resolveShowdown(id: number): Promise<ShowdownVerdict | 'pending' | 'error'> {
@@ -183,7 +199,12 @@ export async function resolveShowdown(id: number): Promise<ShowdownVerdict | 'pe
   try {
     const { data, error } = await sb.functions.invoke('showdown', { body: { action: 'resolve', id } });
     if (data?.ok && typeof data.won === 'boolean') {
-      return { won: data.won, yourScore: Number(data.yourScore), theirScore: Number(data.theirScore) };
+      return {
+        won: data.won,
+        yourScore: Number(data.yourScore),
+        theirScore: Number(data.theirScore),
+        pot: Number(data.pot) || 0,
+      };
     }
     if (data?.ok) return 'error'; // alreadyDecided — nothing to show
     const status = (error as { context?: { status?: number } } | null)?.context?.status;
@@ -197,7 +218,7 @@ export async function resolveShowdown(id: number): Promise<ShowdownVerdict | 'pe
 export async function postDuel(
   seed: string,
   format: 'blitz' | 'themed' = 'blitz'
-): Promise<'ok' | 'no-run' | 'has-open' | 'error'> {
+): Promise<'ok' | 'no-run' | 'has-open' | 'poor' | 'error'> {
   const sb = supabase();
   if (!sb) return 'error';
   try {
@@ -205,6 +226,7 @@ export async function postDuel(
     if (data?.ok) return 'ok';
     const status = (error as { context?: { status?: number } } | null)?.context?.status;
     if (status === 409) return 'has-open'; // one open showdown per player
+    if (status === 402) return 'poor'; // can't cover the ante
     return status === 422 ? 'no-run' : 'error';
   } catch {
     return 'error';

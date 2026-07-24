@@ -94,7 +94,7 @@ export default function ProfileScreen() {
     { label: 'BEST SCORE', value: stats.best, dot: PALETTE[2], accent: CLUE_GREEN },
     { label: 'AVG SCORE', value: stats.games ? Math.round(stats.total / stats.games) : 0, dot: PALETTE[0] },
     { label: 'GAMES', value: stats.games, dot: PALETTE[1] },
-    { label: 'SHOWDOWN PTS', value: sdPts ?? 0, dot: PALETTE[3] },
+    { label: 'POINTS ✦', value: sdPts ?? 0, dot: PALETTE[3] },
   ];
 
   return (
