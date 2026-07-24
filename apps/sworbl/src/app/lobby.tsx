@@ -472,7 +472,7 @@ export default function LobbyScreen() {
               <Text style={[styles.boardBoxLabel, { color: theme.faint }]}>
                 today&rsquo;s board · best score holds the crown
               </Text>
-              <View style={styles.lbBlock}>
+              <View style={[styles.lbBlock, !!board?.length && styles.lbBlockFilled]}>
                 {board === null && (
                   <Text style={[styles.lbEmpty, { color: theme.faint }]}>checking the board…</Text>
                 )}
@@ -495,6 +495,19 @@ export default function LobbyScreen() {
                       <Text style={[styles.lbScore, { color: theme.sub }]}>
                         {r.score.toLocaleString()}
                       </Text>
+                    </View>
+                  ))}
+                {/* EMPTY SEATS as dashed ghosts (owner: "two people, the
+                    row size is unreal") — a thin board reads as seats
+                    waiting, never rows stretched to fill the frame */}
+                {board != null &&
+                  board.length > 0 &&
+                  Array.from({ length: Math.max(0, 5 - board.length) }).map((_, i) => (
+                    <View key={`ghost-${i}`} style={styles.lbRow}>
+                      <Text style={[styles.lbRank, { color: theme.faint }]}>
+                        {board.length + i + 1}
+                      </Text>
+                      <View style={[styles.lbGhostSeat, { borderColor: theme.dashed }]} />
                     </View>
                   ))}
               </View>
@@ -832,6 +845,17 @@ const styles = StyleSheet.create({
     // FIXED height (audit: fitToContents re-measured when the async top-5
     // landed and the sheet visibly grew) — loading paints into this space
     height: 140,
+  },
+  lbBlockFilled: {
+    justifyContent: 'flex-start', // real rows anchor top; ghosts fill down
+  },
+  lbGhostSeat: {
+    flex: 1,
+    height: 16,
+    borderRadius: 8, borderCurve: 'continuous',
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    opacity: 0.5,
   },
   lbEmpty: {
     fontFamily: 'Fredoka_600SemiBold',

@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 
-import { dailyStormBoards, stormName } from '@/game/storm-seeds';
+import { dailyStormBoards } from '@/game/storm-seeds';
 import { listPausedRuns, type PausedRun } from '@/game/storm-runs';
 import { ACCENT, type Theme } from '@/game/theme';
 import { fetchStormCrowns } from '@/net/duels';
@@ -45,13 +45,29 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
       <View style={styles.tierRow}>
         {[...boards].reverse().map((b) => {
           const c = crowns?.[b.seed];
+          const run = paused.find((p) => p.seed === b.seed);
           const words = b.name.split(' ');
           const tierWord = words.length > 1 ? words.slice(1).join(' ') : b.name;
           return (
             <Pressable
               key={b.seed}
-              onPress={() => router.push(`/lobby?seed=${b.seed}`)}
+              // a PAUSED board goes STRAIGHT back in (never the lobby —
+              // the door already charged); the cover lands on RESUME
+              onPress={() =>
+                run
+                  ? router.push(`/storm?seed=${b.seed}`)
+                  : router.push(`/lobby?seed=${b.seed}`)
+              }
+              // paused = the BADGE + amber meta, never a hue flood
+              // (owner: "all red omg hurricane looks awful")
               style={[styles.tier, { backgroundColor: theme.pill }]}>
+              {/* the mid-run badge (owner: "highlighted with a paused
+                  icon on the top right") */}
+              {run && (
+                <View style={styles.pausedBadge}>
+                  <Text style={styles.pausedBadgeText}>⏸</Text>
+                </View>
+              )}
               {b.intensity.key === 'hurricane' ? (
                 <View style={styles.flag}>
                   <View style={styles.flagCenter} />
@@ -62,37 +78,23 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
               <Text style={[styles.tierWord, { color: theme.ink }]} numberOfLines={1}>
                 {tierWord}
               </Text>
-              <Text style={[styles.tierMeta, { color: theme.faint }]} numberOfLines={1}>
-                {c?.top
-                  ? c.top.score.toLocaleString()
-                  : b.intensity.entry === 0
-                    ? 'free'
-                    : `${b.intensity.entry} ✦`}
+              <Text
+                style={[styles.tierMeta, { color: run ? '#F5B84A' : theme.faint }]}
+                numberOfLines={1}>
+                {run
+                  ? run.score > 0
+                    ? `${run.score.toLocaleString()} pts`
+                    : 'paused'
+                  : c?.top
+                    ? c.top.score.toLocaleString()
+                    : b.intensity.entry === 0
+                      ? 'free'
+                      : `${b.intensity.entry} ✦`}
               </Text>
             </Pressable>
           );
         })}
       </View>
-
-      {/* PAUSED MID-RUN — straight back to the board (NEVER through the
-          lobby: the door already charged; re-entering there would charge
-          it again). The cover lands on PAUSED → RESUME. */}
-      {paused.map((c) => (
-        <Pressable
-          key={`paused-${c.seed}`}
-          onPress={() => router.push(`/storm?seed=${c.seed}`)}
-          style={styles.privateRow}
-          hitSlop={4}>
-          <Text style={styles.privateLock}>⏸</Text>
-          <Text style={[styles.privateText, { color: theme.ink }]} numberOfLines={1}>
-            {stormName(c.seed)} — paused
-          </Text>
-          <View style={styles.spring} />
-          <Text style={[styles.privateGo, { color: '#F5B84A' }]}>
-            {c.score > 0 ? `${c.score.toLocaleString()} pts · ` : ''}resume ›
-          </Text>
-        </Pressable>
-      ))}
 
       {/* PRIVATE ROOMS — the card's last door */}
       <Pressable onPress={() => router.push('/rooms')} style={styles.privateRow} hitSlop={4}>
@@ -151,6 +153,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     gap: 2,
+    overflow: 'visible',
+  },
+  pausedBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    width: 19,
+    height: 19,
+    borderRadius: 7, borderCurve: 'continuous',
+    backgroundColor: '#F5B84A',
+    boxShadow: 'inset 0 -2px 0 #CE9022',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  pausedBadgeText: {
+    fontSize: 9,
+    color: '#1F1442',
+    includeFontPadding: false,
   },
   tierEmoji: {
     fontSize: 24,
