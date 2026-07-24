@@ -302,6 +302,23 @@ export default function StormScreen() {
       </View>
 
       <View style={styles.boardWrap}>
+        {!duel && (phase === 'live' || phase === 'settling') && (
+          <View style={styles.tierStrip}>
+            {intensity.key === 'hurricane' ? (
+              <View style={styles.stripFlag}>
+                <View style={styles.stripFlagCenter} />
+              </View>
+            ) : (
+              <Text style={styles.stripEmoji}>{intensity.emoji}</Text>
+            )}
+            <Text style={[styles.stripLabel, { color: theme.ink }]}>
+              {stormName(seed)}
+            </Text>
+            <Text style={[styles.stripMeta, { color: theme.faint }]}>
+              {intensity.key === 'hurricane' ? 'no mercy · ' : ''}best score holds the crown
+            </Text>
+          </View>
+        )}
         {duel && (phase === 'live' || phase === 'settling') && (
           <RaceBar
             theme={theme}
@@ -449,6 +466,38 @@ const styles = StyleSheet.create({
   clock: { fontFamily: 'Fredoka_600SemiBold', fontSize: 19, fontVariant: ['tabular-nums'] },
   scoreLine: { fontFamily: 'Fredoka_600SemiBold', fontSize: 12 },
   boardWrap: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  tierStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  stripEmoji: { fontSize: 22 },
+  stripLabel: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 15,
+    letterSpacing: 0.3,
+  },
+  stripMeta: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 11,
+    letterSpacing: 0.3,
+  },
+  stripFlag: {
+    width: 22,
+    height: 22,
+    borderRadius: 6, borderCurve: 'continuous',
+    backgroundColor: '#E5484D',
+    boxShadow: 'inset 0 -2.5px 0 #8C2328',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stripFlagCenter: {
+    width: 8,
+    height: 8,
+    borderRadius: 2.5, borderCurve: 'continuous',
+    backgroundColor: '#17171C',
+  },
   cover: { alignItems: 'center', gap: 14, paddingHorizontal: 32 },
   title: { fontFamily: 'Fredoka_600SemiBold', fontSize: 26 },
   bigScore: { fontFamily: 'Fredoka_600SemiBold', fontSize: 54 },
