@@ -14,6 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArchetypeBadge } from '@/components/home/archetype-badge';
+import { PlayFab } from '@/components/home/play-fab';
 import { ShowdownsRail } from '@/components/home/showdowns-rail';
 import { StandingsStrip } from '@/components/home/standings-strip';
 import { StormShelf } from '@/components/home/storm-shelf';
@@ -53,6 +54,8 @@ import { getDiagnostics } from '@/game/dev-flags';
 import { loadDay, saveSheetOpen, wasSheetOpen, getResetNonce, loadDayWords, type DayState, clearRun } from '@/game/persist';
 import { standingsStub, rankFor, type LbEntry } from '@/game/standings';
 import { checkContentEpoch } from '@/net/config-remote';
+import { toast } from '@/components/toast';
+import { fetchSettledShowdowns } from '@/net/duels';
 import { fetchDaily, readCachedField, type RemoteField } from '@/net/standings-remote';
 import { fetchRemoteEntry } from '@/net/dailies-remote';
 import { loadStats, streakDays } from '@/game/stats';
@@ -139,6 +142,18 @@ export default function HomeScreen() {
         if (!live || !changed) return;
         const d = loadDay(deal.dayKey);
         if (d.route === 'fresh') setContentNonce((n) => n + 1);
+      });
+      // SETTLED WHILE AWAY: a decided showdown lands as a toast — the
+      // poster finally learns the outcome (audit)
+      void fetchSettledShowdowns().then((settled) => {
+        if (!live || !settled.length) return;
+        const last = settled[settled.length - 1];
+        toast(
+          last.won
+            ? `showdown won ✦  ${last.myScore.toLocaleString()} beat ${last.theirScore.toLocaleString()} · +12 pts`
+            : `showdown lost — ${last.theirScore.toLocaleString()} beat your ${last.myScore.toLocaleString()} · +2 pts`,
+          { pal: last.won ? 2 : 5 }
+        );
       });
       // THE TORCH (owner): a bumped content epoch burns every cached day
       // spec + today's state and re-deals fresh — parked sheets only
@@ -809,6 +824,16 @@ export default function HomeScreen() {
 
       </SafeAreaView>
       </Animated.View>
+
+      {/* THE HOCKEY-STICK FAB (owner: the play door's launcher) — trace
+          P up through L·A·Y at the corner; the vertical leg scrubs the
+          sheet; commit = openToPlay. Hidden on consumed days. */}
+      <PlayFab
+        sheetY={sheetY}
+        closedY={closedY}
+        onCommit={openToPlay}
+        enabled={!played && !!deal}
+      />
 
       {/* dark scrim under the rising sheet (blur deleted — owner call) */}
       <Animated.View
