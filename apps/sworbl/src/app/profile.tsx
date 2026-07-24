@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 import { ScreenBar } from '@/components/screen-bar';
 import { ScreenHeader } from '@/components/screen-header';
 import { Floaters } from '@/components/home/floaters';
-import { fetchMyShowdownPoints } from '@/net/duels';
+import { fetchMyShowdownPoints, fetchPointEvents, type PointEvent } from '@/net/duels';
 import { useTheme, CLUE_GREEN } from '@/game/theme';
 import { PALETTE, tileColorFor } from '@/game/palette';
 import { loadStats, historyGrid, streakDays } from '@/game/stats';
@@ -81,9 +81,11 @@ export default function ProfileScreen() {
   // SHOWDOWN POINTS (audit: the 1v1 payoff had no persistent surface) —
   // cache-first via state; the fetch swaps in silently
   const [sdPts, setSdPts] = useState<number | null>(null);
+  const [ledger, setLedger] = useState<PointEvent[]>([]);
   useEffect(() => {
     let live = true;
     void fetchMyShowdownPoints().then((v) => live && v != null && setSdPts(v));
+    void fetchPointEvents().then((ev) => live && ev && setLedger(ev));
     return () => {
       live = false;
     };
@@ -150,6 +152,26 @@ export default function ProfileScreen() {
               </View>
             ))}
           </View>
+
+          {/* THE LEDGER (owner: manage the currency) — every ✦ accounted */}
+          {ledger.length > 0 && (
+            <View style={styles.ledgerWrap}>
+              <Text style={[styles.ledgerTitle, { color: theme.sub }]}>points ledger</Text>
+              {ledger.map((e, i) => (
+                <View key={`${e.ts}-${i}`} style={styles.ledgerRow}>
+                  <Text style={[styles.ledgerReason, { color: theme.ink }]}>{e.reason}</Text>
+                  <Text
+                    style={[
+                      styles.ledgerDelta,
+                      { color: e.delta >= 0 ? '#5FD6A8' : theme.faint },
+                    ]}>
+                    {e.delta >= 0 ? '+' : ''}
+                    {e.delta} ✦
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* YOUR BEST — the lifetime word in candy blocks + its pay */}
           <View style={styles.section}>
@@ -276,6 +298,30 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  ledgerWrap: {
+    alignSelf: 'stretch',
+    gap: 7,
+    marginTop: 6,
+  },
+  ledgerTitle: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 13,
+    marginBottom: 2,
+  },
+  ledgerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ledgerReason: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 13,
+  },
+  ledgerDelta: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+  },
   identityRow: {
     flexDirection: 'row',
     alignItems: 'center',

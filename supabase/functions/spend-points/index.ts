@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
     .update({ showdown_points: balance - price })
     .eq("id", user.id);
   if (error) return bad(error.message, 500);
+  await admin.from("point_events").insert({ player_id: user.id, delta: -price, reason: body.action });
   return new Response(JSON.stringify({ ok: true, balance: balance - price }), {
     headers: { "Content-Type": "application/json" },
   });

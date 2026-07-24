@@ -83,6 +83,7 @@ export function PlayFab({ sheetY, closedY, commitFrac = 0.34, onCommit, enabled 
   // sLit: how many tiles the trace has passed (0-4). UI-thread only.
   const sLit = useSharedValue(0);
   const sTracing = useSharedValue(0);
+  const sGrip = useSharedValue(0); // the gesture only lives if it BEGAN on P
 
 
   // haptic ladder: one tick per tile, ascending (the trace grammar)
@@ -99,13 +100,20 @@ export function PlayFab({ sheetY, closedY, commitFrac = 0.34, onCommit, enabled 
     .enabled(enabled)
     .minDistance(0)
     .maxPointers(1)
-    .onBegin(() => {
+    .onBegin((e) => {
       'worklet';
+      // the grip is P's alone (owner: "I can hit the A and it activates
+      // the P") — touches elsewhere on the stack are inert
+      const stackH = CELL * 2 + TILE;
+      const onP = e.x <= TILE + GAP * 0.6 && e.y >= stackH - TILE - GAP * 0.6;
+      sGrip.value = onP ? 1 : 0;
+      if (!onP) return;
       sTracing.value = 1;
       sLit.value = 1; // the finger is ON p
     })
     .onUpdate((e) => {
       'worklet';
+      if (!sGrip.value) return;
       // two strokes: RIGHT across the foot (P→L), then UP the column
       // (L→A→Y). The climb scrubs the sheet under the finger.
       const across = e.translationX;
@@ -122,6 +130,8 @@ export function PlayFab({ sheetY, closedY, commitFrac = 0.34, onCommit, enabled 
     })
     .onEnd(() => {
       'worklet';
+      if (!sGrip.value) return;
+      sGrip.value = 0;
       const traveled = closedY - sheetY.value;
       const commit = sLit.value >= 4 || traveled > closedY * commitFrac;
       sTracing.value = 0;

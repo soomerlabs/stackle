@@ -22,9 +22,11 @@ export function AppBar({ theme, onPerson, onSettings, points }: Props) {
       </Pressable>
       <Brand ink={theme.ink} />
       {points != null && (
-        <Pressable onPress={onPerson} hitSlop={8} style={[styles.pointsChip, { backgroundColor: theme.pill }]}>
-          <Text style={[styles.pointsText, { color: theme.ink }]}>✦ {points.toLocaleString()}</Text>
-        </Pressable>
+        <View pointerEvents="box-none" style={styles.pointsSlot}>
+          <Pressable onPress={onPerson} hitSlop={8} style={[styles.pointsChip, { backgroundColor: theme.pill }]}>
+            <Text style={[styles.pointsText, { color: theme.ink }]}>✦ {points.toLocaleString()}</Text>
+          </Pressable>
+        </View>
       )}
       <Pressable onPress={onSettings} hitSlop={8} style={[styles.side, styles.right]}>
         <Icon name="settings" size={23} color={theme.icon} />
@@ -46,9 +48,14 @@ const styles = StyleSheet.create({
   side: {
     width: 44,
   },
-  pointsChip: {
+  pointsSlot: {
     position: 'absolute',
     right: 52,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center', // vertically centered in the bar (owner)
+  },
+  pointsChip: {
     borderRadius: 10, borderCurve: 'continuous',
     paddingHorizontal: 9,
     paddingVertical: 4,

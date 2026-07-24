@@ -86,6 +86,7 @@ Deno.serve(async (req) => {
     .from("players")
     .update({ showdown_points: (wallet.showdown_points ?? 0) - STAKE })
     .eq("id", user.id);
+  await admin.from("point_events").insert({ player_id: user.id, delta: -STAKE, reason: "showdown ante" });
   return new Response(JSON.stringify({ ok: true, score: run.score, stake: STAKE }), {
     headers: { "Content-Type": "application/json" },
   });

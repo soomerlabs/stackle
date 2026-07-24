@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
       .from("players")
       .update({ showdown_points: (wallet.showdown_points ?? 0) - stake })
       .eq("id", user.id);
+    await admin.from("point_events").insert({ player_id: user.id, delta: -stake, reason: "showdown ante" });
     return json({ ok: true, stake });
   }
 
@@ -117,6 +118,7 @@ Deno.serve(async (req) => {
         .from("players")
         .update({ showdown_points: (pl.showdown_points ?? 0) + pot })
         .eq("id", winner);
+      await admin.from("point_events").insert({ player_id: winner, delta: pot, reason: "showdown pot" });
     }
     return json({ ok: true, won: takerWins, yourScore: run.score, theirScore: duel.score, pot });
   }

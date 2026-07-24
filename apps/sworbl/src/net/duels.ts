@@ -142,6 +142,36 @@ export async function fetchSettledShowdowns(): Promise<SettledShowdown[]> {
   }
 }
 
+// the LEDGER (owner: "how do i manage my currency") — your own point
+// events, newest first (RLS: read-own)
+export interface PointEvent {
+  delta: number;
+  reason: string;
+  ts: number;
+}
+
+export async function fetchPointEvents(limit = 12): Promise<PointEvent[] | null> {
+  const sb = supabase();
+  if (!sb) return null;
+  try {
+    const uid = (await sb.auth.getSession()).data.session?.user.id;
+    if (!uid) return null;
+    const { data, error } = await sb
+      .from('point_events')
+      .select('delta, reason, created_at')
+      .order('id', { ascending: false })
+      .limit(limit);
+    if (error || !data) return null;
+    return data.map((r) => ({
+      delta: Number(r.delta),
+      reason: String(r.reason),
+      ts: Date.parse(String(r.created_at)) || 0,
+    }));
+  } catch {
+    return null;
+  }
+}
+
 // your points ledger (profile stat card) — null offline
 export async function fetchMyShowdownPoints(): Promise<number | null> {
   const sb = supabase();

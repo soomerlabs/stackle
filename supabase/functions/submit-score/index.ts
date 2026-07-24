@@ -148,6 +148,7 @@ Deno.serve(async (req) => {
     const { data: pl } = await admin.from("players").select("showdown_points").eq("id", user.id).maybeSingle();
     if (pl) {
       await admin.from("players").update({ showdown_points: (pl.showdown_points ?? 0) + 15 }).eq("id", user.id);
+      await admin.from("point_events").insert({ player_id: user.id, delta: 15, reason: "daily solve" });
     }
   };
 
