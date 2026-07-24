@@ -161,3 +161,16 @@ confusion points become the curriculum.
   the exit is visible, never modal.
 - Build gate: the transition must pass the owner's eye — this rides the
   universal-play-door session, same surfaces, same care.
+
+## PRIVATE STORMS + INVITED SHOWDOWNS (owner 2026-07-24)
+- PRIVATE STORMS: a storm board with a member list — invite users by
+  username; the board + its leaderboard visible to members only.
+  Infrastructure exists: v6 groups/group_members (deployed, unused).
+  A private storm = a group + a seed; leaderboard = practice_standings
+  filtered by membership.
+- SHOWDOWNS become 1v1 with a NAMED opponent: post targets a specific
+  username (invite), only they can claim. Open-to-anyone posts remain
+  as the public variant. The v9 lifecycle (claim/resolve/points) is
+  unchanged — invites add a `target` player on the post.
+- INTENSITY LADDER shipped 2026-07-24: drizzle/squall/hurricane derive
+  from the seed slot (a/b/c); rewards weighting by intensity = later.
