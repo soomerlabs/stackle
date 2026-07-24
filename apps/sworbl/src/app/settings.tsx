@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 8.5,
+    fontSize: 10, // audit type floor (was 8.5)
     letterSpacing: 1.3,
     marginTop: 8,
   },

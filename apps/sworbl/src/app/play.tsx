@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { InteractionManager, View, StyleSheet } from 'react-native';
 
+import { CoachCover, wasCoached } from '@/components/coach-cover';
 import { PlaySheet, type PlaySheetHandle } from '@/components/play-sheet';
 import { dealDaily } from '@/game/daily';
 import { gameSurface } from '@/game/palette';
@@ -53,10 +54,16 @@ export default function PlayScreen() {
     else router.replace('/');
   }, []);
 
+  // THE FIRST-RUN COACH (audit): the very first board ever holds
+  // un-armed under the how-it-works cover — the clock never starts
+  // until the verb has been taught. Once, forever.
+  const [coached, setCoachedState] = useState(() => wasCoached());
+
   return (
     <View style={[styles.root, { backgroundColor: gameSurface(theme.mode).bg }]}>
       <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
-      <PlaySheet ref={sheetRef} active={settled} onClose={close} />
+      <PlaySheet ref={sheetRef} active={settled && coached} onClose={close} />
+      {!coached && <CoachCover onDone={() => setCoachedState(true)} />}
     </View>
   );
 }

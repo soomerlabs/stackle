@@ -25,7 +25,7 @@ initStorage();
 // across cold starts, MMKV is not persisting on this install
 if (__DEV__) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // (require: RN asset/font loading pattern)
     const engine = require('@sworbl/engine').default;
     engine.store.set('sworbl_rn_boots', (engine.store.getInt('sworbl_rn_boots', 0) || 0) + 1);
   } catch {}
@@ -49,23 +49,23 @@ if (IS_REAL_CLIENT) setTimeout(() => {
 // entirely fire-and-forget; the app never waits on the network. After the
 // dictionary so the two JS bites can't stack.
 if (IS_REAL_CLIENT) setTimeout(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // (require: RN asset/font loading pattern)
   const { ensurePlayer } = require('@/net/supabase');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // (require: RN asset/font loading pattern)
   const { drainOutbox } = require('@/net/standings-remote');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // (require: RN asset/font loading pattern)
   const { getPlayerName } = require('@/game/player');
   ensurePlayer(getPlayerName()).then(() => drainOutbox());
 }, 2000);
 // FOREGROUND drain (owner networking audit): a round finished offline used
 // to wait for the NEXT cold boot — now returning to the app delivers it
 if (IS_REAL_CLIENT) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // (require: RN asset/font loading pattern)
   const { AppState } = require('react-native');
   let last = AppState.currentState;
   AppState.addEventListener('change', (next: string) => {
     if (last !== 'active' && next === 'active') {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      // (require: RN asset/font loading pattern)
       const { drainOutbox } = require('@/net/standings-remote');
       setTimeout(() => drainOutbox(), 800);
     }

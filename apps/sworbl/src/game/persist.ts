@@ -98,9 +98,9 @@ export function finishRound(
   const dayScore = rounds.bestRound + (sworb?.solved ? sworb.bonus : 0);
   engine.store.set(K.DAILY_PREFIX + dayKey, dayScore);
   clearRun(dayKey);
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // (require: deliberate lazy load)
   require('./stats').recordDay(dayKey, dayScore, merged.length, merged);
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // (require: deliberate lazy load)
   require('./lexicon').recordWords(roundWords);
   return dayScore;
 }
@@ -112,7 +112,7 @@ export function recordSworb(dayKey: string, sworb: SworbState): number {
   const rounds = loadRounds(dayKey);
   const dayScore = rounds.bestRound + (sworb.solved ? sworb.bonus : 0);
   engine.store.set(K.DAILY_PREFIX + dayKey, dayScore);
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // (require: deliberate lazy load)
   require('./stats').recordDay(dayKey, dayScore, loadDayWords(dayKey).length, loadDayWords(dayKey));
   return dayScore;
 }
@@ -152,9 +152,9 @@ export function finishDay(
   clearRun(dayKey);
   // lifetime stats append (profile screen) — idempotent by day, lazy import
   // avoids a persist↔stats require cycle at module load
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // (require: deliberate lazy load)
   require('./stats').recordDay(dayKey, score, wordsPlayed, bestWords);
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // (require: deliberate lazy load)
   require('./lexicon').recordWords(bestWords);
 }
 

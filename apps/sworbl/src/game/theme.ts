@@ -30,7 +30,7 @@ const DARK: Theme = {
   bg: '#101014',
   ink: '#EDEFF7',
   sub: '#9DA2B3',
-  faint: '#6b6b76',
+  faint: '#8B8B97', // AA-adjacent on #101014 (audit: 3.5:1 was sub-AA at 10pt)
   hairline: 'rgba(255,255,255,0.08)',
   dashed: 'rgba(255,255,255,0.22)',
   icon: '#9DA2B3',
@@ -44,7 +44,7 @@ const LIGHT: Theme = {
   bg: '#EDEFF7',
   ink: '#1F1442',
   sub: '#8A8FA3',
-  faint: '#6b6b76',
+  faint: '#6E6E7A',
   hairline: 'rgba(31,20,66,0.08)',
   dashed: '#C4C2CE',
   icon: '#6A6F82',

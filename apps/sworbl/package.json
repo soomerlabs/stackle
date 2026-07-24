@@ -45,6 +45,10 @@
   "devDependencies": {
     "@types/node": "^26.1.1",
     "@types/react": "~19.2.2",
+    "@typescript-eslint/parser": "^8.65.0",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "^57.0.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "tsx": "^4.23.1",
     "typescript": "~6.0.3"
   },
@@ -54,7 +58,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint",
+    "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "test": "npx tsx tests/trace.test.ts && npx tsx tests/persist.test.ts && npx tsx tests/daily.test.ts && npx tsx tests/dict.test.ts && npx tsx tests/finale-logic.test.ts && npx tsx tests/round-clock.test.ts && npx tsx tests/count-in.test.ts && npx tsx tests/share.test.ts && npx tsx tests/storms.test.ts && npx tsx tests/outbox.test.ts"
   },

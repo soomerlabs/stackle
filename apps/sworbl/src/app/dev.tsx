@@ -94,8 +94,13 @@ function readFlags() {
 export default function DevScreen() {
   // audit H2: the route itself shipped in release bundles (deep-linkable)
   // — only the settings ENTRY was gated. A prod build bounces home.
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  // Gate lives in its own component so the inner one keeps a stable
+  // hook order (rules-of-hooks clean).
   if (!__DEV__) return <Redirect href="/" />;
+  return <DevScreenInner />;
+}
+
+function DevScreenInner() {
   const theme = useTheme();
   const [stamp, setStamp] = useState(0); // bump → re-derive everything
   const [armWipe, setArmWipe] = useState(false);

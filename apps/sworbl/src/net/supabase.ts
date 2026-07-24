@@ -24,7 +24,7 @@ export function isConfigured(): boolean {
 const SecureStore = (() => {
   if (typeof document !== 'undefined') return null; // web
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    // (require: deliberate lazy load)
     return require('expo-secure-store');
   } catch {
     return null; // Node tests / anywhere the native module is absent
@@ -109,7 +109,7 @@ export async function ensurePlayer(name: string): Promise<string | null> {
       const { error } = await sb.from('players').upsert({ id: uid, name }, { onConflict: 'id' });
       if (error && `${error.code}` === '23505' && /^PLAYER\d{4}$/.test(name)) {
         // minted default collided — remint locally and try once more
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        // (require: deliberate lazy load)
         const { remintPlayerName } = require('@/game/player');
         const fresh = remintPlayerName();
         await sb.from('players').upsert({ id: uid, name: fresh }, { onConflict: 'id' });

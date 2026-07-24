@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   },
   modalLabel: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 8.5,
+    fontSize: 10, // audit type floor (was 8.5)
     letterSpacing: 1.3,
   },
   modalInput: {
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 8.5,
+    fontSize: 10, // audit type floor (was 8.5)
     letterSpacing: 1.3,
   },
   cardValue: {
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 8.5,
+    fontSize: 10, // audit type floor (was 8.5)
     letterSpacing: 1.3,
   },
   bestHead: {
