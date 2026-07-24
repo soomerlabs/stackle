@@ -1,12 +1,9 @@
-// The bottom dock: unplayed → bobbing chevron + "swipe to play" over the brewing
-// storm; played → the next-puzzle countdown (engine msToNextDay, H:MM:SS).
+// The bottom dock — the COUNTDOWN's home, and nothing else now (owner:
+// the PLAY mechanic retired; the hero card is the only door). A played
+// day shows the next-puzzle clock; an open day shows nothing.
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSpring, withDelay, Easing,
-} from 'react-native-reanimated';
 import engine from '@sworbl/engine';
-import { type SharedValue } from 'react-native-reanimated';
 import { useTheme } from '@/game/theme';
 
 function nextIn(): string {
@@ -17,14 +14,7 @@ function nextIn(): string {
   return `${h}:${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 
-export function CountdownDock({ played, sLit, sPoke, armed, tile, gap }: {
-  played: boolean;
-  sLit?: SharedValue<number>;
-  sPoke?: SharedValue<number>; // out-of-sequence tap → that tile shakes its head
-  armed?: boolean; // PLAY traced → the chevron takes over (swipe unlocked)
-  tile?: number;
-  gap?: number;
-}) {
+export function CountdownDock({ played }: { played: boolean }) {
   const theme = useTheme();
   const [clock, setClock] = useState(nextIn);
   useEffect(() => {
@@ -33,107 +23,30 @@ export function CountdownDock({ played, sLit, sPoke, armed, tile, gap }: {
     return () => clearInterval(h);
   }, [played]);
 
-  // the ARM POSE: 0 = PLAY tiles · 1 = chevron. A sprung crossfade (shared
-  // values, never layout animations) — tiles drift up and give way as the
-  // chevron springs in from below; the reverse plays on disarm.
-  const sPose = useSharedValue(armed ? 1 : 0);
-  useEffect(() => {
-    // arm: the chevron arrives AFTER the word has flown (the tiles own their
-    // exit); disarm: it leaves at once so the rain lands on a clear stage
-    sPose.value = armed
-      ? withDelay(320, withSpring(1, { mass: 0.6, damping: 15, stiffness: 240 }))
-      : withSpring(0, { mass: 0.6, damping: 18, stiffness: 260 });
-  }, [armed]);
-  const chevPose = useAnimatedStyle(() => ({
-    opacity: sPose.value,
-    transform: [{ translateY: (1 - sPose.value) * 16 }, { scale: 0.85 + sPose.value * 0.15 }],
-  }));
-  // FIRST-RUN COACH (audit: bare P·L·A·Y tiles carried zero instruction
-  // until AFTER a successful trace) — the un-armed pose wears the hint,
-  // inverse of the chevron so exactly one caption ever shows
-  const hintPose = useAnimatedStyle(() => ({
-    opacity: (1 - sPose.value) * 0.85,
-  }));
-
-  const bob = useSharedValue(0);
-  useEffect(() => {
-    bob.value = withRepeat(withTiming(1, { duration: 850, easing: Easing.inOut(Easing.sin) }), -1, true);
-  }, []);
-  const bobStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: bob.value * -7 }],
-    opacity: 0.55 + bob.value * 0.45,
-  }));
-
+  if (!played) return null;
   return (
     <View pointerEvents="none" style={styles.wrap}>
-      {played ? (
-        <View key="count" style={styles.face}>
-          {/* just the clock (owner) — the countdown IS the message */}
-          <Text style={[styles.nextClock, { color: theme.ink }]}>{clock}</Text>
-        </View>
-      ) : (
-        // the HOCKEY-STICK FAB is the launcher now (owner) — the dock face
-        // carries nothing on a playable day; the swipe-up still works
-        <View key="trace" style={[styles.face, { height: (tile ?? 48) + 32 }]} />
-      )}
+      <Text style={[styles.label, { color: theme.faint }]}>next sworb in</Text>
+      <Text style={[styles.clock, { color: theme.ink }]}>{clock}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hintPose: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: -12, // below the tiles, off the screen edge (owner: -24 sat too low)
-    alignItems: 'center',
-  },
-  // the brand's own face (owner: "swipe to play in the sworbl font")
-  hintLabel: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 13,
-    letterSpacing: 0.4,
-  },
   wrap: {
     alignItems: 'center',
     gap: 2,
   },
-  // stretched: with BOTH poses absolute, an auto-width face collapses to
-  // zero and takes the children's geometry with it
-  face: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  // pinned on BOTH axes — absolute placement without full insets diverges
-  // between yoga-native and web (the chevron face vanished / the label
-  // crunched); fully determinate = identical everywhere
-  pose: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
-  chev: {
+  label: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 26,
-    color: '#8971FF',
-    lineHeight: 30,
+    fontSize: 10.5,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
   },
-  swipeLabel: {
+  clock: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 14,
-    color: '#9DA2B3',
-  },
-  nextClock: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 26,
-    color: '#EDEFF7',
+    fontSize: 22,
     fontVariant: ['tabular-nums'],
+    includeFontPadding: false,
   },
 });

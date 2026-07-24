@@ -269,3 +269,42 @@ ONE gesture: tracing P·L·A·Y IS the swipe.
   organizer owns the door. Rides the private-storms build.
 - FUTURE: storm entry pots paying the day's crown holder needs a settle
   job (cron) — pinned, not built.
+
+---
+
+## ADDENDUM — 2026-07-26: the economy hardening + hero-card home
+
+**LAWS (owner rulings this session):**
+- THE PLAY MECHANIC IS DEAD ("we overused it and its not fun — i want it
+  gone"): no swipe-to-spell commits anywhere. Plain candy tap buttons.
+  trace-play/play-fab(hockey stick)/sheet-weather deleted.
+- HERO-CARD HOME ("do the A and B compose"): the daily is ONE card
+  (masthead + hero word + standings glance + PLAY/GUESS in-card; podium
+  strip = the leaderboard door). Storms/showdowns are one card each,
+  vertical rows, no horizontal rails, no corner FAB.
+- THE GRAMMAR LADDER: diphthong drizzle · synonym squall (🌨️) ·
+  thesaurus thunder · homonym hurricane (the flag). Full names in
+  lobbies/covers; shelf chips show the tier word, grammar word whispers.
+- PAUSE & RESUME (storms/showdowns): × mid-run PARKS (RunSnap keyed by
+  seed + launch-ctx registry in game/storm-runs.ts); resume rows on the
+  showdowns card (⏸ paused mid-run / unfinished claims "finish ›"); the
+  ready cover flips to PAUSED/RESUME. Finished runs clear their snap.
+- RECEIPTS EVERYWHERE: every spend carries an idempotent ref
+  (point_events.ref unique); no receipt = refund, never a silent charge.
+- DOORS ARE REAL (audit C3 closed): submit-score rejects paid-tier
+  practice scores without an entry receipt (reason "storm-<tier> <seed>");
+  takers' claims are their ticket; drizzle/rooms free of the check.
+- SHOWDOWNS: named stakes 5..200 (+custom), sealed hands (view serves
+  NULL score), call-outs = private showdowns (reserved seat, 412 for
+  pre-played takers, 403 for non-targets), refresh never re-antes.
+- ROOMS: organizer-set door 0..500 (+custom), invites are OFFERS (invitee
+  pays at accept), showdown row grammar throughout.
+- REFUEL 100/day. Mock packs = the paywall dress rehearsal (splash/
+  surge/deluge), inline AT THE DOOR when broke ("want some?").
+- ANALYTICS: app_events insert-only; pack_tap source door|wallet is the
+  conversion metric.
+- REVERTED BY OWNER'S EYE: blur nav bar, centered masthead.
+
+**OPEN (spec'd, unbuilt):** H1 server timeout for stranded antes (needs
+open_duels.taken_at + reclaim action); native-sheet conversion for the
+daily board; web fallback on sworbl.com; universal-links rebuild.

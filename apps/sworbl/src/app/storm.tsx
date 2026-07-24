@@ -13,7 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GameBoard } from '@/components/game/game-board';
 import { Icon } from '@/components/icon';
 import { ScoreHeader } from '@/components/game/score-header';
-import { dealPractice } from '@/game/daily';
+import { bumpNextId, dealPractice } from '@/game/daily';
+import { loadRun, saveRun, clearRun, type RunSnap } from '@/game/persist';
+import { saveStormCtx, clearStormCtx } from '@/game/storm-runs';
+import { type TileT } from '@/game/types';
 import { stormIntensity, stormName } from '@/game/storm-seeds';
 import { haptic } from '@/game/haptics';
 import { type BestWord } from '@/game/persist';
@@ -99,6 +102,22 @@ export default function StormScreen() {
   const [dealNonce, setDealNonce] = useState(0);
   const deal = useMemo(() => (seed ? dealPractice(seed) : null), [seed, dealNonce]);
 
+  // PAUSE & RESUME (owner: "i hit the X... i open it up, it's paused and
+  // we resume") — the daily's RunSnap store, keyed by seed. Read ONCE at
+  // mount; runAgain clears it so replays deal fresh.
+  const savedRunRef = useRef<RunSnap | null>(null);
+  if (savedRunRef.current === null && seed && dealNonce === 0) {
+    savedRunRef.current = loadRun(seed);
+  }
+  const savedRun = dealNonce === 0 ? savedRunRef.current : null;
+  const initialTiles = useMemo<TileT[] | undefined>(() => {
+    if (!savedRun || savedRun.phase !== 'live') return undefined;
+    if (deal) deal.setQueueIdx(savedRun.queueIdx); // the SAME letter stream continues
+    bumpNextId(Math.max(...savedRun.tiles.map((t) => t.id)));
+    return savedRun.tiles.map((t) => ({ ...t, spawnDrop: 0, bornAt: Date.now() }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deal]);
+
   const [phase, setPhase] = useState<Phase>('ready');
   const [board, setBoard] = useState<Array<{ name: string; score: number; isMe: boolean }> | null>(null);
   // THE CROWN TARGET (owner: the daily's progress bar, here) — the
@@ -118,13 +137,16 @@ export default function StormScreen() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seed]);
-  const [score, setScore] = useState(0);
-  const wordsRef = useRef<BestWord[]>([]);
+  const [score, setScore] = useState(savedRun?.score ?? 0);
+  const wordsRef = useRef<BestWord[]>(savedRun?.words ? [...savedRun.words] : []);
+  // the board's live tile state — fed by onTiles, read by the pause snap
+  const boardTilesRef = useRef<TileT[]>(initialTiles ?? deal?.tiles ?? []);
+  const queueIdxRef = useRef(savedRun?.queueIdx ?? 0);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const CT = useMemo(() => ({ baseSecs: intensity.clockSecs, capSecs: intensity.capSecs }), []);
-  const clockRef = useRef<ClockState>(mkClock());
-  const [remaining, setRemaining] = useState(CT.baseSecs);
+  const clockRef = useRef<ClockState>(mkClock(savedRun ?? undefined));
+  const [remaining, setRemaining] = useState(() => clockRemaining(clockRef.current, Date.now(), CT));
 
   // ---- count-in: the stepper speaks 3·2·1 (play-sheet's grammar).
   // Timers are TRACKED (leave mid-count → cleared) and entry is guarded
@@ -139,7 +161,12 @@ export default function StormScreen() {
     setPhase('settling');
     countTimers.current.push(
       setTimeout(() => {
-        clockRef.current = clockStart(mkClock(), Date.now());
+        // a resume CONTINUES the paused clock (elapsed + fuel restored);
+        // a fresh run starts from zero
+        clockRef.current = clockStart(
+          savedRunRef.current && dealNonce === 0 ? clockRef.current : mkClock(),
+          Date.now()
+        );
         phaseRef.current = 'live';
         setPhase('live');
       }, 350)
@@ -162,8 +189,37 @@ export default function StormScreen() {
     return () => sub.remove();
   }, []);
 
-  // cold deep links have no history — done/back must always land somewhere
-  const leave = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  // cold deep links have no history — done/back must always land somewhere.
+  // A LIVE run PARKS on the way out (owner: "it's paused, we resume"):
+  // board + clock + words snapshot to the seed, launch context to the
+  // registry — the showdowns card grows a resume row.
+  const leave = () => {
+    if (seed && (phaseRef.current === 'live' || phaseRef.current === 'settling')) {
+      clockRef.current = clockPause(clockRef.current, Date.now());
+      const snap: RunSnap = {
+        client: 'rn', v: 1, day: seed, phase: 'live',
+        tiles: boardTilesRef.current.map(({ id, letter, col, row, ci, boost }) => ({ id, letter, col, row, ci, boost })),
+        queueIdx: queueIdxRef.current,
+        score,
+        found: [],
+        words: wordsRef.current,
+        boardElapsedMs: clockElapsedMs(clockRef.current, Date.now()),
+        earnedMs: clockRef.current.earnedMs,
+        guessesUsed: 0, rows: [], slots: [], colors: [],
+      };
+      saveRun(snap);
+      saveStormCtx({
+        seed,
+        post: params.post === '1',
+        stake: Number(params.stake) > 0 ? Number(params.stake) : undefined,
+        sealed: sealedHand || undefined,
+        callout: typeof params.callout === 'string' && params.callout ? params.callout : undefined,
+        savedAt: Date.now(),
+      });
+    }
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
 
   // FROM THE LOBBY (owner: "dismiss that, then launch the gameboard") —
   // the sheet was the ready cover, so the board starts itself
@@ -221,6 +277,9 @@ export default function StormScreen() {
     if (phase !== 'done' || submittedRef.current || !seed) return;
     submittedRef.current = true;
     haptic.soft();
+    // a FINISHED run retires its pause snapshot — resume is for live runs
+    clearRun(seed);
+    clearStormCtx(seed);
     // NO SCORE, NO SEAT (owner ruling): a zero never posts to the board —
     // quitting mid-run already leaves no trace; whiffing shouldn't either
     if (score === 0) return;
@@ -272,6 +331,11 @@ export default function StormScreen() {
     clockRef.current = clock;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // the live board reports its tiles — the pause snapshot reads them here
+  const onTiles = useCallback((tiles: TileT[], queueIdx: number) => {
+    boardTilesRef.current = tiles;
+    queueIdxRef.current = queueIdx;
+  }, []);
 
   const [posted, setPosted] = useState<'idle' | 'busy' | 'ok' | 'has-open' | 'poor' | 'no-player' | 'error'>('idle');
   const autoPostedRef = useRef(false);
@@ -295,10 +359,17 @@ export default function StormScreen() {
   }, [phase]);
 
   const runAgain = () => {
+    if (seed) {
+      clearRun(seed); // replays deal FRESH — the pause snapshot retires
+      clearStormCtx(seed);
+    }
+    savedRunRef.current = null;
     setPosted('idle');
     setGhostScore(0);
     submittedRef.current = false;
     wordsRef.current = [];
+    boardTilesRef.current = [];
+    queueIdxRef.current = 0;
     setBoard(null);
     setScore(0);
     setRemaining(CT.baseSecs);
@@ -410,8 +481,11 @@ export default function StormScreen() {
             deal={deal}
             size={tile}
             gap={gap}
+            initialTiles={initialTiles}
+            initialScore={savedRun?.score}
             secsLeft={phase === 'live' ? remaining : undefined}
             onScore={setScore}
+            onTiles={onTiles}
             onWordSpelled={onWordSpelled}
             concealed={phase !== 'live'}
             countIn={null}
@@ -422,16 +496,22 @@ export default function StormScreen() {
           <View style={styles.cover}>
             {/* ONE title on this screen — the top bar's (owner). The
                 description drops the tier name too: the clock says it. */}
-            <Text style={[styles.eyebrow, { color: theme.faint }]}>SHARED BOARD</Text>
+            <Text style={[styles.eyebrow, { color: theme.faint }]}>
+              {savedRun ? 'PAUSED' : 'SHARED BOARD'}
+            </Text>
             <Text style={[styles.sub, { color: theme.sub }]}>
-              {duel
-                ? duel.sealed || duel.score == null
-                  ? `${duel.name.toLowerCase()}'s hand is sealed on this board.\n${fmtClock(intensity.clockSecs)} — play blind, find out after.`
-                  : `${duel.name.toLowerCase()} put up ${duel.score.toLocaleString()} on this board.\n${fmtClock(intensity.clockSecs)} — beat it.`
-                : `everyone gets this exact board.\n${fmtClock(intensity.clockSecs)} — best score counts.`}
+              {savedRun
+                ? `your run holds ${savedRun.score.toLocaleString()} pts.\n${fmtClock(clockRemaining(clockRef.current, Date.now(), CT))} on the clock — pick it back up.`
+                : duel
+                  ? duel.sealed || duel.score == null
+                    ? `${duel.name.toLowerCase()}'s hand is sealed on this board.\n${fmtClock(intensity.clockSecs)} — play blind, find out after.`
+                    : `${duel.name.toLowerCase()} put up ${duel.score.toLocaleString()} on this board.\n${fmtClock(intensity.clockSecs)} — beat it.`
+                  : `everyone gets this exact board.\n${fmtClock(intensity.clockSecs)} — best score counts.`}
             </Text>
             <Pressable onPress={startRun} style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }]}>
-              <Text style={[styles.ctaText, { color: '#FFFFFF' }]}>PLAY</Text>
+              <Text style={[styles.ctaText, { color: '#FFFFFF' }]}>
+                {savedRun ? 'RESUME' : 'PLAY'}
+              </Text>
             </Pressable>
           </View>
         )}

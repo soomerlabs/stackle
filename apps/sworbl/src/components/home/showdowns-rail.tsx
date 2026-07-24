@@ -10,7 +10,8 @@ import { PALETTE, tileColorFor } from '@/game/palette';
 import { getPlayerName } from '@/game/player';
 import { dailyStormBoards } from '@/game/storm-seeds';
 import { ACCENT, type Theme } from '@/game/theme';
-import { fetchOpenDuels, readCachedDuels, type OpenDuel } from '@/net/duels';
+import { listPausedRuns, type StormCtx } from '@/game/storm-runs';
+import { fetchMyClaims, fetchOpenDuels, readCachedDuels, type MyClaim, type OpenDuel } from '@/net/duels';
 
 const MAX_ROWS = 4;
 
@@ -20,9 +21,15 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
   const squall = useMemo(() => dailyStormBoards()[1], []);
   const myName = getPlayerName();
   const myPal = PALETTE[tileColorFor(myName[0]?.toLowerCase() ?? 'p', 0)];
+  const [claims, setClaims] = useState<MyClaim[]>([]);
+  // boards left mid-run (local, instant) — the paused-showdown rows
+  const [paused, setPaused] = useState<StormCtx[]>([]);
   useEffect(() => {
     let live = true;
+    setPaused(listPausedRuns().filter((c) => c.post));
     fetchOpenDuels().then((d) => live && d && setDuels(d));
+    // the fights you claimed and left — your ante is on the table
+    fetchMyClaims().then((c) => live && setClaims(c));
     return () => {
       live = false;
     };
@@ -65,6 +72,61 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
         <View style={styles.spring} />
         <Text style={[styles.rowGo, { color: ACCENT }]}>post ›</Text>
       </Pressable>
+
+      {/* PAUSED MID-RUN (owner: "i hit the X — it's paused, we resume")
+          — your own showdown run, parked. Tap lands on the RESUME cover. */}
+      {paused.map((c) => (
+        <Pressable
+          key={`paused-${c.seed}`}
+          onPress={() =>
+            router.push(
+              `/storm?seed=${c.seed}&post=1${c.stake ? `&stake=${c.stake}` : ''}&sealed=${c.sealed ? 1 : 0}${c.callout ? `&callout=${encodeURIComponent(c.callout)}` : ''}`
+            )
+          }
+          style={styles.row}
+          hitSlop={4}>
+          <View style={[styles.avatar, { backgroundColor: myPal.bg, boxShadow: `inset 0 -3px 0 ${myPal.edge}` }]}>
+            <Text style={styles.avatarLetter}>{myName[0]?.toLowerCase()}</Text>
+          </View>
+          <View style={styles.rowText}>
+            <Text style={[styles.rowName, { color: theme.ink }]}>your showdown</Text>
+            <Text style={[styles.rowStat, { color: '#F5B84A' }]}>⏸ paused mid-run</Text>
+          </View>
+          <View style={styles.spring} />
+          <Text style={[styles.rowGo, { color: '#F5B84A' }]}>resume ›</Text>
+        </Pressable>
+      ))}
+
+      {/* FINISH YOUR FIGHT (owner: "close the board and come back?") —
+          claimed, unresolved, ante on the table. Leads everything. */}
+      {claims.map((c) => {
+        const pal = PALETTE[tileColorFor(c.posterName[0]?.toLowerCase() ?? 'a', 0)];
+        return (
+          <Pressable
+            key={`claim-${c.id}`}
+            onPress={() =>
+              router.push(
+                `/storm?seed=${c.seed}&vs=${encodeURIComponent(c.posterName)}&did=${c.id}&stk=${c.stake}${c.sealed || c.score == null ? '&sealed=1' : `&target=${c.score}`}`
+              )
+            }
+            style={styles.row}
+            hitSlop={4}>
+            <View style={[styles.avatar, { backgroundColor: pal.bg, boxShadow: `inset 0 -3px 0 ${pal.edge}` }]}>
+              <Text style={styles.avatarLetter}>{c.posterName[0]?.toLowerCase()}</Text>
+            </View>
+            <View style={styles.rowText}>
+              <Text style={[styles.rowName, { color: theme.ink }]} numberOfLines={1}>
+                vs {c.posterName.toLowerCase()}
+              </Text>
+              <Text style={[styles.rowStat, { color: '#F5B84A' }]} numberOfLines={1}>
+                unfinished — your {c.stake} ✦ is on the table
+              </Text>
+            </View>
+            <View style={styles.spring} />
+            <Text style={[styles.rowGo, { color: '#F5B84A' }]}>finish ›</Text>
+          </Pressable>
+        );
+      })}
 
       {/* OPEN CHALLENGES — rows, call-outs first */}
       {open.map((d) => {

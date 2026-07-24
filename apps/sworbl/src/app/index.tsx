@@ -12,12 +12,11 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
 import { HeroCard } from '@/components/home/hero-card';
 import { ShowdownsRail } from '@/components/home/showdowns-rail';
 import { StormShelf } from '@/components/home/storm-shelf';
 import { router, useFocusEffect } from 'expo-router';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedReaction,
@@ -39,7 +38,6 @@ import { twistLabel } from '@/components/home/hero-word';
 import {
   OPEN_SPRING, PARK_SPRING, DOCK_H, ASSIST_RISE, BOOT_MS, bootWindow,
 } from '@/components/home/home-motion';
-import { playMetrics } from '@/components/home/trace-play';
 import { AppBar } from '@/components/home/app-bar';
 import { DateHeader } from '@/components/home/date-header';
 import { PlaySheet, type PlaySheetHandle } from '@/components/play-sheet';
@@ -260,14 +258,8 @@ export default function HomeScreen() {
   const peekH = DOCK_H + insets.bottom;
   const closedY = height - peekH; // rest position: only the peek visible
   const sheetY = useSharedValue(bootOpen ? 0 : closedY); // closedY = peek, 0 = open
-  // TRACE TO PLAY: 0-4 lit tiles; the open gesture is DUAL-MODE — the first
-  // decisive movement axis picks trace (horizontal) or sheet-pull (vertical)
-  const sLit = useSharedValue(0);
-  const sMode = useSharedValue(0); // 0 tracing · 3 launch fired
-  const sGrab = useSharedValue(0); // finger-to-sheet-top gap at touch (owner:
-  // the assist-raised sheet SNAPPED to the finger on the first pull frame)
-  const sArmed = useSharedValue(0); // PLAY traced → swipe unlocked
-  const sGlow = useSharedValue(0); // aurora intensity: muted → FULL GLOW on arm (owner)
+  // (the two-stage trace door is DELETED — owner: "i'm over the PLAY
+  // mechanic"; the hero card's tap is the only door now)
   // THE REVEAL (owner: "it flashes and then it's over — wtf is that"): the
   // color's exit is TIME-based, not position-based. A flick compressed the
   // whole wash into ~150ms; now the color holds through the dock and lets
@@ -288,10 +280,7 @@ export default function HomeScreen() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const sPoke = useSharedValue(-1); // out-of-sequence tap: counter*4 + tileIdx
-  const [armed, setArmed] = useState(false);
   const sSquash = useSharedValue(1); // candy squash when the sheet docks at full
-  const sDetent = useSharedValue(0); // 1 once the pull crosses the commit line
   const [sheetOpen, setSheetOpen] = useState(bootOpen); // fully open → home drag off, round armed
   // lagged round-key sync (see sheetRound above) — runs only at rest
   useEffect(() => {
@@ -344,13 +333,6 @@ export default function HomeScreen() {
   const finishClose = useCallback(() => {
     setSheetOpen(false);
     saveSheetOpen(null); // a closed sheet must never restore
-    sLit.value = 0;
-    sMode.value = 0;
-    sArmed.value = 0;
-    sGlow.value = 0;
-    setArmed(false); // the door re-locks: fresh swipe next time
-    if (armIdle.current) clearTimeout(armIdle.current);
-    if (armSoonTimer.current) clearTimeout(armSoonTimer.current);
   }, []);
   const closeSettled = useCallback(() => {
     closingRef.current = false;
@@ -386,11 +368,8 @@ export default function HomeScreen() {
   // pull UP from the dock: the sheet (pre-mounted, hidden) rides the finger —
   // pure transform on the UI thread, nothing mounts mid-gesture.
   const markOpen = useCallback(() => {
-    if (armIdle.current) clearTimeout(armIdle.current); // launched — no disarm
     setSheetOpen(true);
     if (deal) saveSheetOpen(deal.dayKey); // reclaim-proof: the sheet remembers
-    // (the dock beat is GONE, owner: the arm's success thump carries the
-    // whole launch — trace ticks → thump → silence → the game)
     // the color lets go AFTER the dock — the reveal is its own moment
     sReveal.value = withDelay(240, withTiming(1, { duration: 650, easing: Easing.out(Easing.quad) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -407,184 +386,10 @@ export default function HomeScreen() {
 
   const openToPlay = useCallback(() => {
     if (closingRef.current) return;
-    sMode.value = 3;
     sheetY.value = withSpring(0, OPEN_SPRING);
     markOpen();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markOpen]);
-
-  // the DETENT: a tick the instant the pull crosses the commit threshold —
-  // the hand learns "release now and it opens" without reading anything.
-  // RATE-LIMITED (owner: slow-drag jank synced with haptics): a hover at the
-  // boundary must never machine-gun the feedback generator
-  const lastDetent = useRef(0);
-
-  // a CONSUMED day is closed for business (owner): the dock is just the
-  // countdown — the swipe doesn't react, the sheet never opens again
-  const traceIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const traceBeat = useCallback(
-    (n: number) => {
-      haptic.tick(n + 1);
-      if (traceIdle.current) clearTimeout(traceIdle.current);
-      if (n < 3) {
-        traceIdle.current = setTimeout(() => {
-          sLit.value = 0;
-        }, 1600);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
-  // the wrong-tile head-shake's whisper of a haptic (tap path only)
-  const nudgeBeat = useCallback(() => {
-    haptic.soft();
-  }, []);
-  // stage 1 complete: PLAY lit → the row morphs to the chevron, swipe unlocks.
-  // No swipe within the window → DISARM: the chevron gives way and the tiles
-  // melt back in a reverse cascade (owner: the return must feel gratifying).
-  const armIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const disarm = useCallback(() => {
-    if (armSoonTimer.current) clearTimeout(armSoonTimer.current); // no zombie arms
-    // SELF-HEAL: if a disarm lands while the sheet is off park (the slow-
-    // drag freeze: the idle timer fired mid-pull), park it — the sheet may
-    // never rest displaced
-    if (sMode.value !== 3 && Math.abs(sheetY.value - closedY) > 1) {
-      sheetY.value = withSpring(closedY, PARK_SPRING);
-    }
-    sArmed.value = 0;
-    sGlow.value = withTiming(0, { duration: 420 }); // the weather calms back down
-    setArmed(false);
-    sLit.value = 0; // the tiles RAIN BACK IN gray (trace-play owns the fall)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [closedY]);
-  // the Y's tick must LAND before the arm thump (owner: fast traces stacked
-  // both haptics on one beat) — the arm statement waits one clear moment.
-  // The timer is HELD so a disarm can cancel it (an uncancelled armNow
-  // re-armed the UI after a disarm — the zombie chevron over a dead swipe)
-  const armSoonTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const armSoon = useCallback(() => {
-    if (armSoonTimer.current) clearTimeout(armSoonTimer.current);
-    armSoonTimer.current = setTimeout(() => armNowRef.current(), 170);
-  }, []);
-  const armNow = useCallback(() => {
-    if (traceIdle.current) clearTimeout(traceIdle.current);
-    // (no success haptic here — the Y is just the last tick; SUCCESS moved
-    // to the swipe's commit line, where the launch is actually won, owner)
-    sArmed.value = 1; // RESYNC: the worklet flag must agree with the UI —
-    // a disarm between the Y tick and this timer had split them
-    setArmed(true);
-    // the aurora IGNITES with the arm (owner: "turns on when you swipe to
-    // play and glows with intensity") — muted weather until the door opens
-    sGlow.value = withTiming(1, { duration: 620 });
-    // (assist rise removed — owner: caused more issues than it was worth)
-    if (armIdle.current) clearTimeout(armIdle.current);
-    armIdle.current = setTimeout(disarm, 4000);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disarm, closedY]);
-  const armNowRef = useRef(armNow);
-  armNowRef.current = armNow;
-  // the idle melt pauses while the finger is DOWN on an armed pull (it was
-  // firing mid-slow-drag: disarm under a live finger = the frozen sheet)
-  const holdArmIdle = useCallback(() => {
-    if (armIdle.current) clearTimeout(armIdle.current);
-  }, []);
-  const restartArmIdle = useCallback(() => {
-    if (armIdle.current) clearTimeout(armIdle.current);
-    armIdle.current = setTimeout(disarm, 2500);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disarm]);
-  const pm = playMetrics(width);
-  // TWO-STAGE DOOR (owner): trace P·L·A·Y to unlock, then the chevron —
-  // swipe up launches. The trace teaches the verb; the swipe starts the day.
-  const openDrag = useMemo(
-    () =>
-      Gesture.Pan()
-        .enabled(!sheetOpen && !played)
-        .minDistance(4)
-        .onBegin((e) => {
-          'worklet';
-          // anchor the grab: the pull preserves THIS gap instead of snapping
-          // the sheet's top edge to the finger
-          sGrab.value = e.absoluteY - sheetY.value;
-          if (sArmed.value) {
-            runOnJS(holdArmIdle)(); // no idle melt under a live finger
-            return;
-          }
-          const idx = Math.floor((e.absoluteX - pm.left) / (pm.tile + pm.gap));
-          // a TAP only takes the NEXT tile (owner: 'you MUST hit them all
-          // yourself' — tapping Y cannot light the word behind it). A drag
-          // still lights pass-through tiles: the finger physically crossed.
-          if (idx >= 0 && idx < 4 && idx === sLit.value) {
-            sLit.value = idx + 1;
-            runOnJS(traceBeat)(idx);
-            if (idx === 3) {
-              sArmed.value = 1; // input locks NOW; the ceremony follows the tick
-              runOnJS(armSoon)();
-            }
-          } else if (idx >= 0 && idx < 4) {
-            // wrong tile: SEEN, not taken — it shakes its head (owner: "if
-            // i just hit LA i'd expect to see it react"). Tap path only; a
-            // drag sweeping across tiles must not rattle the row.
-            sPoke.value = (Math.floor(Math.max(0, sPoke.value) / 4) + 1) * 4 + idx;
-            runOnJS(nudgeBeat)();
-          }
-        })
-        .onUpdate((e) => {
-          'worklet';
-          if (!sArmed.value) {
-            const idx = Math.floor((e.absoluteX - pm.left) / (pm.tile + pm.gap));
-            // STRICT sequence in the drag path too (owner: starting on Y and
-            // wiggling armed the row) — only the NEXT tile ever lights; real
-            // sweeps emit events in every tile, so P→L→A→Y still flows
-            if (idx >= 0 && idx < 4 && idx === sLit.value) {
-              sLit.value = idx + 1;
-              runOnJS(traceBeat)(idx);
-              if (idx === 3) {
-                sArmed.value = 1; // input locks NOW; the ceremony follows the tick
-                runOnJS(armSoon)();
-              }
-            }
-            return;
-          }
-          if (sMode.value === 3) return;
-          // stage 2: the pull preserves the grab offset — continuous from
-          // wherever the sheet was resting (assist rise included)
-          sheetY.value = Math.min(closedY, Math.max(0, e.absoluteY - sGrab.value));
-          // (the commit-line success beat is owner-removed — the swipe is
-          // SILENT; the trace ticks open, the board's GO wake answers)
-        })
-        .onEnd((e) => {
-          'worklet';
-          sDetent.value = 0;
-          if (sMode.value === 3) return;
-          if (!sArmed.value) {
-            // whatever state we're in (mid-drag disarm and friends): a
-            // released, uncommitted sheet ALWAYS goes home
-            if (Math.abs(sheetY.value - closedY) > 1) {
-              sheetY.value = withSpring(closedY, { ...PARK_SPRING, velocity: e.velocityY });
-            }
-            return;
-          }
-          const risen = closedY - sheetY.value;
-          if (risen > height * 0.22 || e.velocityY < -900) {
-            sMode.value = 3;
-            sheetY.value = withSpring(0, { ...OPEN_SPRING, velocity: e.velocityY });
-            runOnJS(markOpen)();
-          } else {
-            // ALWAYS re-park (skipping this for tiny rises left the sheet
-            // frozen a few px off park — owner: "it keeps freezing").
-            sheetY.value = withSpring(closedY, { ...PARK_SPRING, velocity: e.velocityY });
-            // …but only a REAL pull that gave up disarms. risen ≤ 12 is the
-            // finger lifting off the TRACE itself (a drag across P·L·A·Y
-            // activates the pan, so its lift fires onEnd) — the arm must
-            // survive that lift or the chevron lies over a dead gesture.
-            // The idle timer restarts on release (it was held mid-pull).
-            if (risen > 12) runOnJS(disarm)();
-            else runOnJS(restartArmIdle)();
-          }
-        }),
-    [width, height, closedY, sheetOpen, played, markOpen, traceBeat, nudgeBeat, armSoon, disarm, holdArmIdle, restartArmIdle]
-  );
 
   // close drag (home owns sheetY): the round pauses ONLY when the close
   // COMMITS (owner: an aborted swipe-down must not restart the count-in —
@@ -606,14 +411,9 @@ export default function HomeScreen() {
         .onUpdate((e) => {
           'worklet';
           sheetY.value = Math.min(closedY, Math.max(0, e.translationY));
-          const past = e.translationY > height * 0.25 ? 1 : 0;
-          // (close-detent ticks owner-removed — the in/out chatter WAS the
-          // weird close haptics; the park beat is the close's only voice)
-          sDetent.value = past;
         })
         .onEnd((e) => {
           'worklet';
-          sDetent.value = 0;
           if (e.translationY > height * 0.25 || e.velocityY > 900) {
             // commit: deactivate NOW (blocker #1 — never let the arm effect
             // re-fire while the sheet slides away)
@@ -804,7 +604,8 @@ export default function HomeScreen() {
 
           <ShowdownsRail theme={theme} refreshNonce={duelsNonce} />
         </ScrollView>
-
+        {/* (the blur floating bar was tried and REVERTED — owner: "just
+            leave it how it was") */}
       </SafeAreaView>
       </Animated.View>
 
@@ -850,10 +651,7 @@ export default function HomeScreen() {
                 {/* boot fade on its OWN node — layout props never share an
                     element with an animated style (web dropped the height) */}
                 <Animated.View style={bandInStyle}>
-                  <CountdownDock
-                    played={played} sLit={sLit} sPoke={sPoke} armed={armed}
-                    tile={pm.tile} gap={pm.gap}
-                  />
+                  <CountdownDock played={played} />
                 </Animated.View>
               </View>
               {__DEV__ && devSnap.diag && (

@@ -109,6 +109,47 @@ export async function fetchStormCrowns(
   }
 }
 
+// YOUR UNFINISHED FIGHTS (owner: "should i be able to close the board
+// and come back?") — duels you CLAIMED but never resolved. Your ante is
+// on the table; this is the road back to the board.
+export interface MyClaim {
+  id: number;
+  seed: string;
+  posterName: string;
+  score: number | null; // null when the hand is sealed
+  stake: number;
+  sealed: boolean;
+}
+
+export async function fetchMyClaims(): Promise<MyClaim[]> {
+  const sb = supabase();
+  if (!sb) return [];
+  try {
+    const uid = (await sb.auth.getSession()).data.session?.user.id;
+    if (!uid) return [];
+    const { data, error } = await sb
+      .from('open_duels')
+      .select('id, seed, poster, score, stake, sealed')
+      .eq('status', 'taken')
+      .eq('taker', uid)
+      .limit(4);
+    if (error || !data?.length) return [];
+    const posterIds = [...new Set(data.map((r) => String(r.poster)))];
+    const { data: names } = await sb.from('players').select('id, name').in('id', posterIds);
+    const nameOf = new Map((names ?? []).map((n) => [String(n.id), String(n.name)]));
+    return data.map((r) => ({
+      id: Number(r.id),
+      seed: String(r.seed),
+      posterName: nameOf.get(String(r.poster)) ?? 'someone',
+      score: r.sealed === true ? null : Number(r.score),
+      stake: Number(r.stake) || 25,
+      sealed: r.sealed === true,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 // SETTLED WHILE AWAY (audit: the poster was never told) — decided
 // showdowns involving YOU, newer than the last one you've seen. The
 // watermark rides local storage; callers toast the freshest result.
