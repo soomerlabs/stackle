@@ -39,7 +39,7 @@ export default function StormScreen() {
   const theme = useTheme();
   const params = useLocalSearchParams<{
     seed?: string; vs?: string; target?: string; did?: string;
-    go?: string; post?: string;
+    go?: string; post?: string; stake?: string; sealed?: string; stk?: string;
   }>();
   const rawSeed = typeof params.seed === 'string' ? params.seed : '';
   const seed = SEED_RE.test(rawSeed) ? rawSeed : null;
@@ -48,7 +48,12 @@ export default function StormScreen() {
   const blitz = intensity.key !== 'drizzle';
   const vsName = typeof params.vs === 'string' && params.vs.length <= 24 ? params.vs : null;
   const vsScore = Number(params.target);
-  const duel = vsName && Number.isFinite(vsScore) ? { name: vsName, score: vsScore } : null;
+  // SEALED HANDS (owner: "you only find out after you commit") — a sealed
+  // duel carries NO target: no ghost, no race bar, the reveal is the verdict
+  const sealedHand = params.sealed === '1';
+  const duel = vsName && (sealedHand || Number.isFinite(vsScore))
+    ? { name: vsName, score: sealedHand ? null : vsScore, sealed: sealedHand && !!vsName }
+    : null;
   const duelId = Number(params.did);
 
   // THE GHOST (modes-spec): the poster's recorded run replays beside yours.
@@ -58,7 +63,9 @@ export default function StormScreen() {
   const ghostSched = useRef<Array<{ at: number; total: number }>>([]);
   const [ghostScore, setGhostScore] = useState(0);
   useEffect(() => {
-    if (!duel || !Number.isFinite(duelId)) return;
+    // sealed hands never fetch the ghost — the run (and its total) stays dark
+    if (!duel || duel.sealed || duel.score == null || !Number.isFinite(duelId)) return;
+    const target = duel.score;
     let live = true;
     void fetchDuelGhost(duelId).then((words) => {
       if (!live) return;
@@ -74,7 +81,7 @@ export default function StormScreen() {
         : // no words stored: a smooth 12-step synthetic climb to the target
           Array.from({ length: 12 }, (_, i) => ({
             at: ((i + 1) / 13) * roundMs,
-            total: Math.round((duel.score * (i + 1)) / 12),
+            total: Math.round((target * (i + 1)) / 12),
           }));
       ghostSched.current.sort((a, b) => a.at - b.at);
     });
@@ -222,7 +229,9 @@ export default function StormScreen() {
       // re-post — audit), never over a manual post already in flight
       if (params.post === '1' && !autoPostedRef.current && posted === 'idle') {
         autoPostedRef.current = true;
-        void postDuel(seed, blitz ? 'blitz' : 'themed').then((r) => {
+        // THE NAMED GAMBLE rides the launch params (lobby picker)
+        const stake = Number(params.stake) > 0 ? Number(params.stake) : undefined;
+        void postDuel(seed, blitz ? 'blitz' : 'themed', { stake, sealed: sealedHand }).then((r) => {
           setPosted(r === 'ok' ? 'ok' : r === 'has-open' ? 'has-open' : r === 'poor' ? 'poor' : 'error');
         });
       }
@@ -327,7 +336,7 @@ export default function StormScreen() {
           styles.boardWrap,
           (phase === 'live' || phase === 'settling') && styles.boardWrapLive,
         ]}>
-        {!duel && (phase === 'live' || phase === 'settling') && (
+        {(!duel || duel.sealed) && (phase === 'live' || phase === 'settling') && (
           <View style={styles.tierStrip}>
             {intensity.key === 'hurricane' ? (
               <View style={styles.stripFlag}>
@@ -344,7 +353,7 @@ export default function StormScreen() {
             </Text>
           </View>
         )}
-        {duel && (phase === 'live' || phase === 'settling') && (
+        {duel && !duel.sealed && duel.score != null && (phase === 'live' || phase === 'settling') && (
           <RaceBar
             theme={theme}
             width={Math.min(winW, 480) - 40}
@@ -384,7 +393,9 @@ export default function StormScreen() {
             <Text style={[styles.title, { color: theme.ink }]}>{stormName(seed)}</Text>
             <Text style={[styles.sub, { color: theme.sub }]}>
               {duel
-                ? `${duel.name.toLowerCase()} put up ${duel.score.toLocaleString()} on this board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — beat it.`
+                ? duel.sealed || duel.score == null
+                  ? `${duel.name.toLowerCase()}'s hand is sealed on this board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — play blind, find out after.`
+                  : `${duel.name.toLowerCase()} put up ${duel.score.toLocaleString()} on this board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — beat it.`
                 : `everyone gets this exact board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — best score counts.`}
             </Text>
             <Pressable onPress={startRun} style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }]}>
@@ -397,17 +408,31 @@ export default function StormScreen() {
           <View style={styles.cover}>
             <Text style={[styles.eyebrow, { color: theme.faint }]}>
               {duel
-                ? (verdict ? verdict.won : score > duel.score)
-                  ? 'SHOWDOWN WON ✦'
-                  : 'SHOWDOWN LOST'
+                ? verdict
+                  ? verdict.won
+                    ? 'SHOWDOWN WON ✦'
+                    : 'SHOWDOWN LOST'
+                  : duel.sealed || duel.score == null
+                    ? 'SEALED HAND — SETTLING…'
+                    : score > duel.score
+                      ? 'SHOWDOWN WON ✦'
+                      : 'SHOWDOWN LOST'
                 : 'YOUR SCORE'}
             </Text>
             <Text style={[styles.bigScore, { color: theme.ink }]}>{score}</Text>
-            {duel && (
+            {duel && duel.score != null && !duel.sealed && (
               <Text style={[styles.sub, { color: score > duel.score ? '#5FD6A8' : theme.sub }]}>
                 {score > duel.score
                   ? `you beat ${duel.name.toLowerCase()}'s ${duel.score.toLocaleString()}`
                   : `${duel.name.toLowerCase()} holds it — ${duel.score.toLocaleString()}`}
+              </Text>
+            )}
+            {/* THE REVEAL (owner: "you only find out after you commit") */}
+            {duel && duel.sealed && (
+              <Text style={[styles.sub, { color: verdict ? (verdict.won ? '#5FD6A8' : theme.sub) : theme.faint }]}>
+                {verdict
+                  ? `the seal breaks — ${duel.name.toLowerCase()} had ${verdict.theirScore.toLocaleString()}`
+                  : 'their hand stays sealed until your run is validated…'}
               </Text>
             )}
             {verdict && (

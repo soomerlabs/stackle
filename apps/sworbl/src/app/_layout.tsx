@@ -118,6 +118,27 @@ export default function RootLayout() {
               sheetCornerRadius: 24,
             }}
           />
+          {/* THE WALLET (owner: mock "pay for more") — content-height */}
+          <Stack.Screen
+            name="points"
+            options={{
+              presentation: 'formSheet',
+              sheetAllowedDetents: 'fitToContents',
+              sheetGrabberVisible: true,
+              sheetCornerRadius: 24,
+            }}
+          />
+          {/* PRIVATE ROOMS (owner: "the organizer dictates the money") —
+              same content-height sheet grammar as the lobby */}
+          <Stack.Screen
+            name="rooms"
+            options={{
+              presentation: 'formSheet',
+              sheetAllowedDetents: 'fitToContents',
+              sheetGrabberVisible: true,
+              sheetCornerRadius: 24,
+            }}
+          />
         </Stack>
         <ToastHost />
       </ThemeProvider>

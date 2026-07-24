@@ -107,6 +107,24 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
           );
         })}
 
+        {/* PRIVATE ROOMS (owner: "the organizer dictates the money") —
+            the shelf's last stop: make your own weather */}
+        <Pressable
+          onPress={() => router.push('/rooms')}
+          style={[styles.block, { backgroundColor: theme.card }]}>
+          <View style={styles.iconZone}>
+            <Text style={styles.bigWeather}>🔒</Text>
+          </View>
+          <View style={styles.dataZone}>
+            <Text style={[styles.name, { color: theme.ink }]} numberOfLines={1}>
+              private
+            </Text>
+            <Text style={[styles.stat, { color: theme.sub }]} numberOfLines={1}>
+              your own board
+            </Text>
+            <Text style={[styles.meta, { color: ACCENT }]}>you set the pot ›</Text>
+          </View>
+        </Pressable>
       </ScrollView>
       {/* the PEEK fade (owner: "hurricane is totally hidden") — cards
           scroll under a bg-colored gradient at the true screen edge */}

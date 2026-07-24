@@ -53,7 +53,7 @@ import { loadDay, saveSheetOpen, wasSheetOpen, getResetNonce, loadDayWords, type
 import { standingsStub, rankFor, type LbEntry } from '@/game/standings';
 import { checkContentEpoch } from '@/net/config-remote';
 import { toast } from '@/components/toast';
-import { fetchMyShowdownPoints, fetchSettledShowdowns } from '@/net/duels';
+import { claimRefuel, fetchMyShowdownPoints, fetchSettledShowdowns } from '@/net/duels';
 import { fetchDaily, readCachedField, type RemoteField } from '@/net/standings-remote';
 import { fetchRemoteEntry } from '@/net/dailies-remote';
 import { loadStats, streakDays } from '@/game/stats';
@@ -148,8 +148,8 @@ export default function HomeScreen() {
         const last = settled[settled.length - 1];
         toast(
           last.won
-            ? `showdown won ✦  ${last.myScore.toLocaleString()} beat ${last.theirScore.toLocaleString()} · +12 pts`
-            : `showdown lost — ${last.theirScore.toLocaleString()} beat your ${last.myScore.toLocaleString()} · +2 pts`,
+            ? `showdown won — ${last.myScore.toLocaleString()} beat ${last.theirScore.toLocaleString()} · pot ${last.pot} ✦`
+            : `showdown lost — ${last.theirScore.toLocaleString()} beat your ${last.myScore.toLocaleString()} · ante gone`,
           { pal: last.won ? 2 : 5 }
         );
       });
@@ -180,6 +180,19 @@ export default function HomeScreen() {
       live = false;
     };
   }, [duelsNonce]);
+  // DAILY REFUEL (owner: "give points everyday") — claim once per app-day;
+  // idempotent server-side, so mounting twice never double-grants
+  useEffect(() => {
+    let live = true;
+    void claimRefuel().then((r) => {
+      if (!live || !r) return;
+      setWalletPts(r.balance);
+      if (r.granted > 0) toast(`daily refuel +${r.granted} ✦`, { pal: 2 });
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
   const homeRefresh = useCallback(async () => {
     if (!deal) return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -735,6 +748,7 @@ export default function HomeScreen() {
         <AppBar
           theme={theme}
           points={walletPts}
+          onPoints={() => router.push('/points')}
           onPerson={() => router.push('/profile')}
           onSettings={() => router.push('/settings')}
         />
@@ -753,16 +767,6 @@ export default function HomeScreen() {
             <DateHeader
               theme={theme}
               dayKey={deal.dayKey}
-              dayLedger={
-                day
-                  ? {
-                      score: day.score,
-                      bestRound: day.rounds.bestRound,
-                      solved: !!day.sworb?.solved,
-                      bonus: day.sworb?.bonus ?? 0,
-                    }
-                  : null
-              }
               score={myScore > 0 ? myScore : null}
               streak={streak}
               onInfo={!played ? () => router.push('/how-to') : undefined}

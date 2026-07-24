@@ -27,13 +27,24 @@ export default function LobbyScreen() {
   const theme = useTheme();
   const params = useLocalSearchParams<{
     seed?: string; create?: string; vs?: string; target?: string; did?: string;
+    stk?: string; sealed?: string;
   }>();
   const seed = typeof params.seed === 'string' ? params.seed : '';
   const creating = params.create === '1';
   const vsName = typeof params.vs === 'string' && params.vs ? params.vs : null;
   const vsScore = Number(params.target);
   const did = Number(params.did);
-  const joining = !!vsName && Number.isFinite(vsScore) && Number.isFinite(did);
+  // SEALED HANDS (owner: "you only find out after you commit") — a sealed
+  // post hides the score until the taker's own run banks
+  const sealedJoin = params.sealed === '1';
+  const joining = !!vsName && Number.isFinite(did) && (sealedJoin || Number.isFinite(vsScore));
+  const joinStake = Number(params.stk) > 0 ? Number(params.stk) : 25;
+
+  // THE NAMED GAMBLE (owner: "put what you're willing to gamble in the
+  // 1v1 request") — poster picks the ante; the pot is always 2×
+  const STAKES = [10, 25, 50, 100];
+  const [stake, setStake] = useState(25);
+  const [sealed, setSealed] = useState(false);
 
   const intensity = stormIntensity(seed);
   const tierPal = intensity.hue;
@@ -84,7 +95,9 @@ export default function LobbyScreen() {
     }
     // REPLACE, not push — the sheet dismisses and the board owns the
     // screen; back from the board is home (owner flow)
-    router.replace(`/storm?seed=${seed}&go=1${creating ? '&post=1' : ''}`);
+    router.replace(
+      `/storm?seed=${seed}&go=1${creating ? `&post=1&stake=${stake}&sealed=${sealed ? 1 : 0}` : ''}`
+    );
   };
 
   const accept = async () => {
@@ -92,8 +105,9 @@ export default function LobbyScreen() {
     setClaiming('busy');
     const r = await claimShowdown(did);
     if (r === 'ok') {
+      // sealed: no target rides the launch — the board races blind
       router.replace(
-        `/storm?seed=${seed}&go=1&vs=${encodeURIComponent(vsName!)}&target=${vsScore}&did=${did}`
+        `/storm?seed=${seed}&go=1&vs=${encodeURIComponent(vsName!)}&did=${did}&stk=${joinStake}${sealedJoin ? '&sealed=1' : `&target=${vsScore}`}`
       );
       return;
     }
@@ -154,12 +168,65 @@ export default function LobbyScreen() {
               </View>
               <Text style={[styles.duelLine, { color: theme.sub }]}>
                 {joining
-                  ? `${vsName!.toLowerCase()} put up ${vsScore.toLocaleString()}. beat it and the pot is yours.`
+                  ? sealedJoin
+                    ? `${vsName!.toLowerCase()}'s score is sealed — you find out what you were up against after your own run.`
+                    : `${vsName!.toLowerCase()} put up ${vsScore.toLocaleString()}. beat it and the pot is yours.`
                   : 'play the board — your score becomes an open challenge.'}
               </Text>
+              {/* THE NAMED GAMBLE (owner): the poster picks the ante */}
+              {creating && (
+                <>
+                  <View style={styles.stakeRow}>
+                    {STAKES.map((s, i) => {
+                      const pal = PALETTE[i % PALETTE.length];
+                      const on = stake === s;
+                      const broke = balance != null && balance < s;
+                      return (
+                        <Pressable
+                          key={s}
+                          disabled={broke}
+                          onPress={() => setStake(s)}
+                          style={[
+                            styles.stakeChip,
+                            on
+                              ? { backgroundColor: pal.bg, boxShadow: `inset 0 -3px 0 ${pal.edge}` }
+                              : { backgroundColor: theme.pill, opacity: broke ? 0.35 : 1 },
+                          ]}>
+                          <Text style={[styles.stakeChipText, { color: on ? '#1F1442' : theme.sub }]}>
+                            {s} ✦
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {/* the hand: open (ghost race) or sealed (poker) */}
+                  <View style={styles.handRow}>
+                    {([false, true] as const).map((v) => (
+                      <Pressable
+                        key={String(v)}
+                        onPress={() => setSealed(v)}
+                        style={[
+                          styles.handChip,
+                          sealed === v
+                            ? { backgroundColor: ACCENT, boxShadow: `inset 0 -3px 0 ${ACCENT_EDGE}` }
+                            : { backgroundColor: theme.pill },
+                        ]}>
+                        <Text style={[styles.handChipText, { color: sealed === v ? '#FFFFFF' : theme.sub }]}>
+                          {v ? 'sealed' : 'open hand'}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <Text style={[styles.handHint, { color: theme.faint }]}>
+                    {sealed
+                      ? 'they won’t see your score until their run is in'
+                      : 'they race your recorded run, score in view'}
+                  </Text>
+                </>
+              )}
               {/* THE STAKES (owner: points on the line) */}
               <Text style={[styles.stakeLine, { color: theme.faint }]}>
-                ante 25 ✦ · winner takes 50
+                {`ante ${(joining ? joinStake : stake).toLocaleString()} ✦ · winner takes ${((joining ? joinStake : stake) * 2).toLocaleString()}`}
                 {balance != null ? ` · you have ${balance.toLocaleString()}` : ''}
               </Text>
               {claiming === 'poor' && (
@@ -325,6 +392,39 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 12,
     letterSpacing: 0.4,
+  },
+  stakeRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  stakeChip: {
+    borderRadius: 11, borderCurve: 'continuous',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  stakeChipText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 13.5,
+    fontVariant: ['tabular-nums'],
+  },
+  handRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  handChip: {
+    borderRadius: 11, borderCurve: 'continuous',
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  handChipText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 12.5,
+    letterSpacing: 0.3,
+  },
+  handHint: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 11.5,
+    fontStyle: 'italic',
   },
   claimNote: {
     fontFamily: 'Fredoka_600SemiBold',

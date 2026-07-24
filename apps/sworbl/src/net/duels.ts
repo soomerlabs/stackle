@@ -15,6 +15,8 @@ export interface OpenDuel {
   score: number;
   name: string;
   mine: boolean;
+  stake: number; // the poster's named gamble — the taker must match it
+  sealed: boolean; // sealed hand: the score reveals only after your run
 }
 
 export function readCachedDuels(): OpenDuel[] {
@@ -28,7 +30,7 @@ export async function fetchOpenDuels(limit = 6): Promise<OpenDuel[] | null> {
     const uid = (await sb.auth.getSession()).data.session?.user.id ?? null;
     const { data, error } = await sb
       .from('open_duel_board')
-      .select('id, seed, format, score, name, poster')
+      .select('id, seed, format, score, name, poster, stake, sealed')
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error || !data) return null;
@@ -39,6 +41,8 @@ export async function fetchOpenDuels(limit = 6): Promise<OpenDuel[] | null> {
       score: Number(r.score),
       name: String(r.name),
       mine: uid != null && r.poster === uid,
+      stake: Number(r.stake) || 25,
+      sealed: r.sealed === true,
     }));
     engine.store.setJSON(CACHE_KEY, out);
     return out;
@@ -108,6 +112,7 @@ export interface SettledShowdown {
   won: boolean;
   myScore: number;
   theirScore: number;
+  pot: number; // 2× the named stake — what the winner took
 }
 
 export async function fetchSettledShowdowns(): Promise<SettledShowdown[]> {
@@ -119,7 +124,7 @@ export async function fetchSettledShowdowns(): Promise<SettledShowdown[]> {
     const since = Number(engine.store.getJSON(SEEN_KEY, 0)) || 0;
     const { data, error } = await sb
       .from('open_duels')
-      .select('id, seed, score, taker_score, winner, poster, taker, status')
+      .select('id, seed, score, taker_score, winner, poster, taker, status, stake')
       .eq('status', 'decided')
       .or(`poster.eq.${uid},taker.eq.${uid}`)
       .gt('id', since)
@@ -135,6 +140,7 @@ export async function fetchSettledShowdowns(): Promise<SettledShowdown[]> {
         won: r.winner === uid,
         myScore: Number(iPosted ? r.score : r.taker_score),
         theirScore: Number(iPosted ? r.taker_score : r.score),
+        pot: (Number(r.stake) || 25) * 2,
       };
     });
   } catch {
@@ -202,17 +208,158 @@ export async function claimShowdown(id: number): Promise<'ok' | 'taken' | 'poor'
   }
 }
 
-// the wallet's client spender — prices live SERVER-side only
+// the wallet's client spender — prices live SERVER-side only. `ref` is
+// the purchase receipt (owner bug: "drained my account, no hint"): a
+// retry carrying the same ref can never double-charge.
 export async function spendPoints(
-  action: 'hint' | 'storm-squall' | 'storm-thunder' | 'storm-hurricane'
+  action: 'hint' | 'storm-squall' | 'storm-thunder' | 'storm-hurricane',
+  ref?: string
 ): Promise<{ balance: number } | 'poor' | 'error'> {
   const sb = supabase();
   if (!sb) return 'error';
   try {
-    const { data, error } = await sb.functions.invoke('spend-points', { body: { action } });
+    const { data, error } = await sb.functions.invoke('spend-points', { body: { action, ref } });
     if (data?.ok) return { balance: Number(data.balance) };
     const status = (error as { context?: { status?: number } } | null)?.context?.status;
     return status === 402 ? 'poor' : 'error';
+  } catch {
+    return 'error';
+  }
+}
+
+// MOCK TOP-UP (owner: "pay for more, lol") — the proof-phase paywall.
+// Ref-idempotent like every purchase; no real money moves.
+export async function buyPack(
+  pack: 'splash' | 'surge' | 'deluge',
+  ref: string
+): Promise<{ balance: number } | 'error'> {
+  const sb = supabase();
+  if (!sb) return 'error';
+  try {
+    const { data } = await sb.functions.invoke('topup', { body: { pack, ref } });
+    if (data?.ok) return { balance: Number(data.balance) };
+    return 'error';
+  } catch {
+    return 'error';
+  }
+}
+
+// DAILY REFUEL (owner: "give points everyday") — claim the day's grant.
+// Idempotent server-side; granted 0 means already fueled today.
+export async function claimRefuel(): Promise<{ granted: number; balance: number } | null> {
+  const sb = supabase();
+  if (!sb) return null;
+  try {
+    const { data } = await sb.functions.invoke('refuel', { body: {} });
+    if (!data?.ok) return null;
+    return { granted: Number(data.granted) || 0, balance: Number(data.balance) || 0 };
+  } catch {
+    return null;
+  }
+}
+
+// PRIVATE ROOMS (owner: "the organizer dictates the money")
+export interface RoomCard {
+  code: string;
+  name: string;
+  seed: string;
+  entry: number;
+  pot: number;
+  status: 'open' | 'settled';
+  hostName: string;
+  seats: number;
+  youAreHost: boolean;
+  youAreIn: boolean;
+}
+
+function toRoomCard(r: Record<string, unknown>): RoomCard {
+  return {
+    code: String(r.code ?? ''),
+    name: String(r.name ?? ''),
+    seed: String(r.seed ?? ''),
+    entry: Number(r.entry) || 0,
+    pot: Number(r.pot) || 0,
+    status: r.status === 'settled' ? 'settled' : 'open',
+    hostName: String(r.hostName ?? 'someone'),
+    seats: Number(r.seats) || 0,
+    youAreHost: r.youAreHost === true,
+    youAreIn: r.youAreIn === true,
+  };
+}
+
+export async function createRoom(
+  name: string,
+  entry: number
+): Promise<{ code: string; seed: string } | 'poor' | 'error'> {
+  const sb = supabase();
+  if (!sb) return 'error';
+  try {
+    const { data, error } = await sb.functions.invoke('room', {
+      body: { action: 'create', name, entry },
+    });
+    if (data?.ok && data.room?.code) {
+      return { code: String(data.room.code), seed: String(data.room.seed) };
+    }
+    const status = (error as { context?: { status?: number } } | null)?.context?.status;
+    return status === 402 ? 'poor' : 'error';
+  } catch {
+    return 'error';
+  }
+}
+
+export async function fetchRoomState(code: string): Promise<RoomCard | 'gone' | 'error'> {
+  const sb = supabase();
+  if (!sb) return 'error';
+  try {
+    const { data, error } = await sb.functions.invoke('room', {
+      body: { action: 'state', code },
+    });
+    if (data?.ok && data.room) return toRoomCard(data.room);
+    const status = (error as { context?: { status?: number } } | null)?.context?.status;
+    return status === 404 ? 'gone' : 'error';
+  } catch {
+    return 'error';
+  }
+}
+
+export async function joinRoom(code: string): Promise<RoomCard | 'poor' | 'gone' | 'settled' | 'error'> {
+  const sb = supabase();
+  if (!sb) return 'error';
+  try {
+    const { data, error } = await sb.functions.invoke('room', {
+      body: { action: 'join', code },
+    });
+    if (data?.ok && data.room) return toRoomCard(data.room);
+    const status = (error as { context?: { status?: number } } | null)?.context?.status;
+    if (status === 402) return 'poor';
+    if (status === 404) return 'gone';
+    return status === 409 ? 'settled' : 'error';
+  } catch {
+    return 'error';
+  }
+}
+
+export interface RoomSettle {
+  winnerName: string | null;
+  winningScore: number;
+  pot: number;
+  refunded: boolean;
+}
+
+export async function settleRoom(code: string): Promise<RoomSettle | 'error'> {
+  const sb = supabase();
+  if (!sb) return 'error';
+  try {
+    const { data } = await sb.functions.invoke('room', {
+      body: { action: 'settle', code },
+    });
+    if (!data?.ok) return 'error';
+    return {
+      winnerName: data.winnerName ? String(data.winnerName) : null,
+      winningScore: Number(data.winningScore) || 0,
+      pot: Number(data.pot) || 0,
+      refunded: data.refunded === true,
+    };
   } catch {
     return 'error';
   }
@@ -246,15 +393,19 @@ export async function resolveShowdown(id: number): Promise<ShowdownVerdict | 'pe
   }
 }
 
-// publish the caller's validated run on a seed; 'no-run' = play it first
+// publish the caller's validated run on a seed; 'no-run' = play it first.
+// stake = the poster's named gamble; sealed = don't reveal the score.
 export async function postDuel(
   seed: string,
-  format: 'blitz' | 'themed' = 'blitz'
+  format: 'blitz' | 'themed' = 'blitz',
+  opts: { stake?: number; sealed?: boolean } = {}
 ): Promise<'ok' | 'no-run' | 'has-open' | 'poor' | 'error'> {
   const sb = supabase();
   if (!sb) return 'error';
   try {
-    const { data, error } = await sb.functions.invoke('post-duel', { body: { seed, format } });
+    const { data, error } = await sb.functions.invoke('post-duel', {
+      body: { seed, format, stake: opts.stake, sealed: opts.sealed },
+    });
     if (data?.ok) return 'ok';
     const status = (error as { context?: { status?: number } } | null)?.context?.status;
     if (status === 409) return 'has-open'; // one open showdown per player

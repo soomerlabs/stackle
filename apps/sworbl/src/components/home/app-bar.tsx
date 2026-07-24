@@ -12,9 +12,10 @@ interface Props {
   onPerson?: () => void;
   onSettings?: () => void;
   points?: number | null; // the wallet chip (owner: expose the points)
+  onPoints?: () => void; // the chip opens the WALLET (mock packs + ledger)
 }
 
-export function AppBar({ theme, onPerson, onSettings, points }: Props) {
+export function AppBar({ theme, onPerson, onSettings, points, onPoints }: Props) {
   return (
     <View style={styles.bar}>
       <Pressable onPress={onPerson} hitSlop={8} style={styles.side}>
@@ -23,7 +24,7 @@ export function AppBar({ theme, onPerson, onSettings, points }: Props) {
       <Brand ink={theme.ink} />
       {points != null && (
         <View pointerEvents="box-none" style={styles.pointsSlot}>
-          <Pressable onPress={onPerson} hitSlop={8} style={[styles.pointsChip, { backgroundColor: theme.pill }]}>
+          <Pressable onPress={onPoints ?? onPerson} hitSlop={8} style={[styles.pointsChip, { backgroundColor: theme.pill }]}>
             <Text style={[styles.pointsText, { color: theme.ink }]}>✦ {points.toLocaleString()}</Text>
           </Pressable>
         </View>
@@ -51,9 +52,11 @@ const styles = StyleSheet.create({
   pointsSlot: {
     position: 'absolute',
     right: 52,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center', // vertically centered in the bar (owner)
+    // center on the CONTENT box, not the bar box — the bar's asymmetric
+    // padding (12 top / 10 bottom) floated the chip 1px high (owner eye)
+    top: 12,
+    bottom: 10,
+    justifyContent: 'center',
   },
   pointsChip: {
     borderRadius: 10, borderCurve: 'continuous',

@@ -21,16 +21,16 @@ const FACES: Record<string, { title: string; lines: string[] }> = {
     title: 'storms',
     lines: [
       'four fresh boards every day — drizzle, squall, thunder, hurricane. same board for every player.',
-      'harder as you climb: less time, harsher letters. hurricane flies the warning flag for a reason.',
-      'best score holds the crown. boards reset daily; bragging rights don’t.',
+      'harder as you climb: less time, harsher letters, and a steeper door — the drizzle is always free.',
+      'best score holds the crown. boards reset daily; bragging rights don’t. private rooms let you set your own board and pot.',
     ],
   },
   showdowns: {
     title: 'showdowns',
     lines: [
       'mano a mano. post a score on a board and it becomes an open challenge on everyone’s home.',
-      'take someone’s and you race their recorded run — their score climbs beside yours, word for word, exactly when they found them.',
-      'winner +10 points, loser +2 for the fight. one open showdown at a time.',
+      'take someone’s and you race their recorded run — unless they sealed their hand. then you play blind and find out after.',
+      'both sides ante the poster’s stake; winner takes the whole pot. one open showdown at a time.',
     ],
   },
 };

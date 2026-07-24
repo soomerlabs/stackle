@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   const user = userData?.user;
   if (!user) return bad("not signed in", 401);
 
-  let body: { seed?: string; format?: string };
+  let body: { seed?: string; format?: string; stake?: number; sealed?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -49,9 +49,11 @@ Deno.serve(async (req) => {
   if ((open ?? []).some((r) => r.seed !== seed))
     return bad("you already have an open showdown", 409);
 
-  // THE ANTE (owner: points on the line) — posting stakes 25. Atomic:
-  // the decrement only lands if the balance covers it.
-  const STAKE = 25;
+  // THE ANTE (owner: "put what you're willing to gamble") — the poster
+  // names the stake; the taker must match it at claim.
+  const STAKE = Number.isInteger(body.stake) && (body.stake as number) >= 5 && (body.stake as number) <= 200
+    ? (body.stake as number)
+    : 25;
   const { data: wallet } = await admin
     .from("players")
     .select("showdown_points")
@@ -77,6 +79,7 @@ Deno.serve(async (req) => {
       score: run.score,
       words: run.words ?? [],
       stake: STAKE,
+      sealed: body.sealed === true,
     },
     { onConflict: "seed,poster" },
   );

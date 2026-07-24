@@ -68,7 +68,8 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
           <Text style={[styles.meta, { color: theme.faint }]}>play › post › wait</Text>
         </Pressable>
 
-        {/* open challengers: beat their score */}
+        {/* open challengers: beat their score — a SEALED hand hides it
+            (owner: "you only find out after you commit") */}
         {open.map((d) => {
           const pal = PALETTE[tileColorFor(d.name[0]?.toLowerCase() ?? 'a', 0)];
           return (
@@ -76,7 +77,7 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
               key={d.id}
               onPress={() =>
                 router.push(
-                  `/lobby?seed=${d.seed}&vs=${encodeURIComponent(d.name)}&target=${d.score}&did=${d.id}`
+                  `/lobby?seed=${d.seed}&vs=${encodeURIComponent(d.name)}&did=${d.id}&stk=${d.stake}${d.sealed ? '&sealed=1' : `&target=${d.score}`}`
                 )
               }
               style={[styles.block, { backgroundColor: theme.card }]}>
@@ -87,9 +88,9 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
                 {d.name.toLowerCase()}
               </Text>
               <Text style={[styles.stat, { color: theme.sub }]}>
-                ⚑ beat {d.score.toLocaleString()}
+                {d.sealed ? '🂠 score sealed' : `⚑ beat ${d.score.toLocaleString()}`}
               </Text>
-              <Text style={[styles.meta, { color: ACCENT }]}>take it ›</Text>
+              <Text style={[styles.meta, { color: ACCENT }]}>{d.stake} ✦ · take it ›</Text>
             </Pressable>
           );
         })}
@@ -103,7 +104,9 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
               <Text style={styles.avatarLetter}>{myName[0]?.toLowerCase()}</Text>
             </View>
             <Text style={[styles.name, { color: theme.ink }]}>your post</Text>
-            <Text style={[styles.stat, { color: theme.sub }]}>{d.score.toLocaleString()} pts</Text>
+            <Text style={[styles.stat, { color: theme.sub }]}>
+              {d.sealed ? '🂠 sealed' : `${d.score.toLocaleString()} pts`} · {d.stake} ✦
+            </Text>
             <View style={styles.waitRow}>
               <View style={[styles.waitDot, { backgroundColor: ACCENT }]} />
               <Text style={[styles.meta, { color: theme.faint }]}>waiting…</Text>

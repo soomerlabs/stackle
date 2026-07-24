@@ -16,11 +16,9 @@ interface Props {
   streak?: number; // 🔥 in the eyebrow when ≥2
   onShare?: () => void;
   onInfo?: () => void; // pre-play: the ⓘ lives where the score will
-  // the day's ledger (owner): rides the masthead's right side
-  dayLedger?: { score: number; bestRound: number; solved: boolean; bonus: number } | null;
 }
 
-export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo, dayLedger }: Props) {
+export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo }: Props) {
   const now = new Date();
   const weekday = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   const monthDay = now
@@ -50,30 +48,18 @@ export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo, dayL
       }
     />
       {/* THE MASTHEAD (owner: "under the divider under thursday") —
-          brand-font "sworb" + italic "of the day" hangs off the hairline */}
+          brand-font "sworb" + italic "of the day" hangs off the hairline.
+          One row, everything on a shared center line (owner: "all
+          centered vertically" — the header score is the ONLY tally). */}
       <View style={styles.masthead}>
-        <View style={styles.mastheadLeft}>
-          <Text style={[styles.mastheadBrand, { color: theme.ink }]}>sworb</Text>
-          <Text style={[styles.mastheadItalic, { color: theme.sub }]}>of the day</Text>
-          <Pressable
-            onPress={() => router.push('/about-mode?mode=daily')}
-            hitSlop={10}
-            style={[styles.infoDot, { backgroundColor: theme.pill }]}>
-            <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
-          </Pressable>
-        </View>
-        {/* the day so far (owner): score · best round · the solve */}
-        {!!dayLedger && (dayLedger.score > 0 || dayLedger.solved) && (
-          <View style={styles.ledger}>
-            <Text style={[styles.ledgerScore, { color: theme.ink }]}>
-              {dayLedger.score.toLocaleString()}
-            </Text>
-            <Text style={[styles.ledgerMeta, { color: theme.faint }]}>
-              best {dayLedger.bestRound.toLocaleString()}
-              {dayLedger.solved ? ` · solved +${dayLedger.bonus}` : ''}
-            </Text>
-          </View>
-        )}
+        <Text style={[styles.mastheadBrand, { color: theme.ink }]}>sworb</Text>
+        <Text style={[styles.mastheadItalic, { color: theme.sub }]}>of the day</Text>
+        <Pressable
+          onPress={() => router.push('/about-mode?mode=daily')}
+          hitSlop={10}
+          style={[styles.infoDot, { backgroundColor: theme.pill }]}>
+          <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -85,11 +71,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   masthead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  mastheadLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -105,31 +86,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 10,
   },
-  ledger: {
-    alignItems: 'flex-end',
-    gap: 1,
-  },
-  ledgerScore: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 15,
-    fontVariant: ['tabular-nums'],
-  },
-  ledgerMeta: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 10.5,
-    letterSpacing: 0.3,
-    fontVariant: ['tabular-nums'],
-  },
   mastheadBrand: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 16,
     letterSpacing: 0.3,
+    includeFontPadding: false, // shared center line with the italic + dot
   },
   mastheadItalic: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 14,
     fontStyle: 'italic',
     letterSpacing: 0.2,
+    includeFontPadding: false,
   },
   scoreRow: {
     flexDirection: 'row',

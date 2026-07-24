@@ -91,18 +91,30 @@ export default function GuessScreen() {
 
   // THE PAID HINT: 25 ✦ reveals one clue — and the ENGINE charges it
   // again (foundCount rises → the reward tier drops). Fair by design.
-  const [hintState, setHintState] = useState<'idle' | 'busy' | 'poor' | 'done'>('idle');
+  // RECEIPTS (owner bug: charged, no hint): every buy carries a stable
+  // ref, retries reuse it — the server dedupes, so a lost response can
+  // never double-charge, and we retry until the goods arrive.
+  const [hintState, setHintState] = useState<'idle' | 'busy' | 'poor' | 'retry' | 'done'>('idle');
+  const buyingRef = useRef(false); // sync guard — state alone lets a double-tap slip
   const unfound = ctx ? ctx.swapped.filter((c) => !found.includes(c)) : [];
   const buyHint = useCallback(async () => {
-    if (!deal || !ctx || hintState === 'busy' || !unfound.length) return;
+    if (!deal || !ctx || buyingRef.current || !unfound.length) return;
+    buyingRef.current = true;
     setHintState('busy');
-    const r = await spendPoints('hint');
+    const ref = `hint-${deal.dayKey}-${found.length}`;
+    let r: Awaited<ReturnType<typeof spendPoints>> = 'error';
+    for (let attempt = 0; attempt < 3; attempt++) {
+      r = await spendPoints('hint', ref);
+      if (r !== 'error') break;
+      await new Promise((res) => setTimeout(res, 600 * (attempt + 1)));
+    }
+    buyingRef.current = false;
     if (r === 'poor') {
       setHintState('poor');
       return;
     }
     if (r === 'error') {
-      setHintState('idle');
+      setHintState('retry'); // same ref next tap — a landed charge still delivers
       return;
     }
     const clue = unfound[0];
@@ -114,7 +126,7 @@ export default function GuessScreen() {
     setHintState('done');
     setTimeout(() => setHintState('idle'), 900);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deal, ctx, hintState, unfound, boot]);
+  }, [deal, ctx, unfound, found, boot]);
 
   const doneTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onDone = useCallback(
@@ -182,9 +194,11 @@ export default function GuessScreen() {
                 ? 'revealing…'
                 : hintState === 'poor'
                   ? 'not enough points'
-                  : hintState === 'done'
-                    ? 'clue revealed ✦'
-                    : 'reveal a clue · 25 ✦ (lowers the bonus)'}
+                  : hintState === 'retry'
+                    ? 'connection hiccup — tap to retry (never double-charges)'
+                    : hintState === 'done'
+                      ? 'clue revealed ✦'
+                      : 'reveal a clue · 25 ✦ (lowers the bonus)'}
             </Text>
           </Pressable>
         )}
