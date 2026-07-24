@@ -24,11 +24,13 @@ import { loadDay } from '@/game/persist';
 import { loadStats } from '@/game/stats';
 import { getPlayerName } from '@/game/player';
 import { haptic } from '@/game/haptics';
+import { reportPlayer } from '@/net/safety';
+import { toast } from '@/components/toast';
 
 const LIST_CAP = 12;
 
 function Row({
-  rank, entry, isYou, ink, sub, card,
+  rank, entry, isYou, ink, sub, card, onReport,
 }: {
   rank: number;
   entry: { name: string; score: number };
@@ -36,10 +38,14 @@ function Row({
   ink: string;
   sub: string;
   card: string;
+  onReport?: () => void; // long-press: report this name (App Store 1.2)
 }) {
   const pal = PALETTE[tileColorFor(entry.name[0]?.toLowerCase() ?? 'a', 0)];
   return (
-    <View
+    <Pressable
+      onLongPress={onReport}
+      delayLongPress={600}
+      disabled={!onReport}
       style={[
         styles.row,
         { backgroundColor: isYou ? ACCENT : card },
@@ -61,7 +67,7 @@ function Row({
       <Text style={[styles.rowScore, { color: isYou ? '#1F1442' : ink }]}>
         {entry.score.toLocaleString()}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -198,6 +204,16 @@ export default function LeaderboardScreen() {
                     ink={theme.ink}
                     sub={theme.faint}
                     card={theme.card}
+                    onReport={
+                      r.you
+                        ? undefined
+                        : () => {
+                            haptic.soft();
+                            void reportPlayer(r.entry.name, page === 0 ? 'daily' : 'alltime').then((ok) =>
+                              toast(ok ? `reported ${r.entry.name.toLowerCase()} — thanks` : 'report failed — try again online')
+                            );
+                          }
+                    }
                   />
                 ))}
                 {!played && (

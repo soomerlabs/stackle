@@ -16,6 +16,8 @@ import { ScreenHeader } from '@/components/screen-header';
 import { Floaters } from '@/components/home/floaters';
 import { useTheme, useThemeMode, setThemeMode, ACCENT, type ThemeMode } from '@/game/theme';
 import { hapticsEnabled, setHapticsEnabled, haptic } from '@/game/haptics';
+import { deleteAccount } from '@/net/safety';
+import { toast } from '@/components/toast';
 
 const MODES: { key: ThemeMode; label: string }[] = [
   { key: 'system', label: 'system' },
@@ -24,6 +26,7 @@ const MODES: { key: ThemeMode; label: string }[] = [
 ];
 
 export default function SettingsScreen() {
+  const [armDelete, setArmDelete] = useState(false);
   const theme = useTheme();
   const dims = useWindowDimensions();
   const mode = useThemeMode();
@@ -79,6 +82,29 @@ export default function SettingsScreen() {
             />
           </View>
 
+          <Text style={[styles.sectionLabel, { color: theme.faint }]}>ACCOUNT</Text>
+          <Pressable
+            onPress={async () => {
+              // two-tap arm (the app's danger idiom — never an Alert)
+              if (!armDelete) {
+                setArmDelete(true);
+                setTimeout(() => setArmDelete(false), 4000);
+                return;
+              }
+              setArmDelete(false);
+              const ok = await deleteAccount();
+              toast(ok ? 'account deleted — fresh start on next launch' : 'delete failed — check your connection');
+              if (ok) router.replace('/');
+            }}
+            style={[styles.row, armDelete ? styles.dangerArmed : { backgroundColor: theme.card }]}>
+            <Text style={[styles.rowLabel, { color: armDelete ? '#FFFFFF' : '#E5484D' }]}>
+              {armDelete ? 'tap again to delete EVERYTHING' : 'delete account'}
+            </Text>
+          </Pressable>
+          <Text style={[styles.aboutSmall, { color: theme.faint }]}>
+            removes your name, scores and standings from the server — no way back
+          </Text>
+
           {__DEV__ && (
             <>
               <Text style={[styles.sectionLabel, { color: theme.faint }]}>DEVELOPER</Text>
@@ -101,6 +127,13 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  dangerArmed: { backgroundColor: '#E5484D' },
+  aboutSmall: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 11,
+    marginTop: -4,
+    marginLeft: 4,
+  },
   root: { flex: 1 },
   safe: { flex: 1 },
   content: {
