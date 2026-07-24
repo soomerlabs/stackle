@@ -646,6 +646,7 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
                 {phase === 'finale' && deal && guessCtx ? (
                   <GuessStage
                     sworb={deal.sworb}
+                    archetype={deal.archetype}
                     rounds={guessCtx.rounds}
                     restore={guessCtx.restore}
                     found={found}

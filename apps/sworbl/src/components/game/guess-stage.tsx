@@ -5,11 +5,12 @@
 // exists; play-sheet just swaps stages. Clue intel arrives as PROPS; the
 // 3rd-miss freebie is reported UP (onMiss) — granting is the sheet's job.
 import React, { useCallback, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import engine from '@sworbl/engine';
 
 import { applyGuess } from '@/game/finale-logic';
+import { ARCHETYPE_LABEL } from '@/components/game/result-view';
 import { haptic } from '@/game/haptics';
 import { GAME_DARK, type GameSurface } from '@/game/palette';
 import { BoardKeyboard } from './board-keyboard';
@@ -27,6 +28,9 @@ export interface FinaleRestore {
 
 interface Props {
   sworb: string;
+  archetype?: string | null; // the day's twist — CONTRACT intel, shown
+  // before the guess (owner ruling: the rule is knowable, only the
+  // answer is hidden — bravery needs a legible bet)
   rounds: number; // decays the solve bonus (engine law)
   restore?: FinaleRestore;
   found: string[]; // clue intel — reward tier + the fan
@@ -42,8 +46,9 @@ interface Props {
 }
 
 export function GuessStage({
-  sworb, rounds, restore, found, clues, clueTotal, nudged, size, gap, gs = GAME_DARK, onProgress, onMiss, onDone,
+  sworb, archetype, rounds, restore, found, clues, clueTotal, nudged, size, gap, gs = GAME_DARK, onProgress, onMiss, onDone,
 }: Props) {
+  const twist = archetype ? ARCHETYPE_LABEL[archetype] : null;
   const len = sworb.length;
   const cell = size + gap;
   const boardW = 5 * cell - gap;
@@ -143,6 +148,11 @@ export function GuessStage({
         />
       </View>
       <ClueFan clues={clues} found={found} nudged={nudged} gs={gs} />
+      {twist && (
+        <View style={styles.twistPill}>
+          <Text style={styles.twistText}>today's twist: {twist}</Text>
+        </View>
+      )}
     </Animated.View>
   );
 }
@@ -150,6 +160,19 @@ export function GuessStage({
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
+  },
+  twistPill: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(137,113,255,0.14)',
+    marginTop: 12,
+  },
+  twistText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 11.5,
+    letterSpacing: 0.6,
+    color: '#8971FF',
   },
   card: {
     borderRadius: 20,
