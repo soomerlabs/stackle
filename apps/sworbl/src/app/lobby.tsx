@@ -18,7 +18,6 @@ import { getPlayerName } from '@/game/player';
 import { POINT_PACKS } from '@/game/point-packs';
 import { dailyStormBoards, stormIntensity, stormName } from '@/game/storm-seeds';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
-import { TraceLaunch } from '@/components/trace-launch';
 import { buyPack, claimShowdown, fetchMyShowdownPoints, spendPoints } from '@/net/duels';
 import { fetchPractice } from '@/net/standings-remote';
 
@@ -442,21 +441,31 @@ export default function LobbyScreen() {
               the door didn&rsquo;t answer — swipe again (a retry never double-charges)
             </Text>
           )}
-          <TraceLaunch
-            onCommit={joining ? accept : play}
-            disabled={broke || claiming === 'busy' || claiming === 'taken' || claiming === 'poor' || claiming === 'played' || entering === 'busy' || entering === 'poor'} // 'error' stays swipeable — retry is safe (receipt ref)
-            caption={
-              broke
-                ? 'not enough points'
+          {/* one honest button (owner: "i'm over the PLAY mechanic —
+              we overused it") — tap commits; 'error' stays tappable
+              because receipt refs make retries safe */}
+          <Pressable
+            onPress={joining ? accept : play}
+            disabled={broke || claiming === 'busy' || claiming === 'taken' || claiming === 'poor' || claiming === 'played' || entering === 'busy' || entering === 'poor'}
+            style={[
+              styles.cta,
+              { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` },
+              (broke || claiming !== 'idle' || entering === 'poor') && claiming !== 'busy' && { opacity: 0.45 },
+            ]}>
+            <Text style={styles.ctaText}>
+              {broke
+                ? 'NOT ENOUGH ✦'
                 : joining
                   ? claiming === 'busy'
-                    ? 'claiming…'
-                    : 'swipe to accept'
-                  : creating
-                    ? 'swipe to play & post'
-                    : 'swipe to play'
-            }
-          />
+                    ? 'CLAIMING…'
+                    : 'ACCEPT'
+                  : entering === 'busy'
+                    ? 'ENTERING…'
+                    : creating
+                      ? 'PLAY & POST'
+                      : 'PLAY'}
+            </Text>
+          </Pressable>
           <Pressable onPress={() => router.back()} hitSlop={8} style={styles.notNow}>
             <Text style={[styles.notNowText, { color: theme.faint }]}>not now</Text>
           </Pressable>

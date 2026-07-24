@@ -13,7 +13,6 @@ import { View, Text, TextInput, Pressable, StyleSheet, Share } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import engine from '@sworbl/engine';
 
-import { TraceLaunch } from '@/components/trace-launch';
 import { PALETTE } from '@/game/palette';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
 import { track } from '@/net/analytics';
@@ -245,11 +244,12 @@ export default function RoomsScreen() {
                   couldn&rsquo;t mint the room — check your connection
                 </Text>
               )}
-              <TraceLaunch
-                onCommit={doCreate}
+              <Pressable
+                onPress={doCreate}
                 disabled={creating === 'busy' || !name.trim()}
-                caption={creating === 'busy' ? 'minting…' : 'swipe to make it'}
-              />
+                style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }, !name.trim() && { opacity: 0.45 }]}>
+                <Text style={styles.ctaText}>{creating === 'busy' ? 'MINTING…' : 'MAKE IT'}</Text>
+              </Pressable>
               <Pressable onPress={() => setFace('pick')} hitSlop={8} style={styles.backLink}>
                 <Text style={[styles.backText, { color: theme.faint }]}>back</Text>
               </Pressable>
@@ -287,11 +287,12 @@ export default function RoomsScreen() {
                   couldn&rsquo;t join — check your connection
                 </Text>
               )}
-              <TraceLaunch
-                onCommit={() => doJoin(code)}
+              <Pressable
+                onPress={() => doJoin(code)}
                 disabled={joining === 'busy' || code.trim().length < 4}
-                caption={joining === 'busy' ? 'knocking…' : 'swipe to join'}
-              />
+                style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }, code.trim().length < 4 && { opacity: 0.45 }]}>
+                <Text style={styles.ctaText}>{joining === 'busy' ? 'KNOCKING…' : 'JOIN'}</Text>
+              </Pressable>
               <Pressable onPress={() => setFace('pick')} hitSlop={8} style={styles.backLink}>
                 <Text style={[styles.backText, { color: theme.faint }]}>back</Text>
               </Pressable>
@@ -354,7 +355,11 @@ export default function RoomsScreen() {
               )}
 
               {room.status === 'open' && !settled && (
-                <TraceLaunch onCommit={play} caption="swipe to play the board" />
+                <Pressable
+                  onPress={play}
+                  style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }]}>
+                  <Text style={styles.ctaText}>PLAY</Text>
+                </Pressable>
               )}
               {/* the host summons (owner: "add in users") — by name */}
               {room.youAreHost && room.status === 'open' && !settled && (
@@ -574,6 +579,17 @@ const styles = StyleSheet.create({
     borderRadius: 14, borderCurve: 'continuous',
     paddingVertical: 13,
     alignItems: 'center',
+  },
+  cta: {
+    borderRadius: 14, borderCurve: 'continuous',
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  ctaText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 15,
+    letterSpacing: 1,
+    color: '#FFFFFF',
   },
   settleText: {
     fontFamily: 'Fredoka_600SemiBold',

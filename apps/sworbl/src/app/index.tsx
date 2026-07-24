@@ -680,15 +680,6 @@ export default function HomeScreen() {
     opacity: interpolate(sheetY.value, [closedY - 90, closedY - 20], [0, 1], Extrapolation.CLAMP),
   }));
   // the band pair (aurora + PLAY tiles) fades in as ONE at boot
-  // THE TAIL BRIDGE (owner: "black line at the bottom when I swipe up") —
-  // below the crest's glow the emerging sheet face was bare near-black, a
-  // dead zone between the color and the lip. A whisper of aurora tint
-  // (luminance bridge, no readable hues) fills it during travel only.
-  const tailStyle = useAnimatedStyle(() => {
-    const travel = interpolate(sheetY.value, [0, closedY], [1, 0], Extrapolation.CLAMP);
-    const build = interpolate(travel, [0.08, 0.4], [0, 1], Extrapolation.CLAMP);
-    return { opacity: build * (1 - sReveal.value) };
-  }, [closedY]);
   const bandInStyle = useAnimatedStyle(() => ({
     opacity: bootWindow(sBoot.value, 0.45, 0.55),
   }));
@@ -859,21 +850,10 @@ export default function HomeScreen() {
                 closeGesture={closeDrag}
               />
             </Animated.View>
-            {/* TAIL BRIDGE: whisper aurora tint under the crest's glow —
-                the emerging face never shows a dead black zone (owner) */}
-            <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, tailStyle]}>
-              <LinearGradient
-                colors={[
-                  'rgba(124,92,224,0)',
-                  'rgba(124,92,224,0.1)',
-                  'rgba(91,200,245,0.14)',
-                ]}
-                locations={[0.18, 0.62, 1]}
-                style={StyleSheet.absoluteFill}
-              />
-            </Animated.View>
-              {/* frost RETIRED (owner, play-door era): the FAB's radiance
-                  is the affordance — the peek face runs bare */}
+            {/* tail-bridge gradient RETIRED (owner: "weird gradient that
+                glows when we launch the sheet, can we delete that?") —
+                it papered over the frost-era crest, which is long gone;
+                the rise runs native-clean now */}
             {/* the COLLAPSED FACE: swipe-to-play/countdown */}
             <Animated.View
               pointerEvents="none"
