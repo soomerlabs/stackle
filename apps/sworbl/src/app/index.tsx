@@ -18,7 +18,6 @@ import { PlayFab } from '@/components/home/play-fab';
 import { ShowdownsRail } from '@/components/home/showdowns-rail';
 import { StandingsStrip } from '@/components/home/standings-strip';
 import { StormShelf } from '@/components/home/storm-shelf';
-import { ParkFrost } from '@/components/home/park-frost';
 import { router, useFocusEffect } from 'expo-router';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -667,28 +666,6 @@ export default function HomeScreen() {
   const bandInStyle = useAnimatedStyle(() => ({
     opacity: bootWindow(sBoot.value, 0.45, 0.55),
   }));
-  // THE PARKED FROST (owner: content scrolls behind the aurora and
-  // "naturally blurs"; PLAY stays crisp on top). This is the tab-bar idiom:
-  // a STATIC blur over scrolling content is what iOS is built for — the
-  // old rule only bans blur RIDING the moving sheet, so it dies inside the
-  // first 40px of travel and unmounts entirely past 80px.
-  // ALWAYS MOUNTED (perf audit): the ±120px mount gate tore the native
-  // blur tree down / rebuilt it WHILE the sheet was moving — the jolt near
-  // the dock on both pull and dismiss. parkBlurStyle already drives the
-  // frost to opacity 0 within ~100px of travel; a fully transparent layer
-  // costs the compositor nothing, so the tree just stays.
-  const parkBlurStyle = useAnimatedStyle(() => ({
-    // THE FROST DISSOLVE (owner: "the blur transition... fade out on the
-    // gameboard — that was pretty good"): the frost rides the whole pull,
-    // melting away as the board fades in beneath — full at park, gone by
-    // ~3/4 of the travel
-    // fades OUT within the first ~100px of travel: live blur must never
-    // ride the moving sheet (owner: "launching is jenky af" — the
-    // full-travel dissolve had smuggled the banned tax back in)
-    opacity:
-      bootWindow(sBoot.value, 0.45, 0.55) *
-      interpolate(sheetY.value, [closedY - 96, closedY - 12], [0, 1], Extrapolation.CLAMP),
-  }), [closedY]);
   // (the pending beacon strips were owner-removed — "weird spaced out
   // ovals" once the invisible park exposed them; the free-floating aurora
   // plus the arm ignition IS the pending signal)
@@ -899,17 +876,8 @@ export default function HomeScreen() {
                 style={StyleSheet.absoluteFill}
               />
             </Animated.View>
-              {/* PARKED FROST, PROGRESSIVE (owner: no visible top edge,
-                  "gradually get blurry"): platform-split — native uses
-                  gradient-masked BlurViews, web uses CSS backdrop-filter +
-                  mask-image. Both dissolve sharp → haze → frost, no line. */}
-              {(
-                <Animated.View
-                  pointerEvents="none"
-                  style={[styles.frostBand, { height: peekH }, parkBlurStyle]}>
-                  <ParkFrost mode={theme.mode === 'dark' ? 'dark' : 'light'} />
-                </Animated.View>
-              )}
+              {/* frost RETIRED (owner, play-door era): the FAB's radiance
+                  is the affordance — the peek face runs bare */}
             {/* the COLLAPSED FACE: swipe-to-play/countdown */}
             <Animated.View
               pointerEvents="none"

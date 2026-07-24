@@ -8,7 +8,6 @@ import Animated, {
 import engine from '@sworbl/engine';
 import { type SharedValue } from 'react-native-reanimated';
 import { useTheme } from '@/game/theme';
-import { TracePlay } from './trace-play';
 
 function nextIn(): string {
   const ms = engine.core.msToNextDay(new Date());
@@ -73,25 +72,9 @@ export function CountdownDock({ played, sLit, sPoke, armed, tile, gap }: {
           <Text style={[styles.nextClock, { color: theme.ink }]}>{clock}</Text>
         </View>
       ) : (
-        <View key="trace" style={[styles.face, { height: (tile ?? 48) + 32 }]}>
-          {/* BOTH faces stay mounted — the pose crossfades them (gratifying
-              morph both directions, owner) */}
-          {sLit && (
-            <View style={styles.pose}>
-              <TracePlay
-                sLit={sLit} sPoke={sPoke} theme={theme} tile={tile ?? 48} gap={gap ?? 8}
-                armed={!!armed}
-              />
-            </View>
-          )}
-          <Animated.View style={[styles.pose, chevPose]} pointerEvents="none">
-            <Animated.Text style={[styles.chev, bobStyle]}>︿</Animated.Text>
-            <Text style={[styles.swipeLabel, { color: theme.ink }]}>swipe up to start</Text>
-          </Animated.View>
-          <Animated.View style={[styles.hintPose, hintPose]} pointerEvents="none">
-            <Text style={[styles.hintLabel, { color: theme.ink }]}>swipe to play</Text>
-          </Animated.View>
-        </View>
+        // the HOCKEY-STICK FAB is the launcher now (owner) — the dock face
+        // carries nothing on a playable day; the swipe-up still works
+        <View key="trace" style={[styles.face, { height: (tile ?? 48) + 32 }]} />
       )}
     </View>
   );

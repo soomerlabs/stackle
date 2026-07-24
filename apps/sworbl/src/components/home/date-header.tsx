@@ -33,13 +33,13 @@ export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo }: Pr
       titleAccent={monthDay}
       right={
         score != null ? (
-          <Pressable onPress={onShare} hitSlop={10} style={styles.scoreTap}>
+          // TITLE-SIZED score + the icon says it all (owner)
+          <View style={styles.scoreRow}>
             <Text style={[styles.score, { color: theme.ink }]}>{score.toLocaleString()}</Text>
-            <View style={styles.shareRow}>
-              <Icon name="share" size={11} color={ACCENT} />
-              <Text style={styles.shareText}>share</Text>
-            </View>
-          </Pressable>
+            <Pressable onPress={onShare} hitSlop={12} style={[styles.shareBtn, { backgroundColor: theme.pill }]}>
+              <Icon name="share" size={15} color={ACCENT} />
+            </Pressable>
+          </View>
         ) : onInfo ? (
           <Pressable onPress={onInfo} hitSlop={12} style={[styles.infoChip, { backgroundColor: theme.card }]}>
             <Icon name="info" size={14} color={ACCENT} />
@@ -87,25 +87,23 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     letterSpacing: 0.2,
   },
-  scoreTap: {
-    alignItems: 'flex-end',
-    gap: 1,
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   score: {
     fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 22,
-    lineHeight: 26,
+    fontSize: 31, // the header title's size (owner)
+    lineHeight: 36,
     fontVariant: ['tabular-nums'],
   },
-  shareRow: {
-    flexDirection: 'row',
+  shareBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 10, borderCurve: 'continuous',
     alignItems: 'center',
-    gap: 3,
-  },
-  shareText: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 10.5,
-    color: ACCENT,
+    justifyContent: 'center',
   },
   infoChip: {
     width: 30,

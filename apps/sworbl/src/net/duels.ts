@@ -97,6 +97,51 @@ export async function fetchStormCrowns(
   }
 }
 
+// SETTLED WHILE AWAY (audit: the poster was never told) — decided
+// showdowns involving YOU, newer than the last one you've seen. The
+// watermark rides local storage; callers toast the freshest result.
+const SEEN_KEY = 'sworbl_rn_sd_seen';
+
+export interface SettledShowdown {
+  id: number;
+  seed: string;
+  won: boolean;
+  myScore: number;
+  theirScore: number;
+}
+
+export async function fetchSettledShowdowns(): Promise<SettledShowdown[]> {
+  const sb = supabase();
+  if (!sb) return [];
+  try {
+    const uid = (await sb.auth.getSession()).data.session?.user.id;
+    if (!uid) return [];
+    const since = Number(engine.store.getJSON(SEEN_KEY, 0)) || 0;
+    const { data, error } = await sb
+      .from('open_duels')
+      .select('id, seed, score, taker_score, winner, poster, taker, status')
+      .eq('status', 'decided')
+      .or(`poster.eq.${uid},taker.eq.${uid}`)
+      .gt('id', since)
+      .order('id', { ascending: true })
+      .limit(10);
+    if (error || !data?.length) return [];
+    engine.store.setJSON(SEEN_KEY, Math.max(...data.map((r) => Number(r.id))));
+    return data.map((r) => {
+      const iPosted = r.poster === uid;
+      return {
+        id: Number(r.id),
+        seed: String(r.seed),
+        won: r.winner === uid,
+        myScore: Number(iPosted ? r.score : r.taker_score),
+        theirScore: Number(iPosted ? r.taker_score : r.score),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 // your points ledger (profile stat card) — null offline
 export async function fetchMyShowdownPoints(): Promise<number | null> {
   const sb = supabase();
