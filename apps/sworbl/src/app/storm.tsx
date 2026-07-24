@@ -11,6 +11,7 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-na
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GameBoard } from '@/components/game/game-board';
+import { Icon } from '@/components/icon';
 import { ScoreHeader } from '@/components/game/score-header';
 import { dealPractice } from '@/game/daily';
 import { stormIntensity, stormName } from '@/game/storm-seeds';
@@ -320,8 +321,9 @@ export default function StormScreen() {
       {/* top bar: seed identity + the clock + live score */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
+          {/* the modal RISES, so it CLOSES (owner: × not ‹) */}
           <Pressable onPress={leave} hitSlop={12}>
-            <Text style={[styles.backGlyph, { color: theme.icon }]}>‹</Text>
+            <Icon name="close" size={22} color={theme.icon} />
           </Pressable>
         </View>
         <View style={styles.topMid}>
@@ -354,9 +356,7 @@ export default function StormScreen() {
             ) : (
               <Text style={styles.stripEmoji}>{intensity.emoji}</Text>
             )}
-            <Text style={[styles.stripLabel, { color: theme.ink }]}>
-              {stormName(seed)}
-            </Text>
+            {/* the NAME lives in the top bar only (owner: "double title") */}
             <Text style={[styles.stripMeta, { color: theme.faint }]}>
               {intensity.key === 'hurricane' ? 'no mercy · ' : ''}best score holds the crown
             </Text>
@@ -398,14 +398,15 @@ export default function StormScreen() {
 
         {phase === 'ready' && (
           <View style={styles.cover}>
+            {/* ONE title on this screen — the top bar's (owner). The
+                description drops the tier name too: the clock says it. */}
             <Text style={[styles.eyebrow, { color: theme.faint }]}>SHARED BOARD</Text>
-            <Text style={[styles.title, { color: theme.ink }]}>{stormName(seed)}</Text>
             <Text style={[styles.sub, { color: theme.sub }]}>
               {duel
                 ? duel.sealed || duel.score == null
-                  ? `${duel.name.toLowerCase()}'s hand is sealed on this board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — play blind, find out after.`
-                  : `${duel.name.toLowerCase()} put up ${duel.score.toLocaleString()} on this board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — beat it.`
-                : `everyone gets this exact board.\n${intensity.label} · ${fmtClock(intensity.clockSecs)} — best score counts.`}
+                  ? `${duel.name.toLowerCase()}'s hand is sealed on this board.\n${fmtClock(intensity.clockSecs)} — play blind, find out after.`
+                  : `${duel.name.toLowerCase()} put up ${duel.score.toLocaleString()} on this board.\n${fmtClock(intensity.clockSecs)} — beat it.`
+                : `everyone gets this exact board.\n${fmtClock(intensity.clockSecs)} — best score counts.`}
             </Text>
             <Pressable onPress={startRun} style={[styles.cta, { backgroundColor: ACCENT, boxShadow: `0 4px 0 ${ACCENT_EDGE}` }]}>
               <Text style={[styles.ctaText, { color: '#FFFFFF' }]}>PLAY</Text>
@@ -529,7 +530,6 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 10,
   },
-  backGlyph: { fontFamily: 'Fredoka_600SemiBold', fontSize: 30, marginTop: -4 },
   // symmetric rails (owner: "so off center") — the title owns true center
   topLeft: { width: 64, alignItems: 'flex-start' },
   topMid: { flex: 1, alignItems: 'center' },
@@ -551,11 +551,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   stripEmoji: { fontSize: 22 },
-  stripLabel: {
-    fontFamily: 'Fredoka_600SemiBold',
-    fontSize: 15,
-    letterSpacing: 0.3,
-  },
   stripMeta: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 11,
