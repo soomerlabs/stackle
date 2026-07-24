@@ -184,16 +184,18 @@ const styles = StyleSheet.create({
     width: CELL + TILE, // two wide: the foot
     height: CELL * 2 + TILE, // three tall: the column
   },
-  // the aurora bleed — three candy shadows on one static layer, breathing
+  // the aurora bleed — ONE shadow on a faint violet body (the
+  // multi-shadow string on a bare view rendered as a black plate, owner)
   radiance: {
     position: 'absolute',
     left: 2,
     right: 2,
     top: 2,
     bottom: 2,
-    borderRadius: 14,
-    boxShadow:
-      '0 0 22px 4px rgba(167,139,250,0.55), 0 -14px 26px 2px rgba(95,214,168,0.35), 0 14px 26px 2px rgba(91,200,245,0.35)',
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(167,139,250,0.10)',
+    boxShadow: '0 0 24px 8px rgba(167,139,250,0.45)',
   },
   tile: {
     position: 'absolute',
