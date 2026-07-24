@@ -8,7 +8,8 @@
     "scheme": "sworbl",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.soomerlabs.sworbl"
+      "bundleIdentifier": "com.soomerlabs.sworbl",
+      "associatedDomains": ["applinks:sworbl.com", "applinks:www.sworbl.com"]
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +18,18 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.soomerlabs.sworbl"
+      "package": "com.soomerlabs.sworbl",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "sworbl.com", "pathPrefix": "/storm" },
+            { "scheme": "https", "host": "sworbl.com", "pathPrefix": "/rooms" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "output": "static",

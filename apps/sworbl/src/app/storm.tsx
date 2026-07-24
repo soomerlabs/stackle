@@ -493,7 +493,9 @@ export default function StormScreen() {
             <Pressable
               onPress={() =>
                 Share.share({
-                  message: `sworbl storm ⛈ ${stormName(seed)} — ${score} pts in the ${intensity.label}. same board, every player. beat my score: sworbl://storm?seed=${seed}`,
+                  // UNIVERSAL LINK (owner: AASA on sworbl.com) — installed
+                  // app opens the board; everyone else lands on the web
+                  message: `sworbl storm ⛈ ${score} pts in the ${stormName(seed)}. same board, every player. beat my score: https://sworbl.com/storm?seed=${seed}`,
                 }).catch(() => {})
               }
               style={[styles.cta, styles.ctaCard, { backgroundColor: theme.card }]}>

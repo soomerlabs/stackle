@@ -6,7 +6,7 @@
 //   room   → the room card: code (share it), pot, board, PLAY, host CALL IT
 // Entries are charged by the room edge function (idempotent joins); the
 // board is the practice lane on the room's own seed.
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Share } from 'react-native';
@@ -36,7 +36,15 @@ type Face = 'pick' | 'create' | 'join' | 'room';
 
 export default function RoomsScreen() {
   const theme = useTheme();
-  const [face, setFace] = useState<Face>('pick');
+  // DEEP LINK (owner: AASA on sworbl.com) — /rooms?code=ABC123 lands on
+  // the join face prefilled. NEVER auto-joins: the door charges points,
+  // so the swipe stays the consent.
+  const params = useLocalSearchParams<{ code?: string }>();
+  const linkedCode =
+    typeof params.code === 'string' && /^[A-Za-z0-9]{4,8}$/.test(params.code)
+      ? params.code.toUpperCase()
+      : null;
+  const [face, setFace] = useState<Face>(linkedCode ? 'join' : 'pick');
   const [myCodes] = useState<string[]>(() => savedRooms());
 
   // create face
@@ -45,7 +53,7 @@ export default function RoomsScreen() {
   const [creating, setCreating] = useState<'idle' | 'busy' | 'poor' | 'error'>('idle');
 
   // join face
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(linkedCode ?? '');
   const [joining, setJoining] = useState<'idle' | 'busy' | 'poor' | 'gone' | 'settled' | 'error'>('idle');
 
   // room face
@@ -260,7 +268,7 @@ export default function RoomsScreen() {
               <Pressable
                 onPress={() =>
                   Share.share({
-                    message: `sworbl private room “${room.name}” — code ${room.code}. door is ${room.entry === 0 ? 'free' : `${room.entry} ✦`}, top score takes the pot.`,
+                    message: `sworbl private room “${room.name}” — door is ${room.entry === 0 ? 'free' : `${room.entry} ✦`}, top score takes the pot. get in: https://sworbl.com/rooms?code=${room.code}`,
                   }).catch(() => {})
                 }
                 style={[styles.codeCard, { backgroundColor: theme.card }]}>

@@ -1,0 +1,13 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["M2FPXX6UJK.com.soomerlabs.sworbl"],
+        "components": [
+          { "/": "/storm*", "comment": "storm boards — shared scores, showdowns" },
+          { "/": "/rooms*", "comment": "private rooms — join by code" }
+        ]
+      }
+    ]
+  }
+}

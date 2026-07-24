@@ -74,6 +74,11 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
           const c = crowns?.[b.seed];
           const mins = Math.floor(b.intensity.clockSecs / 60);
           const secs = b.intensity.clockSecs % 60;
+          // THE GRAMMAR LADDER (owner): "thesaurus thunder" splits — the
+          // grammar word whispers above, the tier word stays big
+          const words = b.name.split(' ');
+          const tierWord = words.length > 1 ? words.slice(1).join(' ') : b.name;
+          const flavorWord = words.length > 1 ? words[0] : null;
           return (
             <Pressable
               key={b.seed}
@@ -90,8 +95,13 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
                 )}
               </View>
               <View style={styles.dataZone}>
+                {!!flavorWord && (
+                  <Text style={[styles.flavor, { color: theme.faint }]} numberOfLines={1}>
+                    {flavorWord}
+                  </Text>
+                )}
                 <Text style={[styles.name, { color: theme.ink }]} numberOfLines={1}>
-                  {b.name}
+                  {tierWord}
                 </Text>
                 <Text style={[styles.stat, { color: theme.sub }]} numberOfLines={1}>
                   {c?.top
@@ -266,7 +276,15 @@ const styles = StyleSheet.create({
     gap: 6,
     alignSelf: 'stretch',
   },
-  // the maritime hurricane warning AS the logo: red square, black center
+  // the grammar word whispers; the tier word carries the card
+  flavor: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 10,
+    fontStyle: 'italic',
+    letterSpacing: 0.4,
+    includeFontPadding: false,
+    marginBottom: -1,
+  },
   name: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 14.5,

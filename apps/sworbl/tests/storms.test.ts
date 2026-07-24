@@ -19,7 +19,7 @@ const tomorrow = dailyStormBoards(new Date('2026-07-24T00:01:00'));
 // constant identity, fresh BOARDS underneath every day
 assert.deepStrictEqual(
   boards.map((b) => b.name),
-  ['drizzle', 'squall', 'thunder', 'hurricane'],
+  ['diphthong drizzle', 'synonym squall', 'thesaurus thunder', 'homonym hurricane'],
   'the boards are named by tier'
 );
 assert.notDeepStrictEqual(
@@ -35,8 +35,8 @@ for (const b of boards.concat(tomorrow)) {
 
 
 // stormName resolves today's boards and passes foreign seeds through
-assert.strictEqual(stormName(boards[0].seed, DAY), 'drizzle', 'slot seeds wear the tier name');
-assert.strictEqual(stormName('s-20990101-d'), 'hurricane', 'any day, any slot — tier name holds');
+assert.strictEqual(stormName(boards[0].seed, DAY), 'diphthong drizzle', 'slot seeds wear the tier name');
+assert.strictEqual(stormName('s-20990101-d'), 'homonym hurricane', 'any day, any slot — tier name holds');
 assert.strictEqual(stormName('first-storm', DAY), 'first-storm', 'foreign seed passes through');
 
 console.log('storms: daily mint pinned (determinism, seed law, names)');

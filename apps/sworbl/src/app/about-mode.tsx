@@ -20,7 +20,7 @@ const FACES: Record<string, { title: string; lines: string[] }> = {
   storms: {
     title: 'storms',
     lines: [
-      'four fresh boards every day — drizzle, squall, thunder, hurricane. same board for every player.',
+      'four fresh boards every day — diphthong drizzle, synonym squall, thesaurus thunder, homonym hurricane. same board for every player.',
       'harder as you climb: less time, harsher letters, and a steeper door — the drizzle is always free.',
       'best score holds the crown. boards reset daily; bragging rights don’t. private rooms let you set your own board and pot.',
     ],
