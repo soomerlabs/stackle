@@ -173,6 +173,9 @@ export default function HomeScreen() {
   // HOME PULL-TO-REFRESH (owner networking audit): standings + day spec
   const [homeRefreshing, setHomeRefreshing] = useState(false);
   const [duelsNonce, setDuelsNonce] = useState(0);
+  // THE PLAY DOOR SELECTION (owner): what the FAB launches. Daily by
+  // default; a tapped storm card links the trace to its board.
+  const [selectedStorm, setSelectedStorm] = useState<string | null>(null);
   const homeRefresh = useCallback(async () => {
     if (!deal) return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -817,7 +820,12 @@ export default function HomeScreen() {
             }
           />
 
-          <StormShelf theme={theme} refreshNonce={duelsNonce} />
+          <StormShelf
+            theme={theme}
+            refreshNonce={duelsNonce}
+            selectedSeed={selectedStorm}
+            onSelect={setSelectedStorm}
+          />
 
           <ShowdownsRail theme={theme} refreshNonce={duelsNonce} />
         </ScrollView>
@@ -831,8 +839,18 @@ export default function HomeScreen() {
       <PlayFab
         sheetY={sheetY}
         closedY={closedY}
-        onCommit={openToPlay}
-        enabled={!played && !!deal}
+        onCommit={
+          selectedStorm
+            ? () => {
+                // a storm is linked: the trace launches ITS board (the
+                // sheet springs home; the board screen owns the run)
+                sheetY.value = withSpring(closedY, PARK_SPRING);
+                setSelectedStorm(null);
+                router.push(`/storm?seed=${selectedStorm}&go=1`);
+              }
+            : openToPlay
+        }
+        enabled={(!played || !!selectedStorm) && !!deal}
       />
 
       {/* dark scrim under the rising sheet (blur deleted — owner call) */}
