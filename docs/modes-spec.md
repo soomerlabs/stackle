@@ -237,6 +237,16 @@ ONE gesture: tracing P·L·A·Y IS the swipe.
   dock band retires; the sections get the space. Open questions for
   the build: where the next-sworbl countdown lives on a done day, and
   how the corner coexists with the parked sheet's peek/frost.
+- GEOMETRY RULING: P alone at the corner, L·A·Y climbing (1+3, not
+  2+2) — three vertical tiles give ~170px of finger travel to scrub the
+  sheet's rise (smooth mapping), the corner turn comes after ONE tile
+  (ignition feel), and the footprint hugs the corner like a true FAB.
+  The word reads bottom-up: it RISES.
+- SHEET RULING: the board stays on the HAND-BUILT layer — a native
+  sheet cannot be finger-scrubbed mid-gesture and its pull-down fights
+  board traces. Steal the native LOOK instead: top corner radius +
+  home's scale-back on the custom presentation. Native sheets remain
+  for tap-launched tasks (guess, lobby, book).
 - THE RADIANCE (owner addendum 2): the parked frost/blur band retires
   WITH the dock — affordance comes from the aurora colors RADIATING off
   the play blocks themselves (soft candy glow bleeding from the FAB:
