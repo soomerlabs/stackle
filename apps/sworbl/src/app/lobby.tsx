@@ -35,7 +35,7 @@ export default function LobbyScreen() {
   const joining = !!vsName && Number.isFinite(vsScore) && Number.isFinite(did);
 
   const intensity = stormIntensity(seed);
-  const tierPal = PALETTE[intensity.pal];
+  const tierPal = intensity.hue;
   const myName = getPlayerName();
   const myPal = PALETTE[tileColorFor(myName[0]?.toLowerCase() ?? 'p', 0)];
   const themPal = vsName ? PALETTE[tileColorFor(vsName[0]?.toLowerCase() ?? 'a', 0)] : myPal;

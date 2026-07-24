@@ -5,12 +5,12 @@
 // Release past the commit line = open; short of it = spring home.
 // Radiance (owner): aurora candy glow breathes off the blocks — the
 // only affordance. All motion is UI-thread shared values.
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue, useAnimatedStyle, useDerivedValue, useAnimatedReaction,
-  withSpring, withTiming, withRepeat, Easing, runOnJS, interpolate, interpolateColor, Extrapolation,
+  withSpring, withTiming, runOnJS, interpolate, interpolateColor, Extrapolation,
   type SharedValue,
 } from 'react-native-reanimated';
 
@@ -83,19 +83,6 @@ export function PlayFab({ sheetY, closedY, commitFrac = 0.34, onCommit, enabled 
   const sLit = useSharedValue(0);
   const sTracing = useSharedValue(0);
 
-  // THE RADIANCE — a slow aurora breath under the stack, opacity-only
-  const breath = useSharedValue(0);
-  useEffect(() => {
-    breath.value = withRepeat(
-      withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const radiance = useAnimatedStyle(() => ({
-    opacity: enabled ? 0.34 + breath.value * 0.3 + sTracing.value * 0.25 : 0,
-  }));
 
   // haptic ladder: one tick per tile, ascending (the trace grammar)
   useAnimatedReaction(
@@ -160,7 +147,6 @@ export function PlayFab({ sheetY, closedY, commitFrac = 0.34, onCommit, enabled 
     <Animated.View style={[styles.wrap, fabPose]} pointerEvents="box-none">
       <GestureDetector gesture={pan}>
         <View style={styles.stack} collapsable={false}>
-          <Animated.View style={[styles.radiance, radiance]} pointerEvents="none" />
           {[0, 1, 2, 3].map((i) => (
             <FabTile key={i} i={i} sLit={sLit} mono={mono} />
           ))}
@@ -183,19 +169,6 @@ const styles = StyleSheet.create({
   stack: {
     width: CELL + TILE, // two wide: the foot
     height: CELL * 2 + TILE, // three tall: the column
-  },
-  // the aurora bleed — ONE shadow on a faint violet body (the
-  // multi-shadow string on a bare view rendered as a black plate, owner)
-  radiance: {
-    position: 'absolute',
-    left: 2,
-    right: 2,
-    top: 2,
-    bottom: 2,
-    borderRadius: 16,
-    borderCurve: 'continuous',
-    backgroundColor: 'rgba(167,139,250,0.10)',
-    boxShadow: '0 0 24px 8px rgba(167,139,250,0.45)',
   },
   tile: {
     position: 'absolute',

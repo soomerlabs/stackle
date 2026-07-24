@@ -380,6 +380,13 @@ export default function HomeScreen() {
   // GUESS FROM HOME (modes-spec): open the sheet STRAIGHT into the finale
   // TAP TO PLAY (owner): the whole top section opens the game — the sheet
   // docks and the idle phase arms its own count-in, same as a swipe
+  // INVISIBLE AT PARK (owner: "weird black box behind the blocks") — with
+  // the frost gone, the parked peek strip showed the bare game surface.
+  // The sheet is fully hidden at rest and alive within 10px of travel.
+  const parkHide = useAnimatedStyle(() => ({
+    opacity: interpolate(sheetY.value, [closedY - 10, closedY], [1, 0], Extrapolation.CLAMP),
+  }), [closedY]);
+
   const openToPlay = useCallback(() => {
     if (closingRef.current) return;
     sMode.value = 3;
@@ -819,7 +826,7 @@ export default function HomeScreen() {
           swipe-to-play peek at the bottom, full-screen when pulled up. The
           peek face and the game crossfade during travel. */}
       {deal && (
-          <Animated.View style={[styles.sheet, sheetStyle]} pointerEvents={undefined}>
+          <Animated.View style={[styles.sheet, sheetStyle, parkHide]} pointerEvents={undefined}>
             {/* crest RETIRED (owner, play-door era): the bottom runs bare;
                 the FAB's radiance is home's living light now */}
             <View style={styles.sheetClip}>

@@ -92,8 +92,21 @@ export default function RootLayout() {
           }}>
           {/* the guess rides up as a SHEET (owner) — iOS pageSheet, pull
               down to bail (intel parks on every guess regardless) */}
+          {/* storm boards RISE (owner: "is the gameboard being pushed
+              now? wtf") — full-screen modal slides up like the sheet,
+              never a sideways push */}
+          <Stack.Screen name="storm" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Screen name="guess" options={{ presentation: 'modal' }} />
           <Stack.Screen name="archetypes" options={{ presentation: 'modal' }} />
+          <Stack.Screen
+            name="about-mode"
+            options={{
+              presentation: 'formSheet',
+              sheetAllowedDetents: 'fitToContents',
+              sheetGrabberVisible: true,
+              sheetCornerRadius: 24,
+            }}
+          />
           <Stack.Screen
             name="lobby"
             options={{

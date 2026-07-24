@@ -34,7 +34,15 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.title, { color: theme.ink }]}>showdowns</Text>
+      <View style={styles.titleRow}>
+        <Text style={[styles.title, { color: theme.ink }]}>showdowns</Text>
+        <Pressable
+          onPress={() => router.push('/about-mode?mode=showdowns')}
+          hitSlop={10}
+          style={[styles.infoDot, { backgroundColor: theme.pill }]}>
+          <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
+        </Pressable>
+      </View>
       <Text style={[styles.subtitle, { color: theme.faint }]}>
         mano a mano
       </Text>
@@ -131,10 +139,26 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: 4,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
   title: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 16,
     letterSpacing: 0.3,
+  },
+  infoDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 6, borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoDotText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 10,
   },
   subtitle: {
     fontFamily: 'Fredoka_600SemiBold',

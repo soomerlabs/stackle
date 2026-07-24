@@ -53,6 +53,12 @@ export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo }: Pr
         <View style={styles.mastheadLeft}>
           <Text style={[styles.mastheadBrand, { color: theme.ink }]}>sworb</Text>
           <Text style={[styles.mastheadItalic, { color: theme.sub }]}>of the day</Text>
+          <Pressable
+            onPress={() => router.push('/about-mode?mode=daily')}
+            hitSlop={10}
+            style={[styles.infoDot, { backgroundColor: theme.pill }]}>
+            <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
+          </Pressable>
         </View>
         {/* the ARCHETYPE tag (owner: right side, on-brand, with the i) —
             a candy chip naming the day's rule; tap = the archetype book */}
@@ -73,8 +79,19 @@ const styles = StyleSheet.create({
   },
   mastheadLeft: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 5,
+    alignItems: 'center',
+    gap: 6,
+  },
+  infoDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 6, borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoDotText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 10,
   },
   mastheadBrand: {
     fontFamily: 'Fredoka_600SemiBold',

@@ -62,7 +62,15 @@ export function StormShelf({
 
   return (
     <View style={styles.wrap}>
-      <Text style={[styles.title, { color: theme.ink }]}>storms</Text>
+      <View style={styles.titleRow}>
+        <Text style={[styles.title, { color: theme.ink }]}>storms</Text>
+        <Pressable
+          onPress={() => router.push('/about-mode?mode=storms')}
+          hitSlop={10}
+          style={[styles.infoDot, { backgroundColor: theme.pill }]}>
+          <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
+        </Pressable>
+      </View>
       <Text style={[styles.subtitle, { color: theme.faint }]}>pick your weather</Text>
       <View style={styles.scrollerWrap}>
       <ScrollView
@@ -149,10 +157,26 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   // rhymes with the masthead — the two section names wear the same type
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
   title: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 16,
     letterSpacing: 0.3,
+  },
+  infoDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 6, borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoDotText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 10,
   },
   subtitle: {
     fontFamily: 'Fredoka_600SemiBold',
