@@ -83,9 +83,11 @@ export function StormShelf({
               style={[
                 styles.block,
                 { backgroundColor: theme.card },
+                // ON-BRAND selection (owner): the sworble violet, always —
+                // never per-tier rainbow borders
                 selectedSeed === b.seed && {
                   borderWidth: 2,
-                  borderColor: PALETTE[b.intensity.pal].bg,
+                  borderColor: ACCENT,
                   transform: [{ translateY: -2 }],
                 },
               ]}>
