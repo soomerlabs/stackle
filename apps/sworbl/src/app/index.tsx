@@ -53,7 +53,7 @@ import { loadDay, saveSheetOpen, wasSheetOpen, getResetNonce, loadDayWords, type
 import { standingsStub, rankFor, type LbEntry } from '@/game/standings';
 import { checkContentEpoch } from '@/net/config-remote';
 import { toast } from '@/components/toast';
-import { fetchSettledShowdowns } from '@/net/duels';
+import { fetchMyShowdownPoints, fetchSettledShowdowns } from '@/net/duels';
 import { fetchDaily, readCachedField, type RemoteField } from '@/net/standings-remote';
 import { fetchRemoteEntry } from '@/net/dailies-remote';
 import { loadStats, streakDays } from '@/game/stats';
@@ -171,6 +171,15 @@ export default function HomeScreen() {
   // HOME PULL-TO-REFRESH (owner networking audit): standings + day spec
   const [homeRefreshing, setHomeRefreshing] = useState(false);
   const [duelsNonce, setDuelsNonce] = useState(0);
+  // the wallet chip (owner: expose the points) — refreshes with the rails
+  const [walletPts, setWalletPts] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    void fetchMyShowdownPoints().then((v) => live && v != null && setWalletPts(v));
+    return () => {
+      live = false;
+    };
+  }, [duelsNonce]);
   const homeRefresh = useCallback(async () => {
     if (!deal) return;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -725,6 +734,7 @@ export default function HomeScreen() {
       <SafeAreaView edges={['top']} style={styles.safe}>
         <AppBar
           theme={theme}
+          points={walletPts}
           onPerson={() => router.push('/profile')}
           onSettings={() => router.push('/settings')}
         />
@@ -743,6 +753,16 @@ export default function HomeScreen() {
             <DateHeader
               theme={theme}
               dayKey={deal.dayKey}
+              dayLedger={
+                day
+                  ? {
+                      score: day.score,
+                      bestRound: day.rounds.bestRound,
+                      solved: !!day.sworb?.solved,
+                      bonus: day.sworb?.bonus ?? 0,
+                    }
+                  : null
+              }
               score={myScore > 0 ? myScore : null}
               streak={streak}
               onInfo={!played ? () => router.push('/how-to') : undefined}

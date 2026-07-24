@@ -16,9 +16,11 @@ interface Props {
   streak?: number; // 🔥 in the eyebrow when ≥2
   onShare?: () => void;
   onInfo?: () => void; // pre-play: the ⓘ lives where the score will
+  // the day's ledger (owner): rides the masthead's right side
+  dayLedger?: { score: number; bestRound: number; solved: boolean; bonus: number } | null;
 }
 
-export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo }: Props) {
+export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo, dayLedger }: Props) {
   const now = new Date();
   const weekday = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   const monthDay = now
@@ -60,8 +62,18 @@ export function DateHeader({ theme, dayKey, score, streak, onShare, onInfo }: Pr
             <Text style={[styles.infoDotText, { color: theme.sub }]}>i</Text>
           </Pressable>
         </View>
-        {/* the ARCHETYPE tag (owner: right side, on-brand, with the i) —
-            a candy chip naming the day's rule; tap = the archetype book */}
+        {/* the day so far (owner): score · best round · the solve */}
+        {!!dayLedger && (dayLedger.score > 0 || dayLedger.solved) && (
+          <View style={styles.ledger}>
+            <Text style={[styles.ledgerScore, { color: theme.ink }]}>
+              {dayLedger.score.toLocaleString()}
+            </Text>
+            <Text style={[styles.ledgerMeta, { color: theme.faint }]}>
+              best {dayLedger.bestRound.toLocaleString()}
+              {dayLedger.solved ? ` · solved +${dayLedger.bonus}` : ''}
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -92,6 +104,21 @@ const styles = StyleSheet.create({
   infoDotText: {
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 10,
+  },
+  ledger: {
+    alignItems: 'flex-end',
+    gap: 1,
+  },
+  ledgerScore: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 15,
+    fontVariant: ['tabular-nums'],
+  },
+  ledgerMeta: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 10.5,
+    letterSpacing: 0.3,
+    fontVariant: ['tabular-nums'],
   },
   mastheadBrand: {
     fontFamily: 'Fredoka_600SemiBold',

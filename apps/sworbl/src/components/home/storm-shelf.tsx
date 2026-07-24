@@ -68,7 +68,9 @@ export function StormShelf({ theme, refreshNonce }: { theme: Theme; refreshNonce
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.rowContent}>
-        {boards.map((b) => {
+        {/* strongest first (owner): hurricane leads the shelf; the walk
+            down to drizzle IS the tour of the ladder */}
+        {[...boards].reverse().map((b) => {
           const c = crowns?.[b.seed];
           const mins = Math.floor(b.intensity.clockSecs / 60);
           const secs = b.intensity.clockSecs % 60;

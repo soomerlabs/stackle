@@ -2,7 +2,7 @@
 // Brand sits at the same offset as the sheet's — the "uniting logos" dock
 // animation is positional, keep them aligned when touching either.
 import React from 'react';
-import { View, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Icon } from '@/components/icon';
 import { Brand } from '@/components/brand';
 import { type Theme } from '@/game/theme';
@@ -11,15 +11,21 @@ interface Props {
   theme: Theme;
   onPerson?: () => void;
   onSettings?: () => void;
+  points?: number | null; // the wallet chip (owner: expose the points)
 }
 
-export function AppBar({ theme, onPerson, onSettings }: Props) {
+export function AppBar({ theme, onPerson, onSettings, points }: Props) {
   return (
     <View style={styles.bar}>
       <Pressable onPress={onPerson} hitSlop={8} style={styles.side}>
         <Icon name="person" size={23} color={theme.icon} />
       </Pressable>
       <Brand ink={theme.ink} />
+      {points != null && (
+        <Pressable onPress={onPerson} hitSlop={8} style={[styles.pointsChip, { backgroundColor: theme.pill }]}>
+          <Text style={[styles.pointsText, { color: theme.ink }]}>✦ {points.toLocaleString()}</Text>
+        </Pressable>
+      )}
       <Pressable onPress={onSettings} hitSlop={8} style={[styles.side, styles.right]}>
         <Icon name="settings" size={23} color={theme.icon} />
       </Pressable>
@@ -39,6 +45,18 @@ const styles = StyleSheet.create({
   },
   side: {
     width: 44,
+  },
+  pointsChip: {
+    position: 'absolute',
+    right: 52,
+    borderRadius: 10, borderCurve: 'continuous',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  pointsText: {
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
   },
   right: {
     alignItems: 'flex-end',
