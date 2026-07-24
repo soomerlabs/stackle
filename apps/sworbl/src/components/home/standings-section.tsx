@@ -48,9 +48,9 @@ export function StandingsSection({ theme, entries, standings, hasYou, devCount }
           showFoot={false}
         />
         {standings.podium.length === 0 ? (
-          // TRULY EMPTY field: the ghost podium says it alone (owner cut
-          // the caption too)
-          null
+          // TRULY EMPTY field: ghost podium + three dashed open seats
+          // (owner brought the rows back — the caption stays gone)
+          <StandingsList theme={theme} rows={[]} youOutside={null} ghost={false} emptyRows={3} />
         ) : (
           <StandingsList
             theme={theme}
