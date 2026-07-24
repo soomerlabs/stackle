@@ -130,7 +130,9 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
       if (phase === 'idle') {
         // FRESH round: the ceremony. SETTLE BEAT first (owner): dock haptic
         // lands, sheet settles, THEN 3·2·1. Cleanup cancels if the sheet leaves.
-        const t = setTimeout(arm, 450);
+        // 450ms was the swipe era's settle beat — the FAB scrub already
+        // carries momentum; a long pause read as hesitation (owner)
+        const t = setTimeout(arm, 180);
         return () => clearTimeout(t);
       }
       // PAUSED round: no auto-anything — the paused cover is already showing;

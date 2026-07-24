@@ -322,7 +322,11 @@ export default function StormScreen() {
         </View>
       </View>
 
-      <View style={styles.boardWrap}>
+      <View
+        style={[
+          styles.boardWrap,
+          (phase === 'live' || phase === 'settling') && styles.boardWrapLive,
+        ]}>
         {!duel && (phase === 'live' || phase === 'settling') && (
           <View style={styles.tierStrip}>
             {intensity.key === 'hurricane' ? (
@@ -499,6 +503,8 @@ const styles = StyleSheet.create({
   clock: { fontFamily: 'Fredoka_600SemiBold', fontSize: 19, fontVariant: ['tabular-nums'] },
   scoreLine: { fontFamily: 'Fredoka_600SemiBold', fontSize: 12 },
   boardWrap: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  // play matches the DAILY's geometry: board anchored high under the bar
+  boardWrapLive: { justifyContent: 'flex-start', paddingTop: 6 },
   scoreBarWrap: {
     marginBottom: 6,
   },
