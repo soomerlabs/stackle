@@ -38,7 +38,6 @@ import Animated, {
 import { Floaters } from '@/components/home/floaters';
 import { CountdownDock } from '@/components/home/countdown-dock';
 import { HeroWord, twistLabel } from '@/components/home/hero-word';
-import { StormCrest } from '@/components/home/sheet-weather';
 import {
   OPEN_SPRING, PARK_SPRING, DOCK_H, ASSIST_RISE, BOOT_MS, bootWindow,
 } from '@/components/home/home-motion';
@@ -810,26 +809,6 @@ export default function HomeScreen() {
       </SafeAreaView>
       </Animated.View>
 
-      {/* THE HOCKEY-STICK FAB (owner: the play door's launcher) — trace
-          P up through L·A·Y at the corner; the vertical leg scrubs the
-          sheet; commit = openToPlay. Hidden on consumed days. */}
-      <PlayFab
-        sheetY={sheetY}
-        closedY={closedY}
-        onCommit={
-          selectedStorm
-            ? () => {
-                // a storm is linked: the trace launches ITS board (the
-                // sheet springs home; the board screen owns the run)
-                sheetY.value = withSpring(closedY, PARK_SPRING);
-                setSelectedStorm(null);
-                router.push(`/storm?seed=${selectedStorm}&go=1`);
-              }
-            : openToPlay
-        }
-        enabled={(!played || !!selectedStorm) && !!deal}
-      />
-
       {/* dark scrim under the rising sheet (blur deleted — owner call) */}
       <Animated.View
         pointerEvents="none"
@@ -840,16 +819,9 @@ export default function HomeScreen() {
           swipe-to-play peek at the bottom, full-screen when pulled up. The
           peek face and the game crossfade during travel. */}
       {deal && (
-        <GestureDetector gesture={openDrag}>
-          <Animated.View style={[styles.sheet, sheetStyle]}>
-            {/* the crest lives on the UNCLIPPED outer layer, UNDER the clip
-                content: it stands TALLER than the band (its head rises over
-                home — northern lights, owner), the transparent-at-park game
-                layer lets it through, and the PLAY tiles stay crisp on top */}
-            <StormCrest
-              sheetY={sheetY} sGlow={sGlow} sBoot={sBoot} sReveal={sReveal}
-              closedY={closedY} width={width} peekH={peekH}
-            />
+          <Animated.View style={[styles.sheet, sheetStyle]} pointerEvents={undefined}>
+            {/* crest RETIRED (owner, play-door era): the bottom runs bare;
+                the FAB's radiance is home's living light now */}
             <View style={styles.sheetClip}>
             {/* the GAME layer (opaque) — transparent at peek so the frost
                 below can sample home */}
@@ -905,8 +877,25 @@ export default function HomeScreen() {
             </Animated.View>
             </View>
           </Animated.View>
-        </GestureDetector>
       )}
+
+      {/* THE FAB, TOPMOST (owner: "the blur is hijacking the hit") — it
+          renders ABOVE the parked sheet layers so the corner is always
+          tappable; it fades itself once the sheet rises */}
+      <PlayFab
+        sheetY={sheetY}
+        closedY={closedY}
+        onCommit={
+          selectedStorm
+            ? () => {
+                sheetY.value = withSpring(closedY, PARK_SPRING);
+                setSelectedStorm(null);
+                router.push(`/storm?seed=${selectedStorm}&go=1`);
+              }
+            : openToPlay
+        }
+        enabled={(!played || !!selectedStorm) && !!deal}
+      />
     </View>
   );
 }

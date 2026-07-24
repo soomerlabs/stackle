@@ -127,6 +127,15 @@ export function StormShelf({
         end={{ x: 1, y: 0.5 }}
         style={styles.edgeFade}
       />
+      {/* the LEFT fade (owner: "i hate hard lines") — scrolled-past cards
+          dissolve at the leading edge too */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={[theme.bg, `${theme.bg}00`]}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={styles.edgeFadeLeft}
+      />
       </View>
     </View>
   );
@@ -152,9 +161,11 @@ const styles = StyleSheet.create({
   // bleeds to the TRUE screen edge (home pads 18) so hidden cards peek
   scrollerWrap: {
     marginRight: -18,
+    marginLeft: -18, // both edges bleed — scrolled cards dissolve, never clip
   },
   rowContent: {
     gap: 10,
+    paddingLeft: 18,
     paddingRight: 44, // the last card clears the fade fully when scrolled
     paddingBottom: 6,
     paddingTop: 2,
@@ -165,6 +176,13 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 36,
+  },
+  edgeFadeLeft: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 22,
   },
   block: {
     width: 170,
