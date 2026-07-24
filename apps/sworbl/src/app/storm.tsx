@@ -11,6 +11,7 @@ import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GameBoard } from '@/components/game/game-board';
+import { ScoreHeader } from '@/components/game/score-header';
 import { dealPractice } from '@/game/daily';
 import { stormIntensity, stormName } from '@/game/storm-seeds';
 import { haptic } from '@/game/haptics';
@@ -90,6 +91,23 @@ export default function StormScreen() {
 
   const [phase, setPhase] = useState<Phase>('ready');
   const [board, setBoard] = useState<Array<{ name: string; score: number; isMe: boolean }> | null>(null);
+  // THE CROWN TARGET (owner: the daily's progress bar, here) — the
+  // board's current #1; an empty board follows YOUR score (you're the
+  // champ until someone shows up)
+  const [crownTarget, setCrownTarget] = useState<number | null>(null);
+  useEffect(() => {
+    if (!seed) return;
+    let live = true;
+    void fetchPractice(seed, 1).then((rows) => {
+      if (!live) return;
+      const top = rows?.[0];
+      setCrownTarget(top && !top.isMe ? top.score : null);
+    });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed]);
   const [score, setScore] = useState(0);
   const wordsRef = useRef<BestWord[]>([]);
 
@@ -300,7 +318,7 @@ export default function StormScreen() {
             ]}>
             {fmtClock(phase === 'live' ? remaining : phase === 'done' ? 0 : CT.baseSecs)}
           </Text>
-          <Text style={[styles.scoreLine, { color: theme.sub }]}>{score} pts</Text>
+
         </View>
       </View>
 
@@ -331,6 +349,16 @@ export default function StormScreen() {
             ghostName={duel.name}
             ceiling={ceilingRef.current = Math.max(ceilingRef.current, duel.score, score)}
           />
+        )}
+        {deal && (phase === 'live' || phase === 'settling') && (
+          <View style={styles.scoreBarWrap}>
+            <ScoreHeader
+              score={score}
+              target={crownTarget ?? Math.max(score, 1)}
+              width={5 * (tile + gap) - gap + 24}
+              gs={gameSurface(theme.mode)}
+            />
+          </View>
         )}
         {deal && phase !== 'ready' && phase !== 'done' && (
           <GameBoard
@@ -471,6 +499,9 @@ const styles = StyleSheet.create({
   clock: { fontFamily: 'Fredoka_600SemiBold', fontSize: 19, fontVariant: ['tabular-nums'] },
   scoreLine: { fontFamily: 'Fredoka_600SemiBold', fontSize: 12 },
   boardWrap: { flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
+  scoreBarWrap: {
+    marginBottom: 6,
+  },
   tierStrip: {
     flexDirection: 'row',
     alignItems: 'center',
