@@ -65,6 +65,12 @@ export function BoardAura({ w, h, state, boardBg }: {
   }, []);
   const ringSpin = useDerivedValue(() => [{ rotate: spin.value * Math.PI * 2 }]);
 
+  // CALM IS SILENT (owner 2026-07-23: "get rid of the weird light hue") —
+  // the ambient blue-violet wash during normal play is gone; the aura only
+  // speaks when it has something to say (danger red, the finale's charge).
+  // After the hooks — the hook count must never change across states.
+  if (state === 'calm') return null;
+
   const pal = AURA[state];
   return (
     <Animated.View
