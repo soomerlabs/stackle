@@ -777,7 +777,7 @@ export default function HomeScreen() {
               played={played || solved}
               solved={solved}
               width={width}
-              onGuess={!played && sworbPending && deal ? openForGuess : undefined}
+              onGuess={!played && sworbPending && deal ? () => router.push('/guess') : undefined}
             />
 
             {/* the strip carries the day's numbers now (owner) — only the

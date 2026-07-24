@@ -4,6 +4,7 @@
 // Boot routes through the engine (consumed → resume → finale → fresh).
 // Clock model: accumulated boardElapsedMs (engine.run.remainingSecs derives the
 // display) — resume RE-ARMS the count-in, never jumps to a running clock.
+import { router } from 'expo-router';
 import React, { useState, useEffect, useMemo, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { AppState, StyleSheet, Text, View, Pressable, useWindowDimensions } from 'react-native';
 import { GestureDetector, type PanGesture } from 'react-native-gesture-handler';
@@ -249,12 +250,17 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
         // round banks (best-round keeps the max, clues merge, submission
         // rides the outbox) and the round-end cover offers the guess
         morph = setTimeout(() => {
-          // ONE MODE (owner 2026-07-23): every round banks, then the board
-          // FLIPS STRAIGHT INTO THE GUESS (the in-place finale) — no cover
-          // in between. Swiping the sheet away is always legal ("not yet").
-          // Solved / guesses spent → the quiet round-banked cover instead.
+          // ONE MODE (owner): every round banks, then the GUESS pushes
+          // over the closing sheet (native slide — the in-sheet
+          // board→keyboard morph is dead; owner: "awful morphing").
+          // Solved / guesses spent → the quiet round-banked cover.
           bankRoundRef.current();
-          setPhase(sworbPendingRef.current() ? 'finale' : 'roundend');
+          if (sworbPendingRef.current()) {
+            onClose();
+            router.push('/guess');
+          } else {
+            setPhase('roundend');
+          }
         }, 1000);
       }
     }, 250);
@@ -561,7 +567,12 @@ export const PlaySheet = forwardRef<PlaySheetHandle, PlaySheetProps>(function Pl
                   ? () => {
                       // dev skip = a REAL clock-out: bank, then the guess
                       bankRoundRef.current();
-                      setPhase(sworbPendingRef.current() ? 'finale' : 'roundend');
+                      if (sworbPendingRef.current()) {
+                        onClose();
+                        router.push('/guess');
+                      } else {
+                        setPhase('roundend');
+                      }
                     }
                   : undefined
               }
