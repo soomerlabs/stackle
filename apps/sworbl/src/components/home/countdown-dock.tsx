@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 18, // breathing room off the dock's bottom edge (owner)
+    bottom: -24, // BELOW the tiles — the play word is never overlapped (owner)
     alignItems: 'center',
   },
   // the brand's own face (owner: "swipe to play in the sworbl font")
