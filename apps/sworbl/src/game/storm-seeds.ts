@@ -18,9 +18,10 @@ const NAMES = [
 // two clients can never disagree about a board's contract.
 //   drizzle   — 3:00, friendly on-ramp, mint. the warm-up.
 //   squall    — 2:00, standard bag, amber. the daily standard.
-//   hurricane — 1:00, NO friendly on-ramp, coral. bragging rights.
+//   thunder   — 1:30, harsh bag arrives, violet. the first real test.
+//   hurricane — 1:00, harsh bag, coral + the warning flag. no mercy.
 export interface StormIntensity {
-  key: 'drizzle' | 'squall' | 'hurricane';
+  key: 'drizzle' | 'squall' | 'thunder' | 'hurricane';
   label: string;
   clockSecs: number;
   capSecs: number;
@@ -29,17 +30,18 @@ export interface StormIntensity {
   bolts: number; // 1-3 on the card chip
 }
 
-export const INTENSITIES: Record<'a' | 'b' | 'c', StormIntensity> = {
+export const INTENSITIES: Record<'a' | 'b' | 'c' | 'd', StormIntensity> = {
   a: { key: 'drizzle', label: 'drizzle', clockSecs: 180, capSecs: 300, friendly: true, pal: 2, bolts: 1 },
   b: { key: 'squall', label: 'squall', clockSecs: 120, capSecs: 200, friendly: true, pal: 4, bolts: 2 },
-  c: { key: 'hurricane', label: 'hurricane', clockSecs: 60, capSecs: 100, friendly: false, pal: 5, bolts: 3 },
+  c: { key: 'thunder', label: 'thunder', clockSecs: 90, capSecs: 150, friendly: false, pal: 0, bolts: 3 },
+  d: { key: 'hurricane', label: 'hurricane', clockSecs: 60, capSecs: 100, friendly: false, pal: 5, bolts: 4 },
 };
 
 // rules from the seed alone — foreign seeds (first-storm, shares) play
 // as squall, the standard contract
 export function stormIntensity(seed: string): StormIntensity {
-  const m = seed.match(/^s-\d{8}-([abc])$/);
-  return m ? INTENSITIES[m[1] as 'a' | 'b' | 'c'] : INTENSITIES.b;
+  const m = seed.match(/^s-\d{8}-([abcd])$/);
+  return m ? INTENSITIES[m[1] as 'a' | 'b' | 'c' | 'd'] : INTENSITIES.b;
 }
 
 export interface StormBoard {
@@ -58,7 +60,7 @@ export function dailyStormBoards(now: Date = new Date()): StormBoard[] {
   // names are the ladder itself; the rng stays for future codename use
   void rng;
   void pool;
-  return (['a', 'b', 'c'] as const).map((slot) => ({
+  return (['a', 'b', 'c', 'd'] as const).map((slot) => ({
     seed: `s-${dk}-${slot}`,
     name: INTENSITIES[slot].label,
     intensity: INTENSITIES[slot],
@@ -71,6 +73,6 @@ export function stormName(seed: string, now: Date = new Date()): string {
   void now;
   // slot seeds wear their tier name any day (yesterday's hurricane is
   // still "hurricane" in history/deep links); foreign seeds pass through
-  const m = seed.match(/^s-\d{8}-([abc])$/);
-  return m ? INTENSITIES[m[1] as 'a' | 'b' | 'c'].label : seed;
+  const m = seed.match(/^s-\d{8}-([abcd])$/);
+  return m ? INTENSITIES[m[1] as 'a' | 'b' | 'c' | 'd'].label : seed;
 }

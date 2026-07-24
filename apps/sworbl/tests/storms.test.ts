@@ -9,7 +9,7 @@ const DAY = new Date('2026-07-23T15:00:00');
 
 // ---- daily storm boards ----
 const boards = dailyStormBoards(DAY);
-assert.strictEqual(boards.length, 3, 'three boards per day');
+assert.strictEqual(boards.length, 4, 'four boards per day');
 
 const again = dailyStormBoards(new Date('2026-07-23T23:59:00'));
 assert.deepStrictEqual(boards, again, 'same day → identical boards (any hour)');
@@ -19,7 +19,7 @@ const tomorrow = dailyStormBoards(new Date('2026-07-24T00:01:00'));
 // constant identity, fresh BOARDS underneath every day
 assert.deepStrictEqual(
   boards.map((b) => b.name),
-  ['drizzle', 'squall', 'hurricane'],
+  ['drizzle', 'squall', 'thunder', 'hurricane'],
   'the boards are named by tier'
 );
 assert.notDeepStrictEqual(
@@ -36,7 +36,7 @@ for (const b of boards.concat(tomorrow)) {
 
 // stormName resolves today's boards and passes foreign seeds through
 assert.strictEqual(stormName(boards[0].seed, DAY), 'drizzle', 'slot seeds wear the tier name');
-assert.strictEqual(stormName('s-20990101-c'), 'hurricane', 'any day, any slot — tier name holds');
+assert.strictEqual(stormName('s-20990101-d'), 'hurricane', 'any day, any slot — tier name holds');
 assert.strictEqual(stormName('first-storm', DAY), 'first-storm', 'foreign seed passes through');
 
 console.log('storms: daily mint pinned (determinism, seed law, names)');
@@ -68,13 +68,15 @@ console.log('storms: swap collision guard pinned');
   const bs = dailyStormBoards(DAY);
   assert.deepStrictEqual(
     bs.map((b) => b.intensity.key),
-    ['drizzle', 'squall', 'hurricane'],
-    'slot a/b/c IS the tier'
+    ['drizzle', 'squall', 'thunder', 'hurricane'],
+    'slot a/b/c/d IS the tier'
   );
   assert.strictEqual(stormIntensity(bs[0].seed).clockSecs, 180, 'drizzle = 3:00');
   assert.strictEqual(stormIntensity(bs[1].seed).clockSecs, 120, 'squall = 2:00');
-  assert.strictEqual(stormIntensity(bs[2].seed).clockSecs, 60, 'hurricane = 1:00');
-  assert.strictEqual(stormIntensity(bs[2].seed).friendly, false, 'hurricane: no friendly on-ramp');
+  assert.strictEqual(stormIntensity(bs[2].seed).clockSecs, 90, 'thunder = 1:30');
+  assert.strictEqual(stormIntensity(bs[3].seed).clockSecs, 60, 'hurricane = 1:00');
+  assert.strictEqual(stormIntensity(bs[2].seed).friendly, false, 'thunder: the harsh bag arrives');
+  assert.strictEqual(stormIntensity(bs[3].seed).friendly, false, 'hurricane: no friendly on-ramp');
   assert.strictEqual(stormIntensity('first-storm').key, 'squall', 'foreign seeds play the standard contract');
 }
 
