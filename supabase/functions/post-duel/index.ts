@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   const user = userData?.user;
   if (!user) return bad("not signed in", 401);
 
-  let body: { seed?: string; format?: string; stake?: number; sealed?: boolean };
+  let body: { seed?: string; format?: string; stake?: number; sealed?: boolean; challenge?: string };
   try {
     body = await req.json();
   } catch {
@@ -33,6 +33,25 @@ Deno.serve(async (req) => {
   const format = body.format ?? "blitz";
   if (typeof seed !== "string" || !/^[a-z0-9-]{3,24}$/.test(seed)) return bad("bad seed");
   if (!["blitz", "themed"].includes(format)) return bad("bad format");
+
+  // CALL-OUT (owner: "can i select a specific user?") - the post aims at
+  // one player; usernames are unique (owner law), so the name IS the id
+  let challenged: string | null = null;
+  if (typeof body.challenge === "string" && body.challenge.trim()) {
+    const wanted = body.challenge.trim().toLowerCase();
+    const adminLookup = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const { data: target } = await adminLookup
+      .from("players")
+      .select("id, name")
+      .ilike("name", wanted)
+      .maybeSingle();
+    if (!target) return bad("no player wears that name", 404);
+    if (target.id === user.id) return bad("you can't call yourself out");
+    challenged = target.id;
+  }
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -88,7 +107,7 @@ Deno.serve(async (req) => {
   if (refreshing) {
     const { data: upd, error } = await admin
       .from("open_duels")
-      .update({ format, score: run.score, words: run.words ?? [], sealed: body.sealed === true })
+      .update({ format, score: run.score, words: run.words ?? [], sealed: body.sealed === true, challenged })
       .eq("poster", user.id)
       .eq("seed", seed)
       .eq("status", "open")
@@ -107,6 +126,7 @@ Deno.serve(async (req) => {
     words: run.words ?? [],
     stake: STAKE,
     sealed: body.sealed === true,
+    challenged,
   });
   if (error) return bad(error.message, 500);
   // ante lands AFTER the post succeeds (a failed post never charges)

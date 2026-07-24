@@ -47,11 +47,14 @@ Deno.serve(async (req) => {
   if (body.action === "claim") {
     const { data: duel } = await admin
       .from("open_duels")
-      .select("poster, status, stake")
+      .select("poster, status, stake, challenged")
       .eq("id", id)
       .maybeSingle();
     if (!duel) return bad("no such showdown", 404);
     if (duel.poster === user.id) return bad("that's your own post");
+    // a CALL-OUT is a reserved seat (owner: pick a specific user)
+    if (duel.challenged && duel.challenged !== user.id)
+      return bad("that fight isn't yours", 403);
     // audit C4: a taker holding a validated score on this seed claims a
     // decided match (resolve reads keep-best) - free money. Blocked.
     const { data: played } = await admin

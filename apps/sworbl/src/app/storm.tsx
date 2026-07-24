@@ -24,6 +24,7 @@ import { gameSurface } from '@/game/palette';
 import { useTheme, ACCENT, ACCENT_EDGE } from '@/game/theme';
 import { TUNING } from '@/game/tuning';
 import { RaceBar } from '@/components/game/race-bar';
+import { track } from '@/net/analytics';
 import { fetchDuelGhost, postDuel, resolveShowdown, type ShowdownVerdict } from '@/net/duels';
 import { enqueuePractice, fetchPractice } from '@/net/standings-remote';
 
@@ -41,6 +42,7 @@ export default function StormScreen() {
   const params = useLocalSearchParams<{
     seed?: string; vs?: string; target?: string; did?: string;
     go?: string; post?: string; stake?: string; sealed?: string; stk?: string;
+    callout?: string;
   }>();
   const rawSeed = typeof params.seed === 'string' ? params.seed : '';
   const seed = SEED_RE.test(rawSeed) ? rawSeed : null;
@@ -230,10 +232,18 @@ export default function StormScreen() {
       // re-post — audit), never over a manual post already in flight
       if (params.post === '1' && !autoPostedRef.current && posted === 'idle') {
         autoPostedRef.current = true;
-        // THE NAMED GAMBLE rides the launch params (lobby picker)
+        // THE NAMED GAMBLE rides the launch params (lobby picker); a
+        // call-out reserves the seat for one player
         const stake = Number(params.stake) > 0 ? Number(params.stake) : undefined;
-        void postDuel(seed, blitz ? 'blitz' : 'themed', { stake, sealed: sealedHand }).then((r) => {
-          setPosted(r === 'ok' ? 'ok' : r === 'has-open' ? 'has-open' : r === 'poor' ? 'poor' : 'error');
+        const challenge = typeof params.callout === 'string' && params.callout ? params.callout : undefined;
+        void postDuel(seed, blitz ? 'blitz' : 'themed', { stake, sealed: sealedHand, challenge }).then((r) => {
+          setPosted(
+            r === 'ok' ? 'ok'
+              : r === 'has-open' ? 'has-open'
+                : r === 'poor' ? 'poor'
+                  : r === 'no-player' ? 'no-player'
+                    : 'error'
+          );
         });
       }
       if (duel && Number.isFinite(duelId)) {
@@ -263,7 +273,7 @@ export default function StormScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [posted, setPosted] = useState<'idle' | 'busy' | 'ok' | 'has-open' | 'poor' | 'error'>('idle');
+  const [posted, setPosted] = useState<'idle' | 'busy' | 'ok' | 'has-open' | 'poor' | 'no-player' | 'error'>('idle');
   const autoPostedRef = useRef(false);
   const postAsDuel = async () => {
     if (!seed || posted === 'busy' || posted === 'ok') return;
@@ -271,6 +281,18 @@ export default function StormScreen() {
     const r = await postDuel(seed, blitz ? 'blitz' : 'themed');
     setPosted(r === 'ok' ? 'ok' : r === 'has-open' ? 'has-open' : r === 'poor' ? 'poor' : 'error');
   };
+
+  // the run's one analytics beat — fires when the settle shows
+  const trackedDone = useRef(false);
+  useEffect(() => {
+    if (phase !== 'done' || trackedDone.current || !seed) return;
+    trackedDone.current = true;
+    track('storm_done', {
+      tier: intensity.key, score, words: wordsRef.current.length,
+      duel: !!duel, sealed: !!duel?.sealed, posted: params.post === '1',
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   const runAgain = () => {
     setPosted('idle');
@@ -466,6 +488,11 @@ export default function StormScreen() {
             {params.post === '1' && posted === 'has-open' && (
               <Text style={[styles.sub, { color: '#F58A66' }]}>
                 you already have a showdown open — this score wasn&rsquo;t posted
+              </Text>
+            )}
+            {params.post === '1' && posted === 'no-player' && (
+              <Text style={[styles.sub, { color: '#F58A66' }]}>
+                no player wears that name — posted nothing, ante untouched
               </Text>
             )}
             {/* the board, in a real card — not floating rows */}

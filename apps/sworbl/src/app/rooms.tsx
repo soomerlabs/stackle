@@ -16,8 +16,10 @@ import engine from '@sworbl/engine';
 import { TraceLaunch } from '@/components/trace-launch';
 import { PALETTE } from '@/game/palette';
 import { ACCENT, ACCENT_EDGE, useTheme } from '@/game/theme';
+import { track } from '@/net/analytics';
 import {
-  createRoom, fetchRoomState, joinRoom, settleRoom, type RoomCard, type RoomSettle,
+  createRoom, fetchRoomInvites, fetchRoomState, inviteToRoom, joinRoom, settleRoom,
+  type RoomCard, type RoomInvite, type RoomSettle,
 } from '@/net/duels';
 import { fetchPractice } from '@/net/standings-remote';
 
@@ -46,6 +48,16 @@ export default function RoomsScreen() {
       : null;
   const [face, setFace] = useState<Face>(linkedCode ? 'join' : 'pick');
   const [myCodes] = useState<string[]>(() => savedRooms());
+  // THE INBOX (owner: "add in users and have them be added") — pending
+  // offers; accepting pays the door, so it's a tap, never automatic
+  const [invites, setInvites] = useState<RoomInvite[]>([]);
+  useEffect(() => {
+    let live = true;
+    void fetchRoomInvites().then((v) => live && setInvites(v));
+    return () => {
+      live = false;
+    };
+  }, []);
 
   // create face
   const [name, setName] = useState('');
@@ -58,6 +70,17 @@ export default function RoomsScreen() {
 
   // room face
   const [room, setRoom] = useState<RoomCard | null>(null);
+  const [inviteName, setInviteName] = useState('');
+  const [inviting, setInviting] = useState<'idle' | 'busy' | 'sent' | 'already' | 'nobody' | 'error'>('idle');
+  const sendInvite = async () => {
+    if (!room || inviting === 'busy' || !inviteName.trim()) return;
+    setInviting('busy');
+    const r = await inviteToRoom(room.code, inviteName.trim());
+    track('room_invite', { ok: r === 'ok' });
+    setInviting(r === 'ok' ? 'sent' : r === 'already-in' ? 'already' : r === 'no-player' ? 'nobody' : 'error');
+    if (r === 'ok') setInviteName('');
+    setTimeout(() => setInviting('idle'), 2200);
+  };
   const [board, setBoard] = useState<Array<{ name: string; score: number; isMe: boolean }> | null>(null);
   const [settling, setSettling] = useState(false);
   const [settled, setSettled] = useState<RoomSettle | null>(null);
@@ -83,6 +106,7 @@ export default function RoomsScreen() {
     if (creating === 'busy' || !name.trim()) return;
     setCreating('busy');
     const r = await createRoom(name.trim(), entry);
+    track('room_create', { entry, ok: typeof r === 'object' });
     if (r === 'poor' || r === 'error') {
       setCreating(r);
       return;
@@ -96,6 +120,7 @@ export default function RoomsScreen() {
     if (joining === 'busy') return;
     setJoining('busy');
     const r = await joinRoom(c.trim().toUpperCase());
+    track('room_join', { ok: typeof r === 'object' });
     if (typeof r === 'object') {
       setJoining('idle');
       enterRoom(r);
@@ -144,6 +169,22 @@ export default function RoomsScreen() {
                   <Text style={[styles.pickMeta, { color: theme.faint }]}>got an invite?</Text>
                 </Pressable>
               </View>
+              {/* pending offers — accepting pays the door (consent = tap) */}
+              {invites.length > 0 && (
+                <View style={styles.savedWrap}>
+                  <Text style={[styles.savedTitle, { color: theme.faint }]}>invites</Text>
+                  {invites.map((inv) => (
+                    <Pressable key={inv.code} onPress={() => doJoin(inv.code)} style={styles.savedRow}>
+                      <Text style={[styles.savedCode, styles.inviteName, { color: theme.ink }]} numberOfLines={1}>
+                        {inv.inviterName.toLowerCase()}&rsquo;s {inv.name}
+                      </Text>
+                      <Text style={[styles.savedGo, { color: ACCENT }]}>
+                        {inv.entry === 0 ? 'free' : `${inv.entry} ✦`} · join ›
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
               {myCodes.length > 0 && (
                 <View style={styles.savedWrap}>
                   <Text style={[styles.savedTitle, { color: theme.faint }]}>your rooms</Text>
@@ -315,6 +356,39 @@ export default function RoomsScreen() {
               {room.status === 'open' && !settled && (
                 <TraceLaunch onCommit={play} caption="swipe to play the board" />
               )}
+              {/* the host summons (owner: "add in users") — by name */}
+              {room.youAreHost && room.status === 'open' && !settled && (
+                <View style={styles.inviteRow}>
+                  <TextInput
+                    value={inviteName}
+                    onChangeText={setInviteName}
+                    placeholder="invite by name"
+                    placeholderTextColor={theme.faint}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={24}
+                    style={[styles.input, styles.inviteInput, { color: theme.ink, backgroundColor: theme.card }]}
+                  />
+                  <Pressable
+                    onPress={sendInvite}
+                    disabled={inviting === 'busy' || !inviteName.trim()}
+                    style={[styles.inviteBtn, { backgroundColor: theme.card }]}>
+                    <Text style={[styles.savedGo, { color: ACCENT }]}>
+                      {inviting === 'busy'
+                        ? '…'
+                        : inviting === 'sent'
+                          ? 'sent ✦'
+                          : inviting === 'already'
+                            ? 'in already'
+                            : inviting === 'nobody'
+                              ? 'no one?'
+                              : inviting === 'error'
+                                ? 'again?'
+                                : 'invite ›'}
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
               {room.youAreHost && room.status === 'open' && !settled && (
                 <Pressable
                   onPress={callIt}
@@ -477,6 +551,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 15,
     fontVariant: ['tabular-nums'],
+  },
+  inviteName: {
+    letterSpacing: 0,
+    flex: 1,
+  },
+  inviteRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  inviteInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  inviteBtn: {
+    borderRadius: 13, borderCurve: 'continuous',
+    paddingHorizontal: 14,
+    justifyContent: 'center',
   },
   settleBtn: {
     borderRadius: 14, borderCurve: 'continuous',

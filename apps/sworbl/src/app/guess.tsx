@@ -19,6 +19,7 @@ import {
   saveFinaleProgress, loadFinaleProgress, clearFinaleProgress,
 } from '@/game/persist';
 import { useTheme } from '@/game/theme';
+import { track } from '@/net/analytics';
 import { spendPoints } from '@/net/duels';
 import { enqueueSubmission } from '@/net/standings-remote';
 
@@ -117,6 +118,7 @@ export default function GuessScreen() {
       setHintState('retry'); // same ref next tap — a landed charge still delivers
       return;
     }
+    track('hint_buy', { found: found.length });
     const clue = unfound[0];
     setFound((cur) => {
       const next = cur.includes(clue) ? cur : [...cur, clue];
@@ -135,6 +137,7 @@ export default function GuessScreen() {
       // bank FIRST (kill-window law) — the celebration is theater over a
       // committed result; home's focus refresh does the reveal
       const sworb = { guessesUsed: r.guessesUsed, solved: r.solved, bonus: r.bonus };
+      track('sworb_done', { solved: r.solved, guesses: r.guessesUsed, bonus: r.bonus });
       const dayScore = recordSworb(deal.dayKey, sworb);
       clearFinaleProgress(deal.dayKey);
       enqueueSubmission(

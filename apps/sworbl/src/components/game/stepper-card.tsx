@@ -100,14 +100,22 @@ const GUESS_C: Record<string, { bg: string; edge: string; ink: string }> = {
   typed: { bg: '#42424F', edge: '#22222A', ink: '#FFFFFF' },
 };
 
-const CONFETTI = Array.from({ length: 18 }, (_, i) => ({
-  dx: Math.cos((i / 18) * Math.PI * 2 + (i % 5) * 0.11) * (46 + (i % 4) * 22),
-  dy: Math.sin((i / 18) * Math.PI * 2) * (34 + (i % 3) * 18) - 14,
-  rot: (i % 2 ? 1 : -1) * (140 + i * 21),
-  s: 5 + (i % 4) * 2,
-  pal: i % 6,
-  delay: (i % 5) * 24,
-}));
+// THE WEB'S SOLVE SHOWER, verbatim (owner: "was this the same as the
+// web?" — it wasn't; now it is): 26 pieces, downward bias (falls, not
+// scatters), staggered AFTER the block pop lands, 1.2–1.6s rides.
+const CONFETTI = Array.from({ length: 26 }, (_, i) => {
+  const ang = (i / 26) * Math.PI * 2 + (i % 5) * 0.13;
+  const dist = 30 + (i % 6) * 10;
+  return {
+    dx: Math.cos(ang) * dist,
+    dy: Math.sin(ang) * dist * 0.55 + 26 + (i % 4) * 10,
+    rot: (i % 2 ? 1 : -1) * (130 + i * 19),
+    s: 5 + (i % 4) * 2,
+    pal: i % 6,
+    delay: 320 + (i % 4) * 30, // fires after the 5 blocks finish their pop
+    dur: 1200 + (i % 5) * 100,
+  };
+});
 
 function Burst({ burstKey }: { burstKey: number }) {
   if (!burstKey) return null;
@@ -124,7 +132,11 @@ function ConfettiBit({ c }: { c: (typeof CONFETTI)[number] }) {
   const t = useSharedValue(0);
   useEffect(() => {
     t.value = 0;
-    t.value = withSequence(withTiming(0, { duration: c.delay }), withTiming(1, { duration: 750 }));
+    // the web's boomConfetti curve: cubic-bezier(0.2, 0.55, 0.4, 1)
+    t.value = withSequence(
+      withTiming(0, { duration: c.delay }),
+      withTiming(1, { duration: c.dur, easing: Easing.bezier(0.2, 0.55, 0.4, 1) })
+    );
   }, []);
   const st = useAnimatedStyle(() => ({
     transform: [

@@ -162,7 +162,32 @@ Deno.serve(async (req) => {
     }
     const newPot = (Number(fresh.pot) || 0) + room.entry;
     await admin.from("rooms").update({ pot: newPot }).eq("id", room.id).eq("status", "open");
+    // an accepted invite leaves the inbox
+    await admin.from("room_invites").delete().eq("room_id", room.id).eq("invitee", user.id);
     return json({ ok: true, room: { ...card, pot: newPot, seats: (seatCount ?? 0) + 1, youAreIn: true } });
+  }
+
+  if (body.action === "invite") {
+    // OWNER: "add in users" - an invite is an OFFER; the invitee pays
+    // the door themselves at accept (never auto-charged)
+    if (room.host !== user.id) return bad("only the host invites", 403);
+    if (room.status !== "open") return bad("room is settled", 409);
+    const wanted = (body.name ?? "").trim().toLowerCase();
+    if (!wanted) return bad("who?");
+    const { data: target } = await admin
+      .from("players").select("id, name").ilike("name", wanted).maybeSingle();
+    if (!target) return bad("no player wears that name", 404);
+    if (target.id === user.id) return bad("you're already here");
+    const { data: seated } = await admin
+      .from("room_members").select("player_id")
+      .eq("room_id", room.id).eq("player_id", target.id).maybeSingle();
+    if (seated) return json({ ok: true, alreadyIn: true, name: target.name });
+    const { error } = await admin.from("room_invites").upsert(
+      { room_id: room.id, inviter: user.id, invitee: target.id },
+      { onConflict: "room_id,invitee" },
+    );
+    if (error) return bad(error.message, 500);
+    return json({ ok: true, invited: target.name });
   }
 
   if (body.action === "settle") {

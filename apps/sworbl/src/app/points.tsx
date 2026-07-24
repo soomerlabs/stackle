@@ -8,6 +8,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PALETTE } from '@/game/palette';
+import { track } from '@/net/analytics';
 import { POINT_PACKS as PACKS } from '@/game/point-packs';
 import { useTheme } from '@/game/theme';
 import {
@@ -37,6 +38,7 @@ export default function PointsScreen() {
     const r = await buyPack(pack.key, ref);
     buyingRef.current = false;
     setBuying(null);
+    track('pack_tap', { pack: pack.key, source: 'wallet', ok: r !== 'error' });
     if (r !== 'error') {
       setBalance(r.balance);
       setBought(pack.key);

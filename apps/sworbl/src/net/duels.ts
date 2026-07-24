@@ -17,6 +17,8 @@ export interface OpenDuel {
   mine: boolean;
   stake: number; // the poster's named gamble — the taker must match it
   sealed: boolean; // sealed hand: the score reveals only after your run
+  forMe: boolean; // a call-out aimed at YOU (owner: pick a specific user)
+  challengedName: string | null; // who MY post calls out (null = open seat)
 }
 
 export function readCachedDuels(): OpenDuel[] {
@@ -30,20 +32,26 @@ export async function fetchOpenDuels(limit = 6): Promise<OpenDuel[] | null> {
     const uid = (await sb.auth.getSession()).data.session?.user.id ?? null;
     const { data, error } = await sb
       .from('open_duel_board')
-      .select('id, seed, format, score, name, poster, stake, sealed')
+      .select('id, seed, format, score, name, poster, stake, sealed, challenged, challenged_name')
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error || !data) return null;
-    const out: OpenDuel[] = data.map((r) => ({
-      id: Number(r.id),
-      seed: String(r.seed),
-      format: r.format === 'themed' ? 'themed' : 'blitz',
-      score: Number(r.score),
-      name: String(r.name),
-      mine: uid != null && r.poster === uid,
-      stake: Number(r.stake) || 25,
-      sealed: r.sealed === true,
-    }));
+    const out: OpenDuel[] = data
+      // someone ELSE's call-out aimed at someone else is not your fight —
+      // it never rides your rail
+      .filter((r) => !r.challenged || r.challenged === uid || r.poster === uid)
+      .map((r) => ({
+        id: Number(r.id),
+        seed: String(r.seed),
+        format: r.format === 'themed' ? 'themed' : 'blitz',
+        score: Number(r.score),
+        name: String(r.name),
+        mine: uid != null && r.poster === uid,
+        stake: Number(r.stake) || 25,
+        sealed: r.sealed === true,
+        forMe: uid != null && r.challenged === uid,
+        challengedName: r.challenged_name ? String(r.challenged_name) : null,
+      }));
     engine.store.setJSON(CACHE_KEY, out);
     return out;
   } catch {
@@ -395,24 +403,75 @@ export async function resolveShowdown(id: number): Promise<ShowdownVerdict | 'pe
 }
 
 // publish the caller's validated run on a seed; 'no-run' = play it first.
-// stake = the poster's named gamble; sealed = don't reveal the score.
+// stake = the poster's named gamble; sealed = don't reveal the score;
+// challenge = call out ONE player by username.
 export async function postDuel(
   seed: string,
   format: 'blitz' | 'themed' = 'blitz',
-  opts: { stake?: number; sealed?: boolean } = {}
-): Promise<'ok' | 'no-run' | 'has-open' | 'poor' | 'error'> {
+  opts: { stake?: number; sealed?: boolean; challenge?: string } = {}
+): Promise<'ok' | 'no-run' | 'has-open' | 'poor' | 'no-player' | 'error'> {
   const sb = supabase();
   if (!sb) return 'error';
   try {
     const { data, error } = await sb.functions.invoke('post-duel', {
-      body: { seed, format, stake: opts.stake, sealed: opts.sealed },
+      body: { seed, format, stake: opts.stake, sealed: opts.sealed, challenge: opts.challenge },
     });
     if (data?.ok) return 'ok';
     const status = (error as { context?: { status?: number } } | null)?.context?.status;
     if (status === 409) return 'has-open'; // one open showdown per player
     if (status === 402) return 'poor'; // can't cover the ante
+    if (status === 404) return 'no-player'; // the call-out name doesn't exist
     return status === 422 ? 'no-run' : 'error';
   } catch {
     return 'error';
+  }
+}
+
+// PRIVATE ROOM INVITES (owner: "add in users") — an invite is an offer;
+// the invitee pays the door at accept
+export async function inviteToRoom(
+  code: string,
+  name: string
+): Promise<'ok' | 'already-in' | 'no-player' | 'error'> {
+  const sb = supabase();
+  if (!sb) return 'error';
+  try {
+    const { data, error } = await sb.functions.invoke('room', {
+      body: { action: 'invite', code, name },
+    });
+    if (data?.ok) return data.alreadyIn ? 'already-in' : 'ok';
+    const status = (error as { context?: { status?: number } } | null)?.context?.status;
+    return status === 404 ? 'no-player' : 'error';
+  } catch {
+    return 'error';
+  }
+}
+
+export interface RoomInvite {
+  code: string;
+  name: string;
+  entry: number;
+  pot: number;
+  inviterName: string;
+}
+
+export async function fetchRoomInvites(): Promise<RoomInvite[]> {
+  const sb = supabase();
+  if (!sb) return [];
+  try {
+    const { data, error } = await sb
+      .from('my_room_invites')
+      .select('code, name, entry, pot, inviter_name')
+      .limit(6);
+    if (error || !data) return [];
+    return data.map((r) => ({
+      code: String(r.code),
+      name: String(r.name),
+      entry: Number(r.entry) || 0,
+      pot: Number(r.pot) || 0,
+      inviterName: String(r.inviter_name ?? 'someone'),
+    }));
+  } catch {
+    return [];
   }
 }

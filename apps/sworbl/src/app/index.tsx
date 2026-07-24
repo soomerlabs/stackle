@@ -53,6 +53,7 @@ import { loadDay, saveSheetOpen, wasSheetOpen, getResetNonce, loadDayWords, type
 import { standingsStub, rankFor, type LbEntry } from '@/game/standings';
 import { checkContentEpoch } from '@/net/config-remote';
 import { toast } from '@/components/toast';
+import { track } from '@/net/analytics';
 import { claimRefuel, fetchMyShowdownPoints, fetchSettledShowdowns } from '@/net/duels';
 import { fetchDaily, readCachedField, type RemoteField } from '@/net/standings-remote';
 import { fetchRemoteEntry } from '@/net/dailies-remote';
@@ -184,6 +185,7 @@ export default function HomeScreen() {
   // idempotent server-side, so mounting twice never double-grants
   useEffect(() => {
     let live = true;
+    track('app_open', {});
     void claimRefuel().then((r) => {
       if (!live || !r) return;
       setWalletPts(r.balance);

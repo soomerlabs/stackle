@@ -86,8 +86,12 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
               <Text style={[styles.name, { color: theme.ink }]} numberOfLines={1}>
                 {d.name.toLowerCase()}
               </Text>
-              <Text style={[styles.stat, { color: theme.sub }]}>
-                {d.sealed ? '🂠 score sealed' : `⚑ beat ${d.score.toLocaleString()}`}
+              <Text style={[styles.stat, { color: d.forMe ? ACCENT : theme.sub }]}>
+                {d.forMe
+                  ? '⚔️ calls YOU out'
+                  : d.sealed
+                    ? '🂠 score sealed'
+                    : `⚑ beat ${d.score.toLocaleString()}`}
               </Text>
               <Text style={[styles.meta, { color: ACCENT }]}>{d.stake} ✦ · take it ›</Text>
             </Pressable>
@@ -108,7 +112,9 @@ export function ShowdownsRail({ theme, refreshNonce }: { theme: Theme; refreshNo
             </Text>
             <View style={styles.waitRow}>
               <View style={[styles.waitDot, { backgroundColor: ACCENT }]} />
-              <Text style={[styles.meta, { color: theme.faint }]}>waiting…</Text>
+              <Text style={[styles.meta, { color: theme.faint }]} numberOfLines={1}>
+                {d.challengedName ? `waiting for ${d.challengedName.toLowerCase()}…` : 'waiting…'}
+              </Text>
             </View>
           </View>
         ))}

@@ -8,8 +8,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { track } from '@/net/analytics';
 
 import { PALETTE, tileColorFor } from '@/game/palette';
 import { getPlayerName } from '@/game/player';
@@ -46,6 +48,9 @@ export default function LobbyScreen() {
   const STAKES = [10, 25, 50, 100];
   const [stake, setStake] = useState(25);
   const [sealed, setSealed] = useState(false);
+  // CALL-OUT (owner: "can i select a specific user?") — optional; blank
+  // keeps the seat open to anyone
+  const [callout, setCallout] = useState('');
 
   // PICK YOUR WEATHER (owner: "can i pick what kind i want?") — creating
   // a showdown offers all four boards; the rail's squall is just the
@@ -113,10 +118,12 @@ export default function LobbyScreen() {
     const r = await buyPack(key, `topup-${key}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
     buyingRef.current = false;
     setBuyingPack(null);
+    // the paywall experiment's core datum: WHO taps buy AT THE DOOR
+    track('pack_tap', { pack: key, source: 'door', door: doorPrice, ok: r !== 'error' });
     if (r !== 'error') setBalance(r.balance);
   };
 
-  const [entering, setEntering] = useState<'idle' | 'busy' | 'poor'>('idle');
+  const [entering, setEntering] = useState<'idle' | 'busy' | 'poor' | 'error'>('idle');
   // one receipt per sheet visit (audit H3): a lost response retried with
   // the same ref can never charge the door twice
   const entryRef = useRef(`entry-${Math.random().toString(36).slice(2, 10)}`);
@@ -140,14 +147,21 @@ export default function LobbyScreen() {
         return;
       }
       if (r === 'error') {
-        setEntering('idle');
+        // NEVER silent (owner: "swiped play, nothing happened") — the
+        // door failing must say so; same ref on retry, never a double
+        setEntering('error');
         return;
       }
     }
     // REPLACE, not push — the sheet dismisses and the board owns the
     // screen; back from the board is home (owner flow)
+    track(creating ? 'showdown_create_launch' : 'storm_enter', {
+      tier: intensity.key,
+      entry: intensity.entry,
+      ...(creating ? { stake, sealed, callout: !!callout.trim() } : {}),
+    });
     router.replace(
-      `/storm?seed=${activeSeed}&go=1${creating ? `&post=1&stake=${stake}&sealed=${sealed ? 1 : 0}` : ''}`
+      `/storm?seed=${activeSeed}&go=1${creating ? `&post=1&stake=${stake}&sealed=${sealed ? 1 : 0}${callout.trim() ? `&callout=${encodeURIComponent(callout.trim())}` : ''}` : ''}`
     );
   };
 
@@ -155,6 +169,7 @@ export default function LobbyScreen() {
     if (claiming === 'busy') return;
     setClaiming('busy');
     const r = await claimShowdown(did);
+    track('showdown_accept', { stake: joinStake, sealed: sealedJoin, result: r });
     if (r === 'ok') {
       // sealed: no target rides the launch — the board races blind
       router.replace(
@@ -303,6 +318,17 @@ export default function LobbyScreen() {
                       ? 'they won’t see your score until their run is in'
                       : 'they race your recorded run, score in view'}
                   </Text>
+                  {/* CALL-OUT — name your opponent, or leave the seat open */}
+                  <TextInput
+                    value={callout}
+                    onChangeText={setCallout}
+                    placeholder="call someone out (optional)"
+                    placeholderTextColor={theme.faint}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={24}
+                    style={[styles.calloutInput, { color: theme.ink, backgroundColor: theme.pill }]}
+                  />
                 </>
               )}
               {/* THE STAKES (owner: points on the line) */}
@@ -393,9 +419,14 @@ export default function LobbyScreen() {
               not enough points for the entry — the drizzle is always free
             </Text>
           )}
+          {entering === 'error' && (
+            <Text style={[styles.claimNote, { color: '#F58A66' }]}>
+              the door didn&rsquo;t answer — swipe again (a retry never double-charges)
+            </Text>
+          )}
           <TraceLaunch
             onCommit={joining ? accept : play}
-            disabled={broke || claiming === 'busy' || claiming === 'taken' || claiming === 'poor' || claiming === 'played' || entering === 'busy' || entering === 'poor'}
+            disabled={broke || claiming === 'busy' || claiming === 'taken' || claiming === 'poor' || claiming === 'played' || entering === 'busy' || entering === 'poor'} // 'error' stays swipeable — retry is safe (receipt ref)
             caption={
               broke
                 ? 'not enough points'
@@ -559,6 +590,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Fredoka_600SemiBold',
     fontSize: 11.5,
     fontStyle: 'italic',
+  },
+  calloutInput: {
+    alignSelf: 'stretch',
+    marginHorizontal: 12,
+    borderRadius: 11, borderCurve: 'continuous',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    fontFamily: 'Fredoka_600SemiBold',
+    fontSize: 13.5,
+    textAlign: 'center',
   },
   claimNote: {
     fontFamily: 'Fredoka_600SemiBold',
