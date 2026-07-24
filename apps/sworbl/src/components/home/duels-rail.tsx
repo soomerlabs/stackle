@@ -21,10 +21,24 @@ export function DuelsRail({ theme, refreshNonce }: { theme: Theme; refreshNonce?
     };
   }, [refreshNonce]);
 
-  if (!duels.length) return null;
+  // EMPTY ≠ INVISIBLE (owner: "im not seeing duels anywhere") — an empty
+  // rail is an invitation: run a board, post it, be the first card.
   return (
     <View style={styles.wrap}>
       <Text style={[styles.eyebrow, { color: theme.faint }]}>OPEN DUELS</Text>
+      {!duels.length && (
+        <Pressable
+          onPress={() => router.push('/storm?seed=first-storm&clock=120')}
+          style={[styles.row, { backgroundColor: theme.card }]}>
+          <View style={styles.mid}>
+            <Text style={[styles.name, { color: theme.ink }]}>no open duels yet</Text>
+            <Text style={[styles.meta, { color: theme.faint }]}>
+              run a 2:00 blitz board, post your score, wait for a taker
+            </Text>
+          </View>
+          <Text style={[styles.take, { color: ACCENT }]}>start one ›</Text>
+        </Pressable>
+      )}
       {duels.map((d) => {
         const pal = PALETTE[tileColorFor(d.name[0]?.toLowerCase() ?? 'a', 0)];
         return (

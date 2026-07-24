@@ -210,7 +210,16 @@ const DAY_WORDS_KEY = 'sworbl_rn_daywords_';
 
 export function loadDayWords(dayKey: string): BestWord[] {
   const v = engine.store.getJSON(DAY_WORDS_KEY + dayKey, null) as BestWord[] | null;
-  return Array.isArray(v) ? v : [];
+  if (!Array.isArray(v)) return [];
+  // DEDUPE ON READ (owner: duplicate-key crash on 'gusty') — pre-pivot days
+  // wrote the RAW spelled list, so a word respelled in one round appears
+  // twice in storage. Best pts per word wins; every renderer keys by word.
+  const best = new Map<string, BestWord>();
+  for (const w of v) {
+    const cur = best.get(w.word);
+    if (!cur || w.pts > cur.pts) best.set(w.word, w);
+  }
+  return [...best.values()];
 }
 
 // ---- UI restoration: "the sheet was open when the OS reclaimed us" ----
